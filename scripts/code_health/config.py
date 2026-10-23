@@ -27,13 +27,14 @@ TARGETS = {
 }
 
 METRIC_FIX = {
-    "CC": "split it: extract phases into a topical sibling (`<stem>_<topic>.py`), or replace a"
-    " branch ladder with a dict/table -> handler",
-    "FUNC_LINES": "extract phases into named helpers or a topical sibling module",
+    "CC": "split it: extract phases into named helpers, or replace a branch ladder with a"
+    " dict/table -> handler",
+    "FUNC_LINES": "extract phases into named helpers, or into a domain subpackage when the"
+    " phase is a real boundary",
     "NESTING": "return early, or extract the inner block into a helper",
-    "FILE_LINES": "offset the growth in the same PR: move an existing function or class into a"
-    " topical sibling `<stem>_<topic>.py` (moved code keeps its cap; see root AGENTS.md), or put"
-    " new tests in a new `test_<stem>_<topic>.py`; new behaviour never goes into a facade",
+    "FILE_LINES": "extract a domain subpackage or a public API; a new `<stem>_<topic>.py`"
+    " sibling is not a boundary. Move existing code (it keeps its cap; see root AGENTS.md), or"
+    " put new tests in a new test file; new behaviour never goes into a facade",
     "MEASURE": "the file must parse and measure (a file that cannot be measured cannot be"
     " judged); fix the syntax, or report the measurer bug",
 }
@@ -44,6 +45,39 @@ TESTS = ("tests/*", "*/tests/*", "tests-js/*", "*/conftest.py")
 # One-shot processes that serve a single profile (CI/release scripts, skill scripts run as a
 # child with a scoped env, installers): the profile-scope rules don't apply to them.
 SINGLE_PROFILE = TESTS + ("scripts/*", "skills/*", "optional-skills/*", "evals/*", "setup.py")
+
+# Import-graph contract. A package may import only the packages named here, plus itself.
+# The table is the target DAG, not a snapshot: existing violations are grandfathered by the
+# base revision, and new ones fail. Surfaces may import inward; core may not import a surface.
+ALL_PACKAGES = "*"
+PACKAGE_LAYERS: dict[str, frozenset[str]] = {
+    "hermes_types": frozenset(),
+    "hermes_platform": frozenset({"hermes_types"}),
+    "hermes_config": frozenset({"hermes_types", "hermes_platform"}),
+    "hermes_providers": frozenset({"hermes_types", "hermes_config", "hermes_platform"}),
+    "hermes_store": frozenset({"hermes_types", "hermes_config"}),
+    "hermes_plugins": frozenset({"hermes_types", "hermes_config", "hermes_providers"}),
+    "pm": frozenset({"hermes_types", "hermes_platform"}),
+    "tools": frozenset({"hermes_types", "hermes_config", "hermes_store"}),
+    "agent": frozenset({
+        "hermes_types", "hermes_config", "hermes_providers", "hermes_store",
+        "hermes_plugins", "tools",
+    }),
+    "gateway": frozenset({
+        "hermes_types", "hermes_config", "hermes_providers", "hermes_store",
+        "hermes_plugins", "agent", "tools",
+    }),
+    "cron": frozenset({"hermes_types", "hermes_config", "hermes_store", "agent", "gateway"}),
+    # In-tree plugin implementations sit at the edge: they may reach inward, never into a
+    # surface. A new platform adapter goes under gateway/platforms/, not here.
+    "plugins": frozenset({
+        "hermes_types", "hermes_config", "hermes_providers", "hermes_store",
+        "hermes_plugins", "agent", "tools", "gateway",
+    }),
+    "hermes_cli": frozenset({ALL_PACKAGES}),
+    "tui_gateway": frozenset({ALL_PACKAGES}),
+    "acp_adapter": frozenset({ALL_PACKAGES}),
+}
 
 
 @dataclass(frozen=True)
@@ -140,6 +174,16 @@ RULES: tuple[Rule, ...] = (
     # Structure.
     Rule("HX011", "if/elif ladder on one name", "use a dict/table -> handler (`_SLASH_DISPATCH`"
          " is the shape)", "ast", exclude=()),
+    # Import graph. The graph is global, not per file: see scripts/code_health/imports.py.
+    Rule("LAYER_VIOLATION", "forbidden package dependency", "move the shared code into a"
+         " lower layer (`hermes_types`, `hermes_config`, `hermes_providers`, `hermes_store`)"
+         " or inject it; a core package must not import a surface", "ast", exclude=()),
+    Rule("IMPORT_CYCLE", "new package dependency cycle", "break the cycle by extracting the"
+         " shared concern into a lower layer; a cycle means an API boundary is in the wrong"
+         " place", "ast", exclude=()),
+    Rule("LATE_IMPORT", "new function-level cross-package import", "import at module top"
+         " level; a late import hides the dependency and defers the failure to call time",
+         "ast", exclude=()),
     # Tests: a fixed delay is a race against the runner's load (the usual flake).
     Rule("HX013", "wall-clock sleep in a test", "wait for the condition, not the clock: an"
          " Event the code under test sets (`threading.Event` / `asyncio.Event`, `.wait(timeout=)`),"

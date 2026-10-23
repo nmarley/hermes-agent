@@ -116,6 +116,56 @@ def read_file(repo: Path, tree: str | None, path: str) -> str | None:
     return proc.stdout.decode("utf-8-sig", errors="replace")
 
 
+def read_files(repo: Path, tree: str | None, paths: list[str]) -> dict[str, str]:
+    """Read many blobs from one tree.
+
+    The working tree reads from disk. A revision goes through one ``git cat-file --batch``
+    process, so a whole-tree import scan is one subprocess instead of one per file.
+    """
+    if not paths:
+        return {}
+    if tree is None:
+        out: dict[str, str] = {}
+        for path in paths:
+            try:
+                out[path] = (repo / path).read_text(encoding="utf-8-sig", errors="replace")
+            except (FileNotFoundError, IsADirectoryError):
+                continue
+        return out
+    request = "".join(f"{tree}:{path}\n" for path in paths).encode("utf-8")
+    proc = subprocess.run(
+        ["git", "cat-file", "--batch"],
+        cwd=repo,
+        input=request,
+        capture_output=True,
+        timeout=120,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(
+            "git cat-file --batch failed: "
+            + proc.stderr.decode("utf-8", "replace").strip()
+        )
+    out = {}
+    pos = 0
+    for path in paths:
+        newline = proc.stdout.find(b"\n", pos)
+        if newline < 0:
+            break
+        header = proc.stdout[pos:newline].decode("utf-8", "replace")
+        pos = newline + 1
+        if header.endswith(" missing"):
+            continue
+        fields = header.split(" ")
+        if len(fields) != 3:
+            continue
+        size = int(fields[2])
+        blob = proc.stdout[pos:pos + size]
+        pos += size + 1  # each blob is followed by a newline
+        out[path] = blob.decode("utf-8-sig", errors="replace")
+    return out
+
+
 def tracked_files(repo: Path, tree: str | None) -> list[str]:
     if tree is None:
         return [p for p in git(repo, "ls-files", "-z").split("\0") if p]
