@@ -179,7 +179,7 @@ def _aux_task_takes_reasoning(task: str) -> bool:
     routes through delegation which reads ``delegation.reasoning_effort``, not its own block."""
     if task == _DELEGATION_TASK_KEY:
         return True
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
+    from hermes_config.defaults import DEFAULT_CONFIG
     block = (DEFAULT_CONFIG.get("auxiliary") or {}).get(task)
     if isinstance(block, dict):
         return "reasoning_effort" in block
@@ -199,7 +199,7 @@ def _prompt_aux_reasoning_effort(task: str, current: str) -> Optional[str]:
 def _reset_aux_to_auto() -> int:
     """Reset every known aux task (built-in + plugin) back to auto/empty. Returns number reset."""
     from hermes_cli.config import load_config, save_config
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
+    from hermes_config.defaults import DEFAULT_CONFIG
     defaults = DEFAULT_CONFIG.get("auxiliary") or {}
 
     def _clear(entry: dict, auto: str, task: str = "") -> bool:

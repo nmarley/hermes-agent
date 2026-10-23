@@ -1948,7 +1948,7 @@ _DOCKER_MEDIA_OUTPUT_CONTAINER_PATHS = {"/output", "/outputs"}
 
 # Internal bridge, not a config source: seed from the canonical default after dotenv so an ambient
 # process/.env value can never control lease safety.
-from hermes_cli.config_defaults import DEFAULT_CONFIG as _DEFAULT_CONFIG
+from hermes_config.defaults import DEFAULT_CONFIG as _DEFAULT_CONFIG
 os.environ["HERMES_TURN_LEASE_TIMEOUT"] = str(_DEFAULT_CONFIG["agent"]["gateway_turn_lease_timeout"])
 
 # Bridge config.yaml values into env so os.getenv() picks them up. config.yaml unconditionally wins

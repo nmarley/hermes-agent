@@ -8,6 +8,9 @@ current debt.
 A layer violation is an import whose target package is not in the source package's allowed set.
 A cycle is a strongly connected component with more than one package. A late import is any
 cross-package import inside a function, which hides an edge the module-level graph should show.
+
+Same-package late imports are kept as baseline credit but never reported: moving a module out
+of a package must not turn its existing late imports into new cross-package debt.
 """
 
 from __future__ import annotations
@@ -19,7 +22,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
-from scripts.code_health.config import ALL_PACKAGES, PACKAGE_LAYERS, in_scope
+from scripts.code_health.config import ALL_PACKAGES, MOVED_MODULES, PACKAGE_LAYERS, in_scope
 from scripts.code_health.gitio import Change, read_files, tracked_files
 from scripts.code_health.model import MODULE_SCOPE, Finding
 
@@ -121,12 +124,19 @@ def build_graph(paths: list[str], contents: dict[str, str]) -> PackageGraph:
             continue
         for line, module, late in _imports(path, text):
             target = module.split(".", 1)[0]
-            if target == source or target not in PACKAGE_LAYERS:
+            if target not in PACKAGE_LAYERS:
+                continue
+            if target == source:
+                # Same-package late imports are credit only: they let a module move out of a
+                # package without its existing late imports reading as new debt.
+                if late:
+                    refs.append(ImportRef(path, line, source, module, target, late))
                 continue
             refs.append(ImportRef(path, line, source, module, target, late))
     edges: dict[str, set[str]] = defaultdict(set)
     for ref in refs:
-        edges[ref.source_pkg].add(ref.target_pkg)
+        if ref.target_pkg != ref.source_pkg:
+            edges[ref.source_pkg].add(ref.target_pkg)
     return PackageGraph(refs, dict(edges), _cycle_edges(edges))
 
 
@@ -187,6 +197,8 @@ def _cycle_edges(edges: dict[str, set[str]]) -> dict[tuple[str, ...], int]:
 
 
 def _layer_violation(ref: ImportRef) -> bool:
+    if ref.target_pkg == ref.source_pkg:
+        return False
     allowed = PACKAGE_LAYERS.get(ref.source_pkg)
     return bool(allowed) and ALL_PACKAGES not in allowed and ref.target_pkg not in allowed
 
@@ -198,7 +210,8 @@ def _new_refs(base: PackageGraph, head: PackageGraph, renamed: dict[str, str],
     Changed files are considered first, so a finding points at the line a reviewer can see.
     """
     base_counts = Counter(
-        (ref.path, ref.target_module) for ref in base.refs if keep(ref)
+        (ref.path, MOVED_MODULES.get(ref.target_module, ref.target_module))
+        for ref in base.refs if keep(ref)
     )
     ordered = sorted(
         (ref for ref in head.refs if keep(ref)),
@@ -231,6 +244,8 @@ def _late_findings(base: PackageGraph, head: PackageGraph, renamed: dict[str, st
                    changed: set[str]) -> list[Finding]:
     findings: list[Finding] = []
     for ref in _new_refs(base, head, renamed, changed, lambda ref: ref.late):
+        if ref.target_pkg == ref.source_pkg:
+            continue
         findings.append(Finding(
             ref.path, "LATE_IMPORT", MODULE_SCOPE, ref.line,
             f"`{ref.source_pkg}` imports `{ref.target_module}` inside a function; "

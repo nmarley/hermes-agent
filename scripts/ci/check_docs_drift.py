@@ -39,7 +39,7 @@ def _docs_text() -> str:
 def config_leaves() -> list[str]:
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
+    from hermes_config.defaults import DEFAULT_CONFIG
 
     out: list[str] = []
 

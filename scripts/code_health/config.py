@@ -79,6 +79,13 @@ PACKAGE_LAYERS: dict[str, frozenset[str]] = {
     "acp_adapter": frozenset({ALL_PACKAGES}),
 }
 
+# Modules that moved packages without changing their public names. The graph compares a base
+# import of the old path as the new module, so a pure move is not new debt. A head import of
+# the old path still counts as new: the move is only free for code that follows it.
+MOVED_MODULES: dict[str, str] = {
+    "hermes_cli.config_defaults": "hermes_config.defaults",
+}
+
 
 @dataclass(frozen=True)
 class Rule:

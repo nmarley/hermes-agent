@@ -36,7 +36,7 @@ def _frozen_for_deletion(snapshot: dict[str, Any]) -> Any:
     policy = _current_policy()
     if policy is None or not policy.ignore_user_config:
         return snapshot
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
+    from hermes_config.defaults import DEFAULT_CONFIG
 
     return _schema_default_branch(snapshot, DEFAULT_CONFIG)
 

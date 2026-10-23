@@ -88,7 +88,7 @@ def _show_terminal_section(config: dict[str, Any]) -> None:
     print(f"  Timeout:      {terminal.get('timeout', 60)}s")
 
     configured = lambda *names: 'configured' if all(_cfg.get_env_value(n) for n in names) else '(not set)'
-    from hermes_cli.config_defaults import DEFAULT_SANDBOX_IMAGE as default_img, DEFAULT_VERCEL_IMAGE as _DEFAULT_VERCEL_IMAGE
+    from hermes_config.defaults import DEFAULT_SANDBOX_IMAGE as default_img, DEFAULT_VERCEL_IMAGE as _DEFAULT_VERCEL_IMAGE
     backend_lines = {
         'docker': lambda: [f"  Docker image: {terminal.get('docker_image', default_img)}"],
         'modal': lambda: [

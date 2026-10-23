@@ -6,7 +6,7 @@ import logging
 from collections.abc import Mapping
 from typing import Any
 
-from hermes_cli.config_defaults import DEFAULT_CONFIG
+from hermes_config.defaults import DEFAULT_CONFIG
 
 try:  # ``resource`` is POSIX-only (and unavailable on Windows).
     import resource as _resource

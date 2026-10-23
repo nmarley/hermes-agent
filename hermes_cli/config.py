@@ -584,7 +584,7 @@ def ensure_hermes_home():
 
 # ---- Config loading/saving ----
 
-from hermes_cli.config_defaults import DEFAULT_CONFIG, OPTIONAL_ENV_VARS
+from hermes_config.defaults import DEFAULT_CONFIG, OPTIONAL_ENV_VARS
 from hermes_cli.config_providers import (
     _API_MODE_ALIASES, _CAMEL_ALIASES, _KNOWN_PROVIDER_KEYS, _PROVIDER_NORMALIZE_WARNED,
     _canonical_api_mode, _coerce_ssl_verify, _custom_provider_entry_to_provider_config,

@@ -16,7 +16,7 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-from hermes_cli.config_defaults import DEFAULT_CONFIG
+from hermes_config.defaults import DEFAULT_CONFIG
 from tools.registry import tool_error
 from toolsets import CLIENT_SURFACE_TOOLSETS, TOOLSET_SESSION_PLATFORMS
 from tools.tool_search_catalog import (

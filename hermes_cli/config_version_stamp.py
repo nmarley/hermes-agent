@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Optional, Tuple
 
-from hermes_cli.config_defaults import DEFAULT_CONFIG
+from hermes_config.defaults import DEFAULT_CONFIG
 
 
 def _coerce_config_version(value) -> int:

@@ -104,7 +104,7 @@ def _apply_terminal_mapping(scope: dict[str, str], mapping: dict[str, Any]) -> N
 def default_terminal_scope() -> dict[str, str]:
     """Code-default ``TERMINAL_*`` policy: what a profile-bypassing session freezes instead of
     reading ``.env``/``config.yaml``. Total like the profile projection, minus the profile."""
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
+    from hermes_config.defaults import DEFAULT_CONFIG
 
     scope: dict[str, str] = {}
     _apply_terminal_mapping(scope, {**_TOOL_LEVEL_DEFAULTS, **(DEFAULT_CONFIG.get("terminal") or {})})

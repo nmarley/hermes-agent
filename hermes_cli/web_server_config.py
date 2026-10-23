@@ -810,7 +810,7 @@ def _normalize_aux_reasoning_effort(value: Optional[str]) -> Optional[str]:
 
 
 def _aux_default_effort(slot: str) -> str:
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
+    from hermes_config.defaults import DEFAULT_CONFIG
     block = (DEFAULT_CONFIG.get("auxiliary") or {}).get(slot)
     return str(block.get("reasoning_effort") or "") if isinstance(block, dict) else ""
 

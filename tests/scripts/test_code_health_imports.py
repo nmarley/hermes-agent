@@ -43,6 +43,20 @@ def test_new_late_cross_package_import_blocks(tmp_path, capsys):
     assert code == 1 and "LATE_IMPORT" in out, out
 
 
+def test_moved_module_is_not_a_new_late_import(tmp_path, capsys):
+    repo, base = _repo(tmp_path)
+    base = _commit(repo, {
+        "agent/a.py": "def f():\n    from hermes_cli.config_defaults import DEFAULT_CONFIG\n    return DEFAULT_CONFIG\n",
+    })
+    code, out = _verdict(
+        repo,
+        base,
+        {"agent/a.py": "def f():\n    from hermes_config.defaults import DEFAULT_CONFIG\n    return DEFAULT_CONFIG\n"},
+        capsys,
+    )
+    assert code == 0, out
+
+
 def test_module_level_import_does_not_trigger_late_import(tmp_path, capsys):
     repo, base = _repo(tmp_path)
     base = _commit(repo, {

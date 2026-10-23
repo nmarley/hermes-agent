@@ -140,7 +140,7 @@ def _bypass_policy(params, *, private_secrets, client_local=False):
     block or shape the session; there is no default model to inherit, so one must be explicit."""
     import copy
     from gateway.session_policy import build_policy
-    from hermes_cli.config_defaults import DEFAULT_CONFIG
+    from hermes_config.defaults import DEFAULT_CONFIG
     if not params.get('model'):
         raise RuntimeStoreError('invalid_params', field='model',
                                 detail='a bypass launch has no profile to inherit a model from')

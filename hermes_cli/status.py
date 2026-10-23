@@ -13,7 +13,7 @@ PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 from hermes_cli.auth import AuthError, resolve_provider
 from hermes_cli.colors import Colors, color
 from hermes_cli.config import get_env_path, get_env_value, get_hermes_home, load_config
-from hermes_cli.config_defaults import DEFAULT_SANDBOX_IMAGE, DEFAULT_VERCEL_IMAGE
+from hermes_config.defaults import DEFAULT_SANDBOX_IMAGE, DEFAULT_VERCEL_IMAGE
 from hermes_cli.models import provider_label
 from hermes_cli.runtime_provider import resolve_requested_provider
 from hermes_cli.vercel_auth import describe_vercel_auth
