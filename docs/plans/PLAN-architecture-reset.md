@@ -430,6 +430,8 @@ Rust:
 
 ## Appendix: baseline evidence
 
+Package graph values are produced by `scripts/code_health/imports.py` on the baseline tree.
+
 | Metric | Baseline |
 |---|---|
 | Tracked files | 20,799 |
@@ -446,6 +448,10 @@ Rust:
 | `hermes_state` siblings | 59 |
 | `hermes_cli` lines | 295k |
 | Cross-package imports, function-level and top-level | 5,479 and 822 |
+| Package graph files | 2,393 |
+| Package graph refs | 6,889 |
+| Package graph edges | 9 |
+| Package graph cycles | 1 SCC, 9 packages, 59 internal edges |
 | `agent <-> hermes_cli` | 524 / 684 |
 | `gateway <-> hermes_cli` | 546 / 359 |
 | `agent <-> tools` | 194 / 351 |
