@@ -1506,7 +1506,7 @@ class SessionSessionsMixin:
         it — or raise SessionExportTooLargeError (the LIMITed subquery
         stops once the bound is exceeded). ``None`` resolves ``sessions.max_export_messages``; 0 disables
         the guard."""
-        from hermes_state import SessionExportTooLargeError, resolved_max_export_messages
+        from hermes_store.api import SessionExportTooLargeError, resolved_max_export_messages
         if max_messages is None:
             max_messages = resolved_max_export_messages()
         if max_messages < 0:
@@ -1524,7 +1524,7 @@ class SessionSessionsMixin:
 
     def assert_exports_safe(self, session_ids, max_messages: Optional[int] = None) -> None:
         """assert_export_safe for each id with the limit resolved once; 0 disables (no queries)."""
-        from hermes_state import resolved_max_export_messages
+        from hermes_store.api import resolved_max_export_messages
         if max_messages is None:
             max_messages = resolved_max_export_messages()
         if max_messages == 0:

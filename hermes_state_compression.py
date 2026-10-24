@@ -650,7 +650,7 @@ class SessionCompressionMixin:
         """Try to atomically acquire the compression lock for ``session_id``. ``False``: another holder owns
         a live lock and the caller MUST NOT compress (its rotation would split the lineage). Expired
         locks and structured holders whose local ``pid=`` is dead are reclaimed transparently."""
-        from hermes_state import _compression_lock_holder_process_is_dead
+        from hermes_store.api import _compression_lock_holder_process_is_dead
         if not session_id:
             return False
         now = time.time()
@@ -720,7 +720,7 @@ class SessionCompressionMixin:
         """Atomically acquire the cross-process turn lease for a conversation (keyed by the
         lineage root). The walk, the INSERT, and reclaim of expired or dead-local-PID leases
         share one write transaction."""
-        from hermes_state import _compression_lock_holder_process_is_dead
+        from hermes_store.api import _compression_lock_holder_process_is_dead
         if not session_id or not holder:
             return False
         now = time.time()
@@ -751,7 +751,7 @@ class SessionCompressionMixin:
         retried at once with a longer write patience, and ``on_contended()`` is called instead,
         since the busy writer may be the holder's last flush. ``should_abort()`` True (e.g.
         ``/stop``) returns False at once."""
-        from hermes_state import classify_persistence_error
+        from hermes_store.api import classify_persistence_error
         deadline = time.monotonic() + max(0.0, float(wait_seconds))
         patience = acquire_patience_s
         wait_started = None

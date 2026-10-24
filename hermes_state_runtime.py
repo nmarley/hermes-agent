@@ -841,7 +841,7 @@ def _worker_append(db, conn, session_id, payload):
 def _worker_turn(db, conn, session_id, payload, operation):
     import time
     from hermes_state_compression import _claim_lease_row
-    from hermes_state import _compression_lock_holder_process_is_dead
+    from hermes_store.api import _compression_lock_holder_process_is_dead
     allowed = {'holder'} if operation == 'turn.release' else {'holder', 'ttl_seconds'}
     if set(payload) != allowed:
         raise RuntimeStoreError('invalid_params')

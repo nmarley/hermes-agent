@@ -266,6 +266,11 @@ def _late_findings(base: PackageGraph, head: PackageGraph, renamed: dict[str, st
     for ref in _new_refs(base, head, renamed, changed, lambda ref: ref.late):
         if ref.target_pkg == ref.source_pkg:
             continue
+        # Root modules are the temporary compatibility layer: PACKAGE_LAYERS lets them import
+        # anything and ROOT_MODULE stops new ones, so a late import out of the root is migration
+        # scaffolding, not hidden package debt. Package -> root still counts: callers must migrate.
+        if ref.source_pkg == ROOT_PACKAGE:
+            continue
         findings.append(Finding(
             ref.path, "LATE_IMPORT", MODULE_SCOPE, ref.line,
             f"`{ref.source_pkg}` imports `{ref.target_module}` inside a function; "

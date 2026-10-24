@@ -115,7 +115,7 @@ def _scrub_surrogates(value: Any) -> Any:
 
 def _stale_holder(row, now: float) -> bool:
     """A lock/lease row whose holder is expired or a provably dead local process."""
-    from hermes_state import _compression_lock_holder_process_is_dead
+    from hermes_store.api import _compression_lock_holder_process_is_dead
     return float(row["expires_at"]) <= now or _compression_lock_holder_process_is_dead(row["holder"])
 
 
@@ -224,7 +224,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
         #74478 patience note below). User-initiated transcript mutations may opt in to rejecting an active
         unowned turn lease in that same transaction.
         """
-        from hermes_state import SessionCompressionInProgressError
+        from hermes_store.api import SessionCompressionInProgressError
         from hermes_store.errors import CompressionSessionClosedError, SessionTurnLeaseLostError
         # NOTE (#75316 redesign): appends do NOT check compression_locks. The lock's job is to stop two
         # COMPRESSIONS colliding, not to fence ordinary transcript writes. Concurrent appends during a
@@ -951,7 +951,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
             held_for_cas: Optional[list[dict[str, Any]]] = None) -> int:
         """:meth:`archive_and_compact` on the caller's write transaction (never commits). The owner
         and the worker/canonical-mutation verbs share this one body so they cannot drift."""
-        from hermes_state import SessionCompressionInProgressError
+        from hermes_store.api import SessionCompressionInProgressError
         if lock_holder is not None:
             lock_row = conn.execute(_COMPRESSION_LOCK_ROW_SQL, (session_id,)).fetchone()
             if lock_row is None or lock_row["holder"] != lock_holder or float(lock_row["expires_at"]) <= time.time():
@@ -1552,7 +1552,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
         mutable payload while the digest still fences a concurrent winner. ``_row_id`` is opt-in (gateway
         reactions); reasoning restored on assistant rows only; ``api_content`` VERBATIM (no sanitize/strip)
         so replay keeps the provider prompt cache byte-stable."""
-        from hermes_state import _strip_background_review_harness, _strip_stale_tool_call_markers
+        from hermes_store.api import _strip_background_review_harness, _strip_stale_tool_call_markers
         # Runtime import avoids the transcript_repair -> hermes_state_messages module cycle.
         from agent.transcript_repair import transcript_row_snapshot
         # Only the unaddressed live replay gets the digest: row-addressed loaders (include_row_ids) keep the
@@ -1709,7 +1709,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
         """Resume row count, or raise ``SessionResumeTooLargeError``. ``max_messages=None`` reads config; 0
         disables the guard without counting. ``tip_only`` bounds only the tip's active rows for callers that
         never materialize the lineage: a heavily compressed conversation is a success, not a rejection."""
-        from hermes_state import SessionResumeTooLargeError, resolved_max_resume_messages
+        from hermes_store.api import SessionResumeTooLargeError, resolved_max_resume_messages
         if max_messages is None:
             max_messages = resolved_max_resume_messages()
         if max_messages < 0:
@@ -1930,7 +1930,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
         """Permanently clear bare tool-call marker content ("[memory]") left by pre-fix sessions
         (``_rows_to_conversation`` repairs it in memory; this stops the re-scan). Only ``content`` is touched.
         ``backup``: ``VACUUM INTO`` snapshot first (none when nothing changes)."""
-        from hermes_state import _STALE_TOOL_CALL_MARKER_RE
+        from hermes_store.api import _STALE_TOOL_CALL_MARKER_RE
         def _find_affected(conn) -> list[int]:
             cursor = conn.execute("SELECT id, content FROM messages "
                 "WHERE role = 'assistant' AND tool_calls IS NOT NULL AND tool_calls != ''")

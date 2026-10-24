@@ -18,7 +18,6 @@ from pathlib import Path
 
 import pytest
 
-import hermes_state
 import hermes_state_wal
 from hermes_state import SessionDB
 
@@ -228,7 +227,7 @@ def gateway_writer(tmp_path: Path):
     """Spawn the gateway writer child on ``tmp_path / "state.db"`` and yield a :class:`GatewayWriter`.
 
     The child is torn down (stdin closed, then wait → terminate → kill) on exit from the block."""
-    repo_root = os.path.dirname(os.path.abspath(hermes_state.__file__))
+    repo_root = str(Path(__file__).resolve().parents[2])
     hermes_home = tmp_path / "home"
     hermes_home.mkdir()
     path = tmp_path / "state.db"

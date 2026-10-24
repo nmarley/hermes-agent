@@ -444,7 +444,7 @@ time.sleep({hold})
 def _lock_held_by_other_process(db_path: Path, hold_seconds: float = 30.0):
     """Hold the repair flock for *db_path* in a real child process."""
     script = _HOLD_LOCK_SCRIPT.format(
-        root=str(Path(hermes_state.__file__).parent),
+        root=str(Path(__file__).resolve().parents[2]),
         lock=str(db_path.with_name(db_path.name + ".repair.lock")),
         hold=hold_seconds,
     )
@@ -534,7 +534,7 @@ def test_two_processes_repairing_at_once_perform_surgery_once(tmp_path):
     _release_header_probe_fds()
 
     script = _REPAIR_SCRIPT.format(
-        root=str(Path(hermes_state.__file__).parent), db=str(db_path)
+        root=str(Path(__file__).resolve().parents[2]), db=str(db_path)
     )
     procs = [
         subprocess.Popen(

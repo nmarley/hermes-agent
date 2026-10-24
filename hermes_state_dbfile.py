@@ -78,7 +78,7 @@ def _pread_db_range(db_path: Path, offset: int, length: int) -> Optional[bytes]:
     """Lock-safe raw read of a possibly-live SQLite database: POSIX preads from a cached,
     never-closed fd (rebound when the path names a new inode); Windows reads plainly, since
     advisory-lock cancellation is a POSIX-only hazard."""
-    from hermes_state import _IS_WINDOWS
+    from hermes_store.api import _IS_WINDOWS
     if _IS_WINDOWS:
         with contextlib.suppress(OSError), db_path.open("rb") as handle:
             handle.seek(offset)
@@ -385,7 +385,7 @@ def iter_deleted_sqlite_sidecar_holders(db_path) -> list[tuple[int, str]]:
 def refuse_deleted_wal_generation(db_path) -> None:
     """Raise if any process holds a deleted WAL/SHM generation for *db_path*; called
     *before* ``sqlite3.connect`` so a second opener cannot mint a replacement WAL inode."""
-    from hermes_state import DeletedWalGenerationError
+    from hermes_store.api import DeletedWalGenerationError
     from hermes_store.errors import _DELETED_WAL_GENERATION_MSG
     if not iter_deleted_sqlite_sidecar_holders(db_path):
         return
@@ -422,7 +422,7 @@ class RetiredGenerationCaptureError(RuntimeError):
 def _fsync_path(path: Path) -> None:
     """fsync a file or directory we own. Never used on the live database: opening and closing a
     descriptor on a file SQLite has locked would cancel this process's POSIX advisory locks."""
-    from hermes_state import _IS_WINDOWS
+    from hermes_store.api import _IS_WINDOWS
     if _IS_WINDOWS:
         return  # directories cannot be opened; file writes fsync their own handle
     fd = os.open(path, os.O_RDONLY)
@@ -749,7 +749,7 @@ def collect_state_db_stats(db_path: Path) -> dict[str, Any]:
     Deliberately does NOT instantiate :class:`SessionDB` — its constructor runs DDL.
     ``wal_size_bytes`` is 0 when the sidecar is absent; ``fts_storage_version`` None means the
     legacy inline layout; ``fts_rebuild_deferral`` is the durable blocked-repair diagnostic."""
-    from hermes_state import _connect_tracked_db
+    from hermes_store.api import _connect_tracked_db
     stats: dict[str, Any] = dict.fromkeys((
         "page_count", "page_size", "freelist_count", "logical_size_bytes", "wal_size_bytes", "journal_mode",
         "messages", "sessions", "fts_tables", "fts_storage_version", "fts_storage_upgrade_needed",

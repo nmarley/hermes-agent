@@ -40,7 +40,7 @@ from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple
 from hermes_state_common import stat_db_file_identity as _stat_db_file_identity
 
 if TYPE_CHECKING:  # pragma: no cover - import cycle guard, typed only
-    from hermes_state import SessionDB
+    from hermes_store.api import SessionDB
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +100,7 @@ _path_lifecycle_locks: dict[Path, threading.Lock] = {}
 
 def _open_session_db(path: Path) -> SessionDB:
     """Construct the SessionDB for *path* (call-time import avoids cycles; tests patch this)."""
-    from hermes_state import SessionDB
+    from hermes_store.api import SessionDB
 
     return SessionDB(db_path=path)
 
@@ -198,7 +198,7 @@ def acquire(db_path: Optional[Path] = None) -> SessionDB:
     but stays alive for its holders, and a fresh one is opened in its place. Raises
     whatever ``SessionDB.__init__`` raises; on a replacement-open failure the registry
     holds NO entry for the path."""
-    from hermes_state import _default_db_path
+    from hermes_store.api import _default_db_path
 
     raw_path = Path(db_path) if db_path is not None else Path(_default_db_path())
     try:

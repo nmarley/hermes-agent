@@ -43,6 +43,37 @@ def test_new_late_cross_package_import_blocks(tmp_path, capsys):
     assert code == 1 and "LATE_IMPORT" in out, out
 
 
+def test_root_module_late_import_of_a_package_is_not_new_debt(tmp_path, capsys):
+    repo, base = _repo(tmp_path)
+    base = _commit(repo, {
+        "hermes_store/__init__.py": "",
+        "hermes_store/api.py": "VALUE = 1\n",
+        "rootmod.py": "def f():\n    return 1\n",
+    })
+    code, out = _verdict(
+        repo,
+        base,
+        {"rootmod.py": "def f():\n    from hermes_store.api import VALUE\n    return VALUE\n"},
+        capsys,
+    )
+    assert code == 0, out
+
+
+def test_package_late_import_of_a_root_module_still_blocks(tmp_path, capsys):
+    repo, base = _repo(tmp_path)
+    base = _commit(repo, {
+        "rootmod.py": "VALUE = 1\n",
+        "agent/a.py": "VALUE = 1\n",
+    })
+    code, out = _verdict(
+        repo,
+        base,
+        {"agent/a.py": "VALUE = 1\n\n\ndef f():\n    from rootmod import VALUE\n    return VALUE\n"},
+        capsys,
+    )
+    assert code == 1 and "LATE_IMPORT" in out, out
+
+
 def test_moved_module_is_not_a_new_late_import(tmp_path, capsys):
     repo, base = _repo(tmp_path)
     base = _commit(repo, {

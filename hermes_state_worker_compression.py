@@ -36,7 +36,7 @@ def worker_compression_lock(db, conn, sid, payload, *, action):
     if not 0.1 <= ttl <= 3600:
         raise RuntimeStoreError('invalid_params')
     if action == 'acquire':
-        from hermes_state import _compression_lock_holder_process_is_dead
+        from hermes_store.api import _compression_lock_holder_process_is_dead
         value = _claim_lease_row(conn, 'compression_locks', 'session_id', sid, holder, now, now + ttl,
                                 lambda h, e: e < now or _compression_lock_holder_process_is_dead(h))[0]
     elif action == 'renew':

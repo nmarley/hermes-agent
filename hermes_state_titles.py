@@ -49,7 +49,7 @@ class SessionTitlesMixin:
     def sanitize_title(title: Optional[str]) -> Optional[str]:
         """Strip control/zero-width/bidi chars (and lone surrogates sqlite3 cannot bind),
         collapse whitespace, normalize empty to None. ValueError past MAX_TITLE_LENGTH."""
-        from hermes_state import SessionDB
+        from hermes_store.api import SessionDB
         if not title:
             return None
         cleaned = _TITLE_INVISIBLE_RE.sub('', _TITLE_CONTROL_RE.sub('', _sanitize_surrogates(title)))

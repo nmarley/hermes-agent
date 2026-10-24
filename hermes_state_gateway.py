@@ -183,7 +183,7 @@ class SessionGatewayMixin:
 
         Fails closed: anything whose parent, age, argv, or network connections
         cannot be proved safe remains a repair-blocking holder."""
-        from hermes_state import psutil
+        from hermes_store.api import psutil
         from hermes_state_dbfile import _concrete_state_db_holder_pids, _is_inactive_orphan_desktop_holder
         if not sys.platform.startswith("linux") or psutil is None:
             return []
@@ -852,7 +852,7 @@ class SessionGatewayMixin:
         still restore the provider that served them; a bare ``custom`` billing class falls back
         to its ``billing_base_url`` endpoint for the readers' bare-custom heal (#136323).
         Empty dict on parse failure — resume uses ambient config."""
-        from hermes_state import _BARE_BILLING_PROVIDERS
+        from hermes_store.api import _BARE_BILLING_PROVIDERS
         raw = (session_meta or {}).get("model_config")
         if isinstance(raw, str):
             try:
