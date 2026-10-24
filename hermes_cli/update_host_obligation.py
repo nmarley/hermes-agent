@@ -33,7 +33,7 @@ import tempfile
 import time
 from pathlib import Path
 from typing import Any, Callable, Iterable, Optional
-from hermes_dir_acl import make_user_dir
+from hermes_platform.fs import make_user_dir
 
 logger = logging.getLogger("hermes_cli.update_cmd")
 

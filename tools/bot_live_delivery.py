@@ -13,7 +13,7 @@ import re
 import time
 import uuid
 from contextlib import ExitStack, contextmanager
-from hermes_dir_acl import make_user_dir, unusable_dir_remedy
+from hermes_platform.fs import make_user_dir, unusable_dir_remedy
 
 from utils import atomic_json_write, atomic_write_text, fsync_directory
 from pathlib import Path

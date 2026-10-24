@@ -226,7 +226,7 @@ def _is_running_as_admin() -> bool:
     """Return True when the current Windows process is elevated (the shared ``TokenElevation``
     probe; ``IsUserAnAdmin`` is deprecated and answered the same question a second way)."""
     _assert_windows()
-    from hermes_dir_acl import process_is_elevated
+    from hermes_platform.fs import process_is_elevated
     return process_is_elevated()
 
 

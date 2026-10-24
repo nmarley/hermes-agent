@@ -56,27 +56,33 @@ PACKAGE_LAYERS: dict[str, frozenset[str]] = {
     # its late-import credit, but they are allowed to import anything while they exist.
     ROOT_PACKAGE: frozenset({ALL_PACKAGES}),
     "hermes_types": frozenset(),
-    "hermes_platform": frozenset({"hermes_types"}),
+    # Foundational host layer: every package may import it. The root compatibility shims stay
+    # importable until their callers move; `ROOT_MODULE` still stops new root files.
+    "hermes_platform": frozenset({"hermes_types", ROOT_PACKAGE}),
     "hermes_config": frozenset({"hermes_types", "hermes_platform"}),
     "hermes_providers": frozenset({"hermes_types", "hermes_config", "hermes_platform"}),
-    "hermes_store": frozenset({"hermes_types", "hermes_config"}),
-    "hermes_plugins": frozenset({"hermes_types", "hermes_config", "hermes_providers"}),
+    "hermes_store": frozenset({"hermes_types", "hermes_config", "hermes_platform"}),
+    "hermes_plugins": frozenset({
+        "hermes_types", "hermes_config", "hermes_providers", "hermes_platform",
+    }),
     "pm": frozenset({"hermes_types", "hermes_platform"}),
-    "tools": frozenset({"hermes_types", "hermes_config", "hermes_store"}),
+    "tools": frozenset({"hermes_types", "hermes_config", "hermes_store", "hermes_platform"}),
     "agent": frozenset({
         "hermes_types", "hermes_config", "hermes_providers", "hermes_store",
-        "hermes_plugins", "tools",
+        "hermes_plugins", "tools", "hermes_platform",
     }),
     "gateway": frozenset({
         "hermes_types", "hermes_config", "hermes_providers", "hermes_store",
-        "hermes_plugins", "agent", "tools",
+        "hermes_plugins", "agent", "tools", "hermes_platform",
     }),
-    "cron": frozenset({"hermes_types", "hermes_config", "hermes_store", "agent", "gateway"}),
+    "cron": frozenset({
+        "hermes_types", "hermes_config", "hermes_store", "agent", "gateway", "hermes_platform",
+    }),
     # In-tree plugin implementations sit at the edge: they may reach inward, never into a
     # surface. A new platform adapter goes under gateway/platforms/, not here.
     "plugins": frozenset({
         "hermes_types", "hermes_config", "hermes_providers", "hermes_store",
-        "hermes_plugins", "agent", "tools", "gateway",
+        "hermes_plugins", "agent", "tools", "gateway", "hermes_platform",
     }),
     "hermes_cli": frozenset({ALL_PACKAGES}),
     "tui_gateway": frozenset({ALL_PACKAGES}),
@@ -88,6 +94,7 @@ PACKAGE_LAYERS: dict[str, frozenset[str]] = {
 # the old path still counts as new: the move is only free for code that follows it.
 MOVED_MODULES: dict[str, str] = {
     "hermes_cli.config_defaults": "hermes_config.defaults",
+    "hermes_dir_acl": "hermes_platform.fs",
 }
 
 

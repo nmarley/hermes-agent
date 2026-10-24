@@ -20,7 +20,7 @@ from collections import namedtuple
 from functools import partial
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
-from hermes_dir_acl import make_user_dir
+from hermes_platform.fs import make_user_dir
 
 from agent.image_eviction_policy import image_dimensions_from_bytes
 from tools.computer_use.backend import ActionResult, CaptureResult, ComputerUseBackend, UIElement

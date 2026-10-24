@@ -18,7 +18,7 @@ import sqlite3
 import stat
 import tempfile
 import threading
-from hermes_dir_acl import make_user_dir
+from hermes_platform.fs import make_user_dir
 
 from hermes_state_runtime import RuntimeStoreError
 from utils import fsync_directory

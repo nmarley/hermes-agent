@@ -14,6 +14,8 @@ def test_minimal_bootstrap_closure_reaches_pm_paths_and_locks(tmp_path):
     stage = tmp_path / "stage"
     shutil.copytree(repo / "pm", stage / "pm", ignore=shutil.ignore_patterns("__pycache__"))
     shutil.copy2(repo / "hermes_constants.py", stage / "hermes_constants.py")
+    shutil.copytree(repo / "hermes_platform", stage / "hermes_platform",
+                    ignore=shutil.ignore_patterns("__pycache__"))
     (stage / "hermes_cli").mkdir()
     for name in ("__init__.py", "runtime_state.py"):
         shutil.copy2(repo / "hermes_cli" / name, stage / "hermes_cli" / name)
@@ -43,9 +45,12 @@ def _constants_stage(tmp_path, *, with_acl: bool) -> Path:
     repo = Path(__file__).resolve().parents[2]
     stage = tmp_path / "stage"
     stage.mkdir()
-    names = ["hermes_constants.py", "hermes_dir_acl.py"] if with_acl else ["hermes_constants.py"]
-    for name in names:
-        shutil.copy2(repo / name, stage / name)
+    shutil.copy2(repo / "hermes_constants.py", stage / "hermes_constants.py")
+    package = stage / "hermes_platform"
+    package.mkdir()
+    shutil.copy2(repo / "hermes_platform" / "__init__.py", package / "__init__.py")
+    if with_acl:
+        shutil.copy2(repo / "hermes_platform" / "fs.py", package / "fs.py")
     return stage
 
 
@@ -57,8 +62,8 @@ def _mkdir_in_stage(stage: Path, home: Path) -> subprocess.CompletedProcess:
 
 
 def test_home_mkdir_carries_the_acl_module_in_the_closure(tmp_path):
-    """hermes_dir_acl is stdlib-only and ships beside hermes_constants: the two together create a
-    home dir, and hermes_constants still imports alone (the import is lazy)."""
+    """hermes_platform.fs is stdlib-only and ships beside hermes_constants: the two together
+    create a home dir, and hermes_constants still imports alone (the import is lazy)."""
     home = tmp_path / "home"
     home.mkdir()
     result = _mkdir_in_stage(_constants_stage(tmp_path, with_acl=True), home)
@@ -77,7 +82,7 @@ def test_home_mkdir_never_silently_skips_the_elevated_grant(tmp_path):
                            timeout=15, check=False)
     assert alone.returncode == 0, alone.stderr
     result = _mkdir_in_stage(stage, home)
-    assert result.returncode != 0 and "hermes_dir_acl" in result.stderr, result.stdout + result.stderr
+    assert result.returncode != 0 and "hermes_platform.fs" in result.stderr, result.stdout + result.stderr
 
 
 def test_managed_python_signing_import_needs_no_pm_or_application(tmp_path):

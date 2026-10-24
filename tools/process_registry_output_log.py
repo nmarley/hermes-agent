@@ -14,7 +14,7 @@ import os
 from pathlib import Path
 import time
 from typing import Optional
-from hermes_dir_acl import make_user_dir
+from hermes_platform.fs import make_user_dir
 
 from hermes_constants import get_hermes_home
 

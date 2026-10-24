@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, NamedTuple, Optional
 from urllib.parse import urlparse
 import httpx
-from hermes_dir_acl import make_user_dir
+from hermes_platform.fs import make_user_dir
 
 # ``agent.auxiliary_client`` costs ~50 ms cold; only the handlers need it. Both names stay
 # module attributes so tests can patch ``tools.vision_tools.async_call_llm`` (truthy-skip: mocks win).

@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone, UTC
 from pathlib import Path
 from typing import Any, Callable, NamedTuple, Optional
-from hermes_dir_acl import make_user_dir
+from hermes_platform.fs import make_user_dir
 
 from gateway.status_inline_source import (
     command_line_runs_inline_source,

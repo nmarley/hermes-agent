@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from hermes_dir_acl import make_user_dir
+from hermes_platform.fs import make_user_dir
 
 from hermes_constants import get_hermes_home
 from utils import atomic_json_write
