@@ -35,8 +35,14 @@ def _dispatch_session_delete(db, ids, **kwargs):
     emit_session_deleted_event(db, ids, **kwargs)
 
 
+def _load_mutation_hooks():
+    from gateway.mutation_hooks import mutation_hooks
+    return mutation_hooks
+
+
 _api.set_config_loader(_load_config_readonly)
 _api.set_session_delete_hook(_dispatch_session_delete)
+_api.set_mutation_hooks_provider(_load_mutation_hooks)
 _install_agent_turn_hooks()
 
 sys.modules[__name__] = _api

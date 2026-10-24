@@ -27,7 +27,7 @@ from pathlib import Path
 from hermes_platform.fs import make_user_dir
 
 from hermes_constants import get_hermes_home, mkdir_under_hermes_home, profile_cli_selector
-from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, TypeVar, cast
+from typing import Any, Callable, Dict, Iterator, List, Optional, Protocol, Tuple, TypeVar, cast
 
 from hermes_store.common.config import load_config_snapshot, set_config_loader
 from hermes_store.common.files import stat_db_file_identity as _stat_db_file_identity
@@ -182,6 +182,34 @@ def _compression_lock_holder_process_is_dead(holder: str) -> bool:
 _BARE_BILLING_PROVIDERS = frozenset({"auto", "custom"})
 
 T = TypeVar("T")
+
+
+class MutationHooks(Protocol):
+    """Surface types and display projections the store cannot import directly."""
+
+    def parse_authenticated_subject(self, subject: str) -> Optional[tuple[str, str, str]]: ...
+
+    def branch_session(self, *, session_id: str, principal_id: str, origin_profile: Optional[str],
+                       route_profile: Optional[str]) -> tuple[str, Any, Any]: ...
+
+    def reset_entry(self, previous_entry: Any, child_id: str) -> tuple[Any, Any]: ...
+
+    def split_user_originated_turn(self, message: Any) -> tuple[Any, Any]: ...
+
+
+_mutation_hooks_provider: Optional[Callable[[], MutationHooks]] = None
+
+
+def set_mutation_hooks_provider(provider: Optional[Callable[[], MutationHooks]]) -> None:
+    global _mutation_hooks_provider
+    _mutation_hooks_provider = provider
+
+
+def mutation_hooks() -> MutationHooks:
+    if _mutation_hooks_provider is None:
+        raise RuntimeError("mutation hooks are not installed; import hermes_state first")
+    return _mutation_hooks_provider()
+
 
 # Import-time snapshot lets _default_db_path() detect a re-pointed DEFAULT_DB_PATH
 # (tests monkeypatch the constant directly).

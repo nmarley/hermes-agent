@@ -5,7 +5,10 @@ import sys
 
 def test_runtime_storage_modules_import_without_loading_gateway():
     probe = ("import sys, hermes_state, hermes_state_runtime, hermes_state_local, hermes_state_local_lineage, "
-             "hermes_state_mutation_branch, hermes_state_mutations, hermes_state_worker_compression; "
+             "hermes_state_mutation_binding, hermes_state_mutation_branch, hermes_state_mutation_chat_pick, "
+             "hermes_state_mutation_compress, hermes_state_mutation_guards, hermes_state_mutation_prepared, "
+             "hermes_state_mutation_reset, hermes_state_mutation_retirement, hermes_state_mutation_transcript, "
+             "hermes_state_mutations, hermes_state_worker_compression; "
              "print(sorted(m for m in sys.modules if m == 'gateway' or m.startswith('gateway.')))")
     out = subprocess.run([sys.executable, '-c', probe], capture_output=True, text=True, check=True)
     assert out.stdout.strip() == '[]', out.stdout
