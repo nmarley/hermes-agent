@@ -50,7 +50,11 @@ SINGLE_PROFILE = TESTS + ("scripts/*", "skills/*", "optional-skills/*", "evals/*
 # The table is the target DAG, not a snapshot: existing violations are grandfathered by the
 # base revision, and new ones fail. Surfaces may import inward; core may not import a surface.
 ALL_PACKAGES = "*"
+ROOT_PACKAGE = "<root>"
 PACKAGE_LAYERS: dict[str, frozenset[str]] = {
+    # Root modules are being retired. They are a graph node so a move out of the root keeps
+    # its late-import credit, but they are allowed to import anything while they exist.
+    ROOT_PACKAGE: frozenset({ALL_PACKAGES}),
     "hermes_types": frozenset(),
     "hermes_platform": frozenset({"hermes_types"}),
     "hermes_config": frozenset({"hermes_types", "hermes_platform"}),
@@ -191,6 +195,9 @@ RULES: tuple[Rule, ...] = (
     Rule("LATE_IMPORT", "new function-level cross-package import", "import at module top"
          " level; a late import hides the dependency and defers the failure to call time",
          "ast", exclude=()),
+    Rule("ROOT_MODULE", "new top-level Python module", "move it into the owning package;"
+         " the repository root is entry points and compatibility shims only", "ast",
+         exclude=()),
     # Tests: a fixed delay is a race against the runner's load (the usual flake).
     Rule("HX013", "wall-clock sleep in a test", "wait for the condition, not the clock: an"
          " Event the code under test sets (`threading.Event` / `asyncio.Event`, `.wait(timeout=)`),"

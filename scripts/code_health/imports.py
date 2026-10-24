@@ -22,7 +22,13 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
-from scripts.code_health.config import ALL_PACKAGES, MOVED_MODULES, PACKAGE_LAYERS, in_scope
+from scripts.code_health.config import (
+    ALL_PACKAGES,
+    MOVED_MODULES,
+    PACKAGE_LAYERS,
+    ROOT_PACKAGE,
+    in_scope,
+)
 from scripts.code_health.gitio import Change, read_files, tracked_files
 from scripts.code_health.model import MODULE_SCOPE, Finding
 
@@ -45,9 +51,15 @@ class PackageGraph:
 
 
 def package_of(path: str) -> str | None:
-    """The top-level package a measured Python file belongs to, or None."""
-    if not path.endswith(".py") or "/" not in path:
+    """The top-level package a measured Python file belongs to, or None.
+
+    A root module is the special ``ROOT_PACKAGE`` node: the graph keeps its late imports as
+    baseline credit so a module that moves into a package does not look like new debt.
+    """
+    if not path.endswith(".py"):
         return None
+    if "/" not in path:
+        return ROOT_PACKAGE
     first = path.split("/", 1)[0]
     return first if first in PACKAGE_LAYERS else None
 
@@ -115,7 +127,15 @@ def _imports(path: str, text: str) -> list[tuple[int, str, bool]]:
     return found
 
 
+def _target_package(module: str, root_modules: set[str]) -> str | None:
+    first = module.split(".", 1)[0]
+    if first in PACKAGE_LAYERS and first != ROOT_PACKAGE:
+        return first
+    return ROOT_PACKAGE if first in root_modules else None
+
+
 def build_graph(paths: list[str], contents: dict[str, str]) -> PackageGraph:
+    root_modules = {path[:-3] for path in paths if "/" not in path and path.endswith(".py")}
     refs: list[ImportRef] = []
     for path in paths:
         source = package_of(path)
@@ -123,8 +143,8 @@ def build_graph(paths: list[str], contents: dict[str, str]) -> PackageGraph:
         if source is None or text is None:
             continue
         for line, module, late in _imports(path, text):
-            target = module.split(".", 1)[0]
-            if target not in PACKAGE_LAYERS:
+            target = _target_package(module, root_modules)
+            if target is None:
                 continue
             if target == source:
                 # Same-package late imports are credit only: they let a module move out of a
@@ -135,7 +155,7 @@ def build_graph(paths: list[str], contents: dict[str, str]) -> PackageGraph:
             refs.append(ImportRef(path, line, source, module, target, late))
     edges: dict[str, set[str]] = defaultdict(set)
     for ref in refs:
-        if ref.target_pkg != ref.source_pkg:
+        if ref.target_pkg != ref.source_pkg and ROOT_PACKAGE not in (ref.source_pkg, ref.target_pkg):
             edges[ref.source_pkg].add(ref.target_pkg)
     return PackageGraph(refs, dict(edges), _cycle_edges(edges))
 
@@ -284,6 +304,27 @@ def _cycle_findings(base: PackageGraph, head: PackageGraph,
     return findings
 
 
+def _is_root_py(path: str) -> bool:
+    return path.endswith(".py") and "/" not in path
+
+
+def _root_module_findings(repo: Path, base: str, head: str | None,
+                          changes: list[Change]) -> list[Finding]:
+    """A new file at the repository root is new layout debt, not a finding about its contents."""
+    base_root = {path for path in tracked_files(repo, base) if _is_root_py(path)}
+    head_paths = {path for path in tracked_files(repo, head) if _is_root_py(path)}
+    if head is None:
+        head_paths.update(change.new for change in changes if change.new and _is_root_py(change.new))
+    return [
+        Finding(
+            path, "ROOT_MODULE", MODULE_SCOPE, 1,
+            "new top-level Python module; move it into the owning package, or make it an "
+            "explicit compatibility shim",
+        )
+        for path in sorted(head_paths - base_root)
+    ]
+
+
 def _graph_paths(repo: Path, tree: str | None,
                  changes: list[Change] | None = None) -> list[str]:
     paths = {
@@ -308,4 +349,5 @@ def compare_imports(repo: Path, base: str, head: str | None,
         _layer_findings(base_graph, head_graph, renamed, changed)
         + _late_findings(base_graph, head_graph, renamed, changed)
         + _cycle_findings(base_graph, head_graph, changed)
+        + _root_module_findings(repo, base, head, changes)
     )

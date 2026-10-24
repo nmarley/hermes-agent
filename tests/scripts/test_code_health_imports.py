@@ -57,6 +57,19 @@ def test_moved_module_is_not_a_new_late_import(tmp_path, capsys):
     assert code == 0, out
 
 
+def test_new_root_module_blocks(tmp_path, capsys):
+    repo, base = _repo(tmp_path)
+    code, out = _verdict(repo, base, {"new_root.py": "VALUE = 1\n"}, capsys)
+    assert code == 1 and "ROOT_MODULE" in out, out
+
+
+def test_existing_root_module_is_not_new(tmp_path, capsys):
+    repo, base = _repo(tmp_path)
+    base = _commit(repo, {"rootmod.py": "VALUE = 1\n"})
+    code, out = _verdict(repo, base, {"agent/a.py": "VALUE = 1\n"}, capsys)
+    assert code == 0, out
+
+
 def test_module_level_import_does_not_trigger_late_import(tmp_path, capsys):
     repo, base = _repo(tmp_path)
     base = _commit(repo, {
