@@ -40,9 +40,20 @@ def _load_mutation_hooks():
     return mutation_hooks
 
 
+def _load_compression_hooks():
+    from gateway.compression_hooks import GatewayCompressionHooks
+    from hermes_cli.goals import GoalState
+    from hermes_cli.heartbeat import HeartbeatState
+    from hermes_cli.loops import LoopState
+
+    return GatewayCompressionHooks(
+        lambda: (('goal', GoalState), ('heartbeat', HeartbeatState), ('loop', LoopState)))
+
+
 _api.set_config_loader(_load_config_readonly)
 _api.set_session_delete_hook(_dispatch_session_delete)
 _api.set_mutation_hooks_provider(_load_mutation_hooks)
+_api.set_compression_hooks_provider(_load_compression_hooks)
 _install_agent_turn_hooks()
 
 sys.modules[__name__] = _api

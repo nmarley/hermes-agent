@@ -1,7 +1,7 @@
 """Commit a prepared summary, physical target, generation and receipt atomically."""
 import uuid
 from hermes_store.mutations.prepared import validate_prepared
-from hermes_state_worker_compression import archive_on_connection, publish_on_connection
+from hermes_store.compression.worker_compression import archive_on_connection, publish_on_connection
 
 
 def compress_in_transaction(db, conn, session_id, payload, prepared):

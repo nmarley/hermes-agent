@@ -72,10 +72,10 @@ from hermes_state_dbfile import (
     RetiredGenerationCaptureError, capture_retired_wal_generation, refuse_deleted_wal_generation,
 )
 from hermes_state_messages import SessionMessagesMixin
-from hermes_state_prune_rewrite import SessionPruneRewriteMixin
+from hermes_store.compression.prune_rewrite import SessionPruneRewriteMixin
 from hermes_store.sessions.api_content import SessionApiContentMixin
 from hermes_state_coverage import SessionCoverageMixin
-from hermes_state_rewind import SessionRewindMixin
+from hermes_store.compression.rewind import SessionRewindMixin
 from hermes_state_wal import (
     _WAL_INCOMPAT_MARKERS, _on_disk_journal_mode, apply_database_pragmas, apply_wal_with_fallback,
 )
@@ -84,7 +84,7 @@ from hermes_store.sessions.titles import SessionTitlesMixin
 from hermes_state_usage import SessionUsageMixin
 from hermes_state_maintenance import SessionMaintenanceMixin
 from hermes_state_gateway import SessionGatewayMixin
-from hermes_state_compression import SessionCompressionMixin
+from hermes_store.compression.session import SessionCompressionMixin
 from hermes_state_search import SessionSearchMixin
 
 try:  # Hard dependency, but tolerate scaffold-phase imports before pip install.
@@ -209,6 +209,42 @@ def mutation_hooks() -> MutationHooks:
     if _mutation_hooks_provider is None:
         raise RuntimeError("mutation hooks are not installed; import hermes_state first")
     return _mutation_hooks_provider()
+
+
+class CompressionHooks(Protocol):
+    """Compressor, display, and surface helpers the compression cluster cannot import."""
+
+    def created_surface(self, value: Any) -> Optional[str]: ...
+
+    def user_originated_turn_view(self, message: Any) -> Any: ...
+
+    def history_before_user_originated_turn(self, messages: list, index: int) -> tuple[list, Any]: ...
+
+    def retryable_user_text(self, message: Any) -> Any: ...
+
+    def split_user_originated_turn(self, message: Any) -> tuple[Any, Any]: ...
+
+    def is_ephemeral_scaffolding(self, message: Any) -> bool: ...
+
+    def durable_content(self, content: Any) -> Any: ...
+
+    def flatten_message_text(self, content: Any) -> str: ...
+
+    def worker_automation_state_types(self) -> tuple[tuple[str, Any], ...]: ...
+
+
+_compression_hooks_provider: Optional[Callable[[], CompressionHooks]] = None
+
+
+def set_compression_hooks_provider(provider: Optional[Callable[[], CompressionHooks]]) -> None:
+    global _compression_hooks_provider
+    _compression_hooks_provider = provider
+
+
+def compression_hooks() -> CompressionHooks:
+    if _compression_hooks_provider is None:
+        raise RuntimeError("compression hooks are not installed; import hermes_state first")
+    return _compression_hooks_provider()
 
 
 # Import-time snapshot lets _default_db_path() detect a re-pointed DEFAULT_DB_PATH
