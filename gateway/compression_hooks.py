@@ -3,6 +3,7 @@
 from typing import Any, Optional
 
 from agent.context_compressor import (
+    ContextCompressor,
     history_before_user_originated_turn, retryable_user_text, split_user_originated_turn,
     user_originated_turn_view,
 )
@@ -41,3 +42,6 @@ class GatewayCompressionHooks:
 
     def worker_automation_state_types(self) -> tuple[tuple[str, Any], ...]:
         return self._worker_automation_state_types()
+
+    def is_context_summary_content(self, content: Any) -> bool:
+        return ContextCompressor._is_context_summary_content(content)

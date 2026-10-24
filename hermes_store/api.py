@@ -56,7 +56,7 @@ from hermes_store.guard import (
 from hermes_state_readpool import _READ_POOL_MAX, _proc_fd_targets, _read_budget_for
 import hermes_state_registry as _state_registry
 from hermes_state_sessions import SessionSessionsMixin
-from hermes_state_fts import SessionFtsSetupMixin, load_fts5_cjk_extension
+from hermes_store.search.index import SessionFtsSetupMixin, load_fts5_cjk_extension
 from hermes_state_portability import SessionPortabilityMixin
 from hermes_store.adapters.telegram import SessionTelegramTopicsMixin
 from hermes_state_profile_repair import SessionProfileRepairMixin
@@ -85,7 +85,7 @@ from hermes_state_usage import SessionUsageMixin
 from hermes_state_maintenance import SessionMaintenanceMixin
 from hermes_state_gateway import SessionGatewayMixin
 from hermes_store.compression.session import SessionCompressionMixin
-from hermes_state_search import SessionSearchMixin
+from hermes_store.search.messages import SessionSearchMixin
 
 try:  # Hard dependency, but tolerate scaffold-phase imports before pip install.
     import psutil
@@ -231,6 +231,8 @@ class CompressionHooks(Protocol):
     def flatten_message_text(self, content: Any) -> str: ...
 
     def worker_automation_state_types(self) -> tuple[tuple[str, Any], ...]: ...
+
+    def is_context_summary_content(self, content: Any) -> bool: ...
 
 
 _compression_hooks_provider: Optional[Callable[[], CompressionHooks]] = None

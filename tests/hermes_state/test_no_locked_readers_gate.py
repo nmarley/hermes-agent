@@ -47,7 +47,7 @@ _STATE_PY = _REPO_ROOT / "hermes_store" / "api.py"
 # (source file, class name to scan in that file).
 _ALL_STATE_SOURCES: list[tuple[Path, str]] = [
     (_STATE_PY, "SessionDB"),
-    (_REPO_ROOT / "hermes_state_search.py", "SessionSearchMixin"),
+    (_REPO_ROOT / "hermes_store" / "search" / "messages.py", "SessionSearchMixin"),
     (_REPO_ROOT / "hermes_state_schema.py", "SessionSchemaMixin"),
     (_REPO_ROOT / "hermes_state_portability.py", "SessionPortabilityMixin"),
 ]
