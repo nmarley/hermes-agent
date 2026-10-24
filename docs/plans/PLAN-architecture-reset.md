@@ -87,7 +87,12 @@ Existing packages keep their names initially:
 - `gateway`: session service, platform supervisor, adapters.
 - `cron`: scheduler.
 - `hermes_cli`, `tui_gateway`: surfaces.
-- `pm`, `hermes_platform`: environment and host facts.
+- `pm`: environment and dependency manager.
+- `hermes_platform`: host paths, constants, YAML and file I/O, logging, time, executable lookup.
+
+Root `.py` files are compatibility shims only. The final allowlist is `setup.py`,
+`hermes_constants.py`, `hermes_state.py`, and `utils.py`; the last three replace themselves in
+`sys.modules` so the old path and the new module are one object.
 
 Allowed edges:
 
@@ -174,6 +179,31 @@ Exit criteria:
 - The `agent <-> hermes_cli` and `gateway <-> hermes_cli` cycles are gone.
 - All tests pass with no behavior changes.
 
+### Stage 2.5: Package the leaf root modules
+
+The repository root holds 80 Python files, and most of them are not entry points. This stage
+moves the low-level utilities every package imports. It comes before the state move so the
+state modules re-point their imports once.
+
+2.5a. Create `hermes_platform` modules for host paths and low-level I/O: `constants` from
+   `hermes_constants.py`, `utils` from `utils.py`, `yaml` from `hermes_yaml.py`, `fs` from
+   `hermes_dir_acl.py`, `logging` from `hermes_logging.py`, and `time` from `hermes_time.py`.
+2.5b. Move the scratch-cache helpers in `hermes_constants_scratch*.py` into
+   `hermes_platform/scratch.py`.
+2.5c. Keep root alias shims for the old-updater surface: `hermes_constants.py` and `utils.py`
+   replace themselves in `sys.modules`, so the old path and the new path are one module object.
+2.5d. Update production imports with a codemod. Update `PACKAGE_LAYERS` so `hermes_platform`
+   imports only `hermes_types`, and `hermes_config` may import `hermes_platform`.
+2.5e. Add a `ROOT_MODULE` code-health rule with a frozen allowlist of the remaining root
+   Python files. A new root `.py` file fails. Each later stage removes the files it moves.
+2.5f. Run `python scripts/check` and the config, tools, and state tests.
+
+Exit criteria:
+
+- The leaf utilities live in `hermes_platform`; the root shims are aliases, not copies.
+- `ROOT_MODULE` fails on a synthetic new root module.
+- No behavior changes.
+
 ### Stage 3: Split the state layer into repositories
 
 3a. Create `hermes_store` with submodules: `schema`, `migrations`, `sessions`, `messages`,
@@ -194,6 +224,29 @@ Exit criteria:
 - `hermes_state.py` is under 300 lines and contains no SQL.
 - Schema changes are migration files, not code paths.
 - The state tests pass unchanged.
+
+### Stage 3.5: Package the entry points and facades
+
+3.5a. Move `run_agent.py` into `agent/` after Stage 2 has removed its `hermes_cli` imports. Keep
+   a root alias shim for one release, then delete it.
+3.5b. Move `cli.py` into `hermes_cli/`. The `hermes` console entry point stays on
+   `hermes_cli.main:main`.
+3.5c. Move `model_tools.py`, `toolsets.py`, and `toolset_distributions.py` into `tools/` once
+   the graph allows their imports there.
+3.5d. Move `hermes_bootstrap.py`, `hermes_startup_watchdog.py`, and
+   `registration_lifecycle.py` into `hermes_cli/`.
+3.5e. Move `batch_runner.py`, `mini_swe_runner.py`, and `trajectory_compressor.py` into
+   `hermes_cli/runners/`.
+3.5f. Shrink the `ROOT_MODULE` allowlist after each move. The final allowlist is `setup.py`
+   plus the three compatibility shims.
+3.5g. Update `pyproject.toml`, `setup.py`, the updater compatibility surface, and docs paths in
+   the same change as each move.
+
+Exit criteria:
+
+- `ls *.py` at the root shows only `setup.py` and the three alias shims.
+- `ROOT_MODULE` passes.
+- Console entry points and updater compatibility still work.
 
 ### Stage 4: Reorganize the gateway by domain
 
@@ -397,6 +450,8 @@ Graph:
 Structure:
 
 - `hermes_cli` under 100k lines.
+- Root `.py` files: 80 at baseline, 4 at the end (`setup.py` plus three compatibility shims).
+- No new root modules outside the `ROOT_MODULE` allowlist.
 - Zero `hermes_state_*` siblings in new code.
 - Fewer than 20 flat modules in `gateway/`.
 - Every adapter passes the conformance suite.
@@ -418,8 +473,9 @@ Rust:
 ## Open decisions
 
 - Package naming: new top-level packages (`hermes_config`, `hermes_providers`, `hermes_store`)
-  versus a single `hermes_core/` namespace. Recommendation: new top-level packages first,
-  then a `src/hermes/` migration as a separate plan.
+  versus a single `hermes_core/` namespace. Recommendation: new top-level packages first.
+  Root file placement is committed in Stages 2.5 and 3.5; a `src/hermes/` layout remains a
+  separate plan.
 - Whether `hermes_cli` remains a surface package or is renamed to `hermes_surfaces/cli`.
 - Plugin RPC scope: tools and hooks first, memory and model providers next.
 - Desktop: Tauri for footprint versus Electron for Chromium consistency. Recommendation:
@@ -445,6 +501,9 @@ Package graph values are produced by `scripts/code_health/imports.py` on the bas
 | Skills | 210 |
 | `gateway/` Python files | 326 |
 | `session_*` and `run_*` in `gateway/` | 120 and 45 |
+| Root Python files | 80 |
+| Root state files | 60 (`hermes_state.py` plus 59 siblings) |
+| Other root Python files | 20 |
 | `hermes_state` siblings | 59 |
 | `hermes_cli` lines | 295k |
 | Cross-package imports, function-level and top-level | 5,479 and 822 |
