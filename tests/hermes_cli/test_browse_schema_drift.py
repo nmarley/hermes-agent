@@ -17,7 +17,7 @@ from fastapi import HTTPException
 
 from hermes_cli.web_server_sessions import _open_session_db_at_path
 from hermes_state import SessionDB
-from hermes_state_common import SCHEMA_VERSION
+from hermes_store.schema import SCHEMA_VERSION
 
 _ADDED_TABLES = ("runtime_epoch", "session_admissions", "worker_executions", "worker_receipts")
 _ADDED_COLUMNS = (("sessions", "runtime_revision"), ("sessions", "runtime_generation"),

@@ -4,7 +4,7 @@
 work on a file several Hermes processes share (gateway service, the Desktop
 app's `hermes serve` backend, CLI sessions, the TUI slash worker):
 
-* `hermes_state_common.fts_rebuild_admission` — full structural FTS rebuilds
+* `search.fts_rebuild_admission` — full structural FTS rebuilds
 * `hermes_state_repair._cross_process_repair_lock`   — writable_schema surgery / VACUUM
 
 Both document themselves as fail-closed, and both honoured that only for a
@@ -35,7 +35,7 @@ import pytest
 
 import hermes_state
 import hermes_state_repair
-import hermes_state_common
+from hermes_store import search
 from hermes_state import SessionDB
 from hermes_state_repair import repair_state_db_schema
 
@@ -62,7 +62,7 @@ def test_fts_admission_fails_closed_when_lock_file_is_unopenable(tmp_path):
     db_path = tmp_path / "state.db"
     _make_unopenable(db_path.with_name(db_path.name + ".fts_rebuild.lock"))
 
-    with hermes_state_common.fts_rebuild_admission(db_path) as admitted:
+    with search.fts_rebuild_admission(db_path) as admitted:
         assert admitted is False
 
 
@@ -71,7 +71,7 @@ def test_fts_admission_still_admits_a_pathless_db(tmp_path):
 
     The fix must not turn the legitimate no-op case into a permanent deferral.
     """
-    with hermes_state_common.fts_rebuild_admission(None) as admitted:
+    with search.fts_rebuild_admission(None) as admitted:
         assert admitted is True
 
 

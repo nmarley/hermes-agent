@@ -24,11 +24,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
-from hermes_state_common import (
-    _id_chunks,
-    _placeholders as _session_ids_placeholders,
-    emit_session_deleted,
-)
+from hermes_store.common.sql import _id_chunks, _placeholders as _session_ids_placeholders
+from hermes_store.common.lifecycle import emit_session_deleted
 
 logger = logging.getLogger(__name__)
 

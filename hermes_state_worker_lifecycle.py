@@ -83,7 +83,7 @@ def worker_title_source(db, conn, session_id, payload):
 
 def worker_next_title(db, conn, session_id, payload):
     from hermes_state_titles import _NUMBERED_TITLE_RE
-    from hermes_state_common import escape_like
+    from hermes_store.common.sql import escape_like
     if set(payload) != {'base_title'} or not isinstance(payload['base_title'], str):
         raise RuntimeStoreError('invalid_params')
     title = conn.execute('SELECT title FROM sessions WHERE id=?', (session_id,)).fetchone()[0]

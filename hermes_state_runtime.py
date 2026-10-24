@@ -550,7 +550,7 @@ def mutate_runtime_session(db, *, epoch: int, principal_id: str, session_id: str
         return result, event
     result, event = db._execute_write(write)
     if event is not None:
-        from hermes_state_common import emit_session_deleted
+        from hermes_store.common.lifecycle import emit_session_deleted
         emit_session_deleted(db, event.session_ids, reason=event.reason, primary=session_id)
     return result
 

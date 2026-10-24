@@ -66,7 +66,7 @@ def test_doctor_collects_structural_fts_upgrade_status(
     from hermes_cli import doctor_state
     from hermes_state_dbfile import collect_state_db_stats
     from hermes_state_fts import _expected_vtable_sql
-    from hermes_state_common import FTS_SQL, FTS_TRIGRAM_SQL
+    from hermes_store.search import FTS_SQL, FTS_TRIGRAM_SQL
 
     db_path = tmp_path / "state.db"
     with sqlite3.connect(db_path) as conn:
@@ -106,7 +106,7 @@ def test_doctor_collects_pending_rebuild_with_settled_layout(tmp_path, monkeypat
     from hermes_cli import doctor_state
     from hermes_state_dbfile import collect_state_db_stats
     from hermes_state_fts import _expected_vtable_sql
-    from hermes_state_common import FTS_SQL, FTS_TRIGRAM_SQL
+    from hermes_store.search import FTS_SQL, FTS_TRIGRAM_SQL
 
     db_path = tmp_path / "state.db"
     with sqlite3.connect(db_path) as conn:

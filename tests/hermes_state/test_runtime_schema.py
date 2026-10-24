@@ -4,7 +4,7 @@ import sqlite3
 import pytest
 
 from hermes_state import SessionDB
-from hermes_state_common import SCHEMA_VERSION
+from hermes_store.schema import SCHEMA_VERSION
 import hermes_state_runtime as rt
 
 

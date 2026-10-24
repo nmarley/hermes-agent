@@ -23,7 +23,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from hermes_constants import get_hermes_home
 from hermes_startup_watchdog import report_startup_progress
 from hermes_state_holders import read_only_db_uri
-from hermes_state_common import (
+from hermes_store.locks import (
     _acquire_db_flock, _clear_lock_holder_record, _describe_lock_holder, _read_lock_holder_record,
     is_advisory_lock_contention,
 )
@@ -122,7 +122,7 @@ def _msvcrt_lock(handle, flag_name: str) -> None:
 
 def _try_lock_nonblocking(handle) -> None:
     """Take the advisory lock on *handle* without waiting (raises on contention)."""
-    from hermes_store.api import _IS_WINDOWS
+    from hermes_store.locks import _IS_WINDOWS
     if _IS_WINDOWS:
         _msvcrt_lock(handle, "LK_NBLCK")
     else:
@@ -132,7 +132,7 @@ def _try_lock_nonblocking(handle) -> None:
 
 def _release_lock_handle(handle, *, clear_record: bool = False) -> None:
     """Drop the advisory lock on *handle* (best effort) and close it."""
-    from hermes_store.api import _IS_WINDOWS
+    from hermes_store.locks import _IS_WINDOWS
     with contextlib.closing(handle), contextlib.suppress(OSError):  # best-effort release; always close
         if _IS_WINDOWS:
             _msvcrt_lock(handle, "LK_UNLCK")
@@ -176,7 +176,8 @@ def _cross_process_repair_lock(db_path: Path):
     a large DB, and an unbounded wait would hang the caller's open with no traceback (the failure shape of
     #36644).
     """
-    from hermes_store.api import _IS_WINDOWS, _REPAIR_LOCK_TIMEOUT_SECONDS
+    from hermes_store.locks import _IS_WINDOWS
+    from hermes_store.api import _REPAIR_LOCK_TIMEOUT_SECONDS
     lock_path, handle = _open_lock_file(
         db_path, ".repair.lock", "repair", "skipping schema surgery rather than running it without cross-process authority.")
     if handle is None:
@@ -1064,7 +1065,7 @@ def _repair_state_db_schema_locked(
 
 def _unlink_db_triple(path: Path) -> Optional[str]:
     """Remove *path* and every SQLite sidecar; return any cleanup failure."""
-    from hermes_store.api import _IS_WINDOWS
+    from hermes_store.locks import _IS_WINDOWS
     failures: list[str] = []
     for victim in (path, *_sidecars(path)):
         for attempt in range(10):

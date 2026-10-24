@@ -390,7 +390,7 @@ def worker_retry_target(db, params):
     return row['session_id']
 
 
-from hermes_state_common import _COMPRESSION_LOCK_ROW_SQL as _LOCK_ROW_SQL, _ENDED_ROW_SQL, _ended_by_compression
+from hermes_store.common.messages import _COMPRESSION_LOCK_ROW_SQL as _LOCK_ROW_SQL, _ENDED_ROW_SQL, _ended_by_compression
 
 def reopen_on_connection(db, conn, session_id):
     if not _ended_by_compression(conn.execute(_ENDED_ROW_SQL, (session_id,)).fetchone()):

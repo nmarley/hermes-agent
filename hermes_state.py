@@ -18,6 +18,12 @@ def _load_config_readonly():
     return load_config_readonly()
 
 
+def _dispatch_session_delete(db, ids, **kwargs):
+    from hermes_cli.lifecycle_session import emit_session_deleted_event
+    emit_session_deleted_event(db, ids, **kwargs)
+
+
 _api.set_config_loader(_load_config_readonly)
+_api.set_session_delete_hook(_dispatch_session_delete)
 
 sys.modules[__name__] = _api

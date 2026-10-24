@@ -8,7 +8,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Dict, Optional
 
-from hermes_state_common import _RESET_CHILD_SQL, _sql_json_extract
+from hermes_store.common.sessions import _RESET_CHILD_SQL
+from hermes_store.common.sql import _sql_json_extract
 
 # Same logger the code used before extraction (record parity).
 _log = logging.getLogger("hermes_cli.web_server")

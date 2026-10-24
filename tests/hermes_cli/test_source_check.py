@@ -771,7 +771,7 @@ def test_unknown_runtime_verdict_expires_but_definite_verdict_does_not(installat
     tree = f"/repos/fixture/fork/git/trees/{sha}"
     module = f"/fixture/fork/{sha}/hermes_state_common.py"
     responses[tree] = (200, {"tree": [{"path": "hermes_state_common.py", "type": "blob"}]})
-    from hermes_state_common import SCHEMA_SQL
+    from hermes_store.schema import SCHEMA_SQL
     responses[module] = (200, SCHEMA_SQL if runtime else "SCHEMA_SQL = 'old schema'")
     failed_path = tree if failure == "tree" else module
     good = responses[failed_path]

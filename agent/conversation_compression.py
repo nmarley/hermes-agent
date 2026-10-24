@@ -18,6 +18,7 @@ import dataclasses
 import inspect
 import json
 import logging
+from hermes_store.common.sessions import is_automatic_end_reason
 import math
 import os
 import tempfile
@@ -3204,7 +3205,6 @@ def _parent_deliberately_ended(session_db: Any, session_id: str) -> bool:
     if not callable(reader):
         return False
     try:
-        from hermes_state_common import is_automatic_end_reason
         row = reader(session_id) or {}
         return row.get("ended_at") is not None and not is_automatic_end_reason(row.get("end_reason"))
     except Exception:

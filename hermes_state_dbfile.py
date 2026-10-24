@@ -25,9 +25,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from hermes_state_holders import canonical_sqlite_path, read_only_db_uri
-from hermes_state_common import (
-    FTS_REBUILD_DEFERRAL_KEY, stat_db_file_identity as _stat_db_file_identity
-)
+from hermes_store.search import FTS_REBUILD_DEFERRAL_KEY
+from hermes_store.common.files import stat_db_file_identity as _stat_db_file_identity
 
 # Log-record parity with the origin module (caplog tests pin "hermes_state").
 logger = logging.getLogger("hermes_state")
@@ -78,7 +77,7 @@ def _pread_db_range(db_path: Path, offset: int, length: int) -> Optional[bytes]:
     """Lock-safe raw read of a possibly-live SQLite database: POSIX preads from a cached,
     never-closed fd (rebound when the path names a new inode); Windows reads plainly, since
     advisory-lock cancellation is a POSIX-only hazard."""
-    from hermes_store.api import _IS_WINDOWS
+    from hermes_store.locks import _IS_WINDOWS
     if _IS_WINDOWS:
         with contextlib.suppress(OSError), db_path.open("rb") as handle:
             handle.seek(offset)
@@ -422,7 +421,7 @@ class RetiredGenerationCaptureError(RuntimeError):
 def _fsync_path(path: Path) -> None:
     """fsync a file or directory we own. Never used on the live database: opening and closing a
     descriptor on a file SQLite has locked would cancel this process's POSIX advisory locks."""
-    from hermes_store.api import _IS_WINDOWS
+    from hermes_store.locks import _IS_WINDOWS
     if _IS_WINDOWS:
         return  # directories cannot be opened; file writes fsync their own handle
     fd = os.open(path, os.O_RDONLY)

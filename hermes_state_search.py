@@ -1,7 +1,7 @@
 """Full-text / trigram / CJK message search and FTS maintenance for SessionDB.
 
 Plain mixin for ``hermes_state.SessionDB`` (no ``__init__``/state of its own).
-Must never import hermes_state (cycle); shared constants live in hermes_state_common.
+Must never import hermes_state (cycle); shared constants live in hermes_store.common.
 """
 
 import contextlib
@@ -11,14 +11,12 @@ import sqlite3
 import time
 from typing import Any, Callable, Collection, Dict, List, Optional, Tuple
 
-from agent.skill_commands import describe_skill_invocation
+from hermes_store.common.skills import describe_skill_invocation
 from hermes_store.errors import is_malformed_db_error
-from hermes_state_common import (
-    FTS_CJK_STALE_KEY, FTS_SQL, FTS_STALE_KEY, FTS_STORAGE_VERSION, FTS_TOOL_CONTENT_PREFIX_CHARS,
-    FTS_TRIGRAM_EXCLUDED_SOURCES, FTS_TRIGRAM_SQL,
-    MAX_FTS5_QUERY_CHARS, SCHEMA_VERSION, _FTS_CJK_TRIGGERS,
-    escape_like as _escape_like, fts_rebuild_admission, fts_trigram_session_sql, routed_sessions_setting,
-)
+from hermes_store.search import FTS_CJK_STALE_KEY, FTS_SQL, FTS_STALE_KEY, FTS_STORAGE_VERSION, FTS_TOOL_CONTENT_PREFIX_CHARS, FTS_TRIGRAM_EXCLUDED_SOURCES, FTS_TRIGRAM_SQL, MAX_FTS5_QUERY_CHARS, _FTS_CJK_TRIGGERS, fts_rebuild_admission, fts_trigram_session_sql
+from hermes_store.schema import SCHEMA_VERSION
+from hermes_store.common.sql import escape_like as _escape_like
+from hermes_store.common.settings import routed_sessions_setting
 from hermes_state_fts import fts_layout_current, fts_layout_drift
 
 # Pre-split logger identity so log filtering/capture is unchanged.

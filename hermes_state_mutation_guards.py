@@ -1,5 +1,5 @@
 """Transcript mutation guards evaluated on the receipt's writer connection."""
-from hermes_state_common import _ENDED_ROW_SQL, _ended_by_compression
+from hermes_store.common.messages import _ENDED_ROW_SQL, _ended_by_compression
 from hermes_store.errors import SessionCompressionInProgressError, SessionTurnLeaseLostError
 from hermes_state_runtime import RuntimeStoreError
 
@@ -68,7 +68,7 @@ def _continuation_edges(conn, sid):
     ``model_config``, so an inherited ``_branched_from``/``_delegate_from`` naming an older row
     does not make it a fork, and a delegate's continuation published by a canonical ``compress``
     carries no marker at all."""
-    from hermes_state_common import _non_continuation_child_sql
+    from hermes_store.common.sessions import _non_continuation_child_sql
     edge = _non_continuation_child_sql('child.', 'parent.id')
     rows = conn.execute(
         'SELECT child.id FROM sessions parent JOIN sessions child ON child.parent_session_id=parent.id '

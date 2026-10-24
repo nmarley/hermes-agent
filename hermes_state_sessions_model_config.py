@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 from typing import Any, Callable, Optional
 
-from hermes_state_common import _sql_json_extract
+from hermes_store.common.sql import _sql_json_extract
 
 
 def update_conversation_model_config_value(db, session_id: str, key: str,

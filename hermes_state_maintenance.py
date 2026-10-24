@@ -7,10 +7,10 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-from hermes_state_common import (
-    AUTO_VACUUM_MIN_FREELIST_RATIO, _id_chunks, _non_continuation_child_sql, _placeholders, _sql_session_last_active,
-    escape_like as _escape_like, emit_session_deleted,
-)
+from hermes_store.common.constants import AUTO_VACUUM_MIN_FREELIST_RATIO
+from hermes_store.common.sql import _id_chunks, _placeholders, escape_like as _escape_like
+from hermes_store.common.sessions import _non_continuation_child_sql, _sql_session_last_active
+from hermes_store.common.lifecycle import emit_session_deleted
 from hermes_startup_watchdog import report_startup_progress
 
 # caplog tests pin the "hermes_state" logger name.

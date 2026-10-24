@@ -16,7 +16,7 @@ import sqlite3
 
 import pytest
 
-import hermes_state_common
+from hermes_store import search
 from hermes_state import SessionDB
 
 
@@ -98,7 +98,7 @@ def v1_trigram_db(tmp_path):
 
 
 def test_realign_does_not_stamp_current_while_the_trigram_is_stale(v1_trigram_db):
-    assert _stamp(v1_trigram_db) != str(hermes_state_common.FTS_STORAGE_VERSION)
+    assert _stamp(v1_trigram_db) != str(search.FTS_STORAGE_VERSION)
 
 
 def test_doctor_offers_optimize_storage_for_a_stale_trigram(v1_trigram_db, monkeypatch):
@@ -119,7 +119,7 @@ def test_fresh_store_is_stamped_on_creation_and_doctor_stays_quiet(tmp_path, mon
     db = SessionDB(db_path=db_path)
     _seed(db)
     db.close()
-    assert _stamp(db_path) == str(hermes_state_common.FTS_STORAGE_VERSION)
+    assert _stamp(db_path) == str(search.FTS_STORAGE_VERSION)
     monkeypatch.setattr(doctor_state, "STATE_DB_SIZE_WARN_BYTES", 0)
     rows = doctor_state._render_state_db_stats(collect_state_db_stats(db_path))
     assert not any("hermes sessions optimize-storage" in detail for _, _, detail in rows)
@@ -154,7 +154,7 @@ def test_notice_for_a_stale_trigram_does_not_claim_the_legacy_reclaim(v1_trigram
 
 
 def test_notice_for_a_legacy_inline_store_keeps_the_reclaim_estimate(tmp_path, monkeypatch):
-    from hermes_state_common import LEGACY_FTS_SQL
+    from hermes_store.search import LEGACY_FTS_SQL
 
     db_path = tmp_path / "state.db"
     db = SessionDB(db_path=db_path)
@@ -193,7 +193,7 @@ def test_a_base_index_the_next_open_realigns_is_not_offered_as_opt_in_work(tmp_p
         conn.close()
     assert "optimize-storage" not in _notice_for(db_path, monkeypatch)
     SessionDB(db_path=db_path).close()
-    assert _stamp(db_path) == str(hermes_state_common.FTS_STORAGE_VERSION)
+    assert _stamp(db_path) == str(search.FTS_STORAGE_VERSION)
 
 
 def test_a_layout_change_the_code_has_not_shipped_yet_is_reported_as_drift(tmp_path, monkeypatch):
@@ -202,12 +202,12 @@ def test_a_layout_change_the_code_has_not_shipped_yet_is_reported_as_drift(tmp_p
     db = SessionDB(db_path=db_path)
     _seed(db)
     db.close()
-    assert _stamp(db_path) == str(hermes_state_common.FTS_STORAGE_VERSION)
+    assert _stamp(db_path) == str(search.FTS_STORAGE_VERSION)
 
     import hermes_state_fts
-    bumped = hermes_state_common.FTS_SQL.replace(
+    bumped = search.FTS_SQL.replace(
         "content_rowid='id'\n);", "content_rowid='id',\n    tokenize='porter unicode61'\n);", 1)
-    assert bumped != hermes_state_common.FTS_SQL
+    assert bumped != search.FTS_SQL
     monkeypatch.setattr(hermes_state_fts, "FTS_SQL", bumped)
     layouts = dict(hermes_state_fts.FTS_VTABLE_LAYOUTS)
     layouts["messages_fts"] = (*layouts["messages_fts"], hermes_state_fts._expected_vtable_sql(bumped, "messages_fts"))
@@ -224,7 +224,7 @@ def test_a_layout_change_the_code_has_not_shipped_yet_is_reported_as_drift(tmp_p
 def test_the_layout_registry_ends_with_the_shipping_ddl():
     """A change to the FTS DDL must append its stored form, keeping the previous one recognisable as old."""
     import hermes_state_fts
-    from hermes_state_common import FTS_SQL, FTS_TRIGRAM_SQL, LEGACY_FTS_SQL, LEGACY_FTS_TRIGRAM_SQL
+    from hermes_store.search import FTS_SQL, FTS_TRIGRAM_SQL, LEGACY_FTS_SQL, LEGACY_FTS_TRIGRAM_SQL
 
     layouts = hermes_state_fts.FTS_VTABLE_LAYOUTS
     assert layouts["messages_fts"][-1] == hermes_state_fts._expected_vtable_sql(FTS_SQL, "messages_fts")
@@ -237,7 +237,7 @@ def test_the_layout_registry_ends_with_the_shipping_ddl():
 
 def _install_newer_base_layout(db: SessionDB) -> str:
     """A base-index definition this code does not recognise (a newer release's), stamped with a newer version."""
-    from hermes_state_common import FTS_SQL, FTS_STORAGE_VERSION
+    from hermes_store.search import FTS_SQL, FTS_STORAGE_VERSION
 
     sql = db._conn.execute("SELECT sql FROM sqlite_master WHERE name = 'messages_fts'").fetchone()[0]
     db._conn.executescript(
@@ -260,7 +260,7 @@ def _forbid_demote(db: SessionDB, monkeypatch) -> None:
 
 def test_a_layout_from_a_newer_release_is_left_alone(tmp_path, monkeypatch):
     """Downgrade: an unrecognised (newer) definition is neither rebuilt nor re-stamped as this release's."""
-    from hermes_state_common import FTS_STORAGE_VERSION
+    from hermes_store.search import FTS_STORAGE_VERSION
 
     db_path = tmp_path / "state.db"
     db = SessionDB(db_path=db_path)
@@ -298,7 +298,7 @@ def test_a_quoted_table_name_in_the_stored_definition_is_still_current(tmp_path,
         db.optimize_fts_storage(vacuum=False)
     finally:
         db.close()
-    assert _stamp(db_path) == str(hermes_state_common.FTS_STORAGE_VERSION)
+    assert _stamp(db_path) == str(search.FTS_STORAGE_VERSION)
 
 
 def test_optimize_settle_refuses_pending_backfill(tmp_path):
@@ -327,7 +327,7 @@ def test_optimize_settle_refuses_pending_backfill(tmp_path):
 
 
 def test_a_stale_base_source_view_is_replaced_before_the_store_is_stamped(tmp_path):
-    from hermes_state_common import FTS_STORAGE_VERSION, FTS_TOOL_CONTENT_PREFIX_CHARS
+    from hermes_store.search import FTS_STORAGE_VERSION, FTS_TOOL_CONTENT_PREFIX_CHARS
 
     db_path = tmp_path / "state.db"
     db = SessionDB(db_path=db_path)
@@ -437,7 +437,7 @@ def test_the_base_realign_without_the_trigram_tokenizer_keeps_the_store_open_and
 
 def test_a_stale_source_view_does_not_replace_a_newer_base_index(tmp_path):
     """Downgrade with a differing source view: the open-time repair leaves an unrecognised base index alone."""
-    from hermes_state_common import FTS_STORAGE_VERSION
+    from hermes_store.search import FTS_STORAGE_VERSION
 
     db_path = tmp_path / "state.db"
     db = SessionDB(db_path=db_path)
@@ -459,7 +459,7 @@ def test_a_stale_source_view_does_not_replace_a_newer_base_index(tmp_path):
 
 def test_optimize_storage_on_a_newer_layout_finishes_its_work_without_restamping(tmp_path):
     """Leftover old-index tables on a downgraded store are torn down and reported as done; the stamp stays."""
-    from hermes_state_common import FTS_STORAGE_VERSION
+    from hermes_store.search import FTS_STORAGE_VERSION
 
     db_path = tmp_path / "state.db"
     db = SessionDB(db_path=db_path)

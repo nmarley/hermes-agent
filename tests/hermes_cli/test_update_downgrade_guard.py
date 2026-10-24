@@ -134,7 +134,7 @@ def test_check_holds_a_release_that_update_would_refuse(repo, tmp_path, monkeypa
 
 
 def test_the_runtime_schema_marker_is_still_in_this_trees_state_schema():
-    from hermes_state_common import SCHEMA_SQL
+    from hermes_store.schema import SCHEMA_SQL
 
     assert guard.defines_runtime([SCHEMA_SQL])
 

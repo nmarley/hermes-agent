@@ -37,7 +37,7 @@ import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple
 
-from hermes_state_common import stat_db_file_identity as _stat_db_file_identity
+from hermes_store.common.files import stat_db_file_identity as _stat_db_file_identity
 
 if TYPE_CHECKING:  # pragma: no cover - import cycle guard, typed only
     from hermes_store.api import SessionDB

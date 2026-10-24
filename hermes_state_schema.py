@@ -1,7 +1,7 @@
 """Schema creation, column reconciliation, and FTS DDL management for SessionDB.
 
 Plain mixin for ``hermes_state.SessionDB`` (no ``__init__``/state of its own).
-Must never import hermes_state (cycle); shared constants live in hermes_state_common.
+Must never import hermes_state (cycle); shared constants live in hermes_store.common.
 """
 
 import contextlib
@@ -20,12 +20,10 @@ from typing import Dict, List, Optional, Sequence
 from hermes_constants import get_hermes_home
 from hermes_startup_watchdog import report_startup_progress
 from utils import safe_json_loads
-from hermes_state_common import (
-    DEFERRED_INDEX_SQL, FTS_CJK_STALE_KEY, FTS_REBUILD_DEFERRAL_KEY, FTS_STALE_KEY, FTS_SQL,
-    FTS_STORAGE_VERSION, FTS_TOOL_CONTENT_PREFIX_CHARS, FTS_TRIGRAM_SQL, LEGACY_FTS_SQL,
-    LEGACY_FTS_TRIGRAM_SQL, SCHEMA_SQL,
-    SCHEMA_VERSION, _FTS_CJK_TRIGGERS, _FTS_TRIGGERS, _ephemeral_child_sql, _sql_json_extract, fts_rebuild_admission,
-)
+from hermes_store.schema import DEFERRED_INDEX_SQL, SCHEMA_SQL, SCHEMA_VERSION
+from hermes_store.search import FTS_CJK_STALE_KEY, FTS_REBUILD_DEFERRAL_KEY, FTS_STALE_KEY, FTS_SQL, FTS_STORAGE_VERSION, FTS_TOOL_CONTENT_PREFIX_CHARS, FTS_TRIGRAM_SQL, LEGACY_FTS_SQL, LEGACY_FTS_TRIGRAM_SQL, _FTS_CJK_TRIGGERS, _FTS_TRIGGERS, fts_rebuild_admission
+from hermes_store.common.sessions import _ephemeral_child_sql
+from hermes_store.common.sql import _sql_json_extract
 from hermes_state_fts import (_drop_orphan_fts_shadow_tables, base_index_recognised, base_source_view_is_stale,
                               fts_layout_current)
 from hermes_state_holders import _read_proc_argv

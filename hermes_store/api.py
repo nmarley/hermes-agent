@@ -29,11 +29,13 @@ from hermes_platform.fs import make_user_dir
 from hermes_constants import get_hermes_home, mkdir_under_hermes_home, profile_cli_selector
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, TypeVar, cast
 
-from hermes_state_common import (
+from hermes_store.common.config import load_config_snapshot, set_config_loader
+from hermes_store.common.files import stat_db_file_identity as _stat_db_file_identity
+from hermes_store.common.lifecycle import set_session_delete_hook
+from hermes_store.common.sql import escape_like as _escape_like, _placeholders
+from hermes_store.common.titles import (
     TITLE_SOURCE_DERIVED as _TITLE_SOURCE_DERIVED, TITLE_SOURCE_LLM as _TITLE_SOURCE_LLM,
     TITLE_SOURCE_USER as _TITLE_SOURCE_USER,
-    escape_like as _escape_like, _placeholders,
-    stat_db_file_identity as _stat_db_file_identity,
 )
 from hermes_state_holders import read_only_db_uri
 from hermes_store.pidns import holder_pid_checkable
@@ -94,22 +96,14 @@ logger = logging.getLogger("hermes_state")
 
 _MAX_SAFE_MESSAGES = 20_000  # resume/export guard default
 
-_CONFIG_LOADER: Optional[Callable[[], dict]] = None
-
-
-def set_config_loader(loader: Optional[Callable[[], dict]]) -> None:
-    """Install the config reader. The root shim owns the surface import; the store does not."""
-    global _CONFIG_LOADER
-    _CONFIG_LOADER = loader
-
 
 def _configured_transcript_limit(key: str, fallback: int = _MAX_SAFE_MESSAGES) -> int:
     """``sessions.<key>`` from the injected config reader, else *fallback*; 0 disables."""
-    loader = _CONFIG_LOADER
-    if loader is None:
+    config = load_config_snapshot()
+    if config is None:
         return fallback
     try:
-        value = (loader().get("sessions") or {}).get(key)
+        value = (config.get("sessions") or {}).get(key)
         if value is None:
             return fallback
         limit = int(value)
@@ -432,7 +426,6 @@ _repair_attempt_lock = threading.Lock()
 # Cross-process schema-surgery lock timeout (``_repair_attempt_lock`` covers one interpreter
 # only); sized for the slowest legitimate holder (VACUUM, multi-GB DB).
 _REPAIR_LOCK_TIMEOUT_SECONDS = 120.0
-_IS_WINDOWS = sys.platform == "win32"
 
 
 def _close_time_checkpoint_configurable() -> bool:
