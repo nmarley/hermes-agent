@@ -161,7 +161,7 @@ class SessionPruneRewriteMixin:
         from agent.conversation_compression_archive import ABSORBED_ROW_IDS
         from agent.message_metadata import DB_ROW_SNAPSHOT
         from agent.transcript_repair import transcript_row_snapshot
-        from hermes_state_errors import PruneRowStaleError, PruneRowUnresolvedError
+        from hermes_store.errors import PruneRowStaleError, PruneRowUnresolvedError
 
         def _call_ids(tool_calls: Any) -> list[Any]:
             return [call.get("id") if isinstance(call, dict) else None for call in (_parse_tool_calls(tool_calls) or [])]

@@ -61,7 +61,11 @@ PACKAGE_LAYERS: dict[str, frozenset[str]] = {
     "hermes_platform": frozenset({"hermes_types", ROOT_PACKAGE}),
     "hermes_config": frozenset({"hermes_types", "hermes_platform"}),
     "hermes_providers": frozenset({"hermes_types", "hermes_config", "hermes_platform"}),
-    "hermes_store": frozenset({"hermes_types", "hermes_config", "hermes_platform"}),
+    # Root compatibility shims stay importable until their callers move; `ROOT_MODULE` still
+    # stops new root files.
+    "hermes_store": frozenset({
+        "hermes_types", "hermes_config", "hermes_platform", ROOT_PACKAGE,
+    }),
     "hermes_plugins": frozenset({
         "hermes_types", "hermes_config", "hermes_providers", "hermes_platform",
     }),
@@ -95,6 +99,14 @@ PACKAGE_LAYERS: dict[str, frozenset[str]] = {
 MOVED_MODULES: dict[str, str] = {
     "hermes_cli.config_defaults": "hermes_config.defaults",
     "hermes_dir_acl": "hermes_platform.fs",
+    "hermes_state_errors": "hermes_store.errors",
+    "hermes_state_guard": "hermes_store.guard",
+    "hermes_state_health": "hermes_store.health",
+    "hermes_state_ids": "hermes_store.ids",
+    "hermes_state_keys": "hermes_store.keys",
+    "hermes_state_lockguard": "hermes_store.lockguard",
+    "hermes_state_pidns": "hermes_store.pidns",
+    "hermes_state_user_copy": "hermes_store.user_copy",
 }
 
 

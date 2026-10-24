@@ -1,6 +1,6 @@
 """Transcript mutation guards evaluated on the receipt's writer connection."""
 from hermes_state_common import _ENDED_ROW_SQL, _ended_by_compression
-from hermes_state_errors import SessionCompressionInProgressError, SessionTurnLeaseLostError
+from hermes_store.errors import SessionCompressionInProgressError, SessionTurnLeaseLostError
 from hermes_state_runtime import RuntimeStoreError
 
 # What ``require_idle``'s transcript-guard check raises when a live turn lease or a

@@ -17,10 +17,10 @@ import psutil
 import pytest
 
 import hermes_state_common
-import hermes_state_pidns
+from hermes_store import pidns as hermes_state_pidns
 from agent.conversation_compression import _compression_lock_holder
 from hermes_state import SessionDB
-from hermes_state_pidns import LocalPidNamespace
+from hermes_store.pidns import LocalPidNamespace
 
 _OURS, _SIBLING = "111", "222"
 

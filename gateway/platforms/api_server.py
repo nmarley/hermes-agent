@@ -162,7 +162,7 @@ from gateway.browser_control_broker import (
 from gateway.parked_route_refusal import ParkedRouteRefused
 from gateway.platforms._shared import coerce_port as _coerce_port, get_scoped_secret as _get_scoped_secret
 from gateway.platforms.tcp_site import start_tcp_site
-from hermes_state_errors import SessionActiveWriteGuardError
+from hermes_store.errors import SessionActiveWriteGuardError
 
 
 logger = logging.getLogger(__name__)

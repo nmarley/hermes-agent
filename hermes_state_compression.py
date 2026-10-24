@@ -406,7 +406,7 @@ class SessionCompressionMixin:
             watermark: Optional[int] = None, watermark_ceiling: Optional[int] = None) -> None:
         """:meth:`publish_compression_child` on the caller's write transaction (never commits). The
         owner and the worker/canonical-mutation verbs share this one body so they cannot drift."""
-        from hermes_state_errors import CompressionSessionBusyError
+        from hermes_store.errors import CompressionSessionBusyError
         if require_lease_refresh and compression_lock_holder:
             conn.execute(
                 "UPDATE compression_locks SET expires_at = ? WHERE session_id = ? AND holder = ?",

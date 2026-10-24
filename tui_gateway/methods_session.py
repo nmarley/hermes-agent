@@ -271,7 +271,7 @@ def _persist_branch(db, new_key: str, parent_key: str, title: str, history: list
             db.set_auto_title(new_key, title, source=title_source)
         sync_flushed_message_markers(history, rows)
     except Exception as exc:
-        from hermes_state_errors import is_disk_full_error
+        from hermes_store.errors import is_disk_full_error
         if compensate and not is_disk_full_error(exc):
             try:
                 db.discard_unadmitted_session(new_key)
@@ -1173,7 +1173,7 @@ def _(rid, params: dict, session: dict) -> dict:
 def _(rid, params: dict) -> dict:
     """Delete a stored session + transcripts; refused while live here (FK trips on the agent's next flush)."""
     from agent.onboarding_record import delete_chat
-    from hermes_state_errors import SessionActiveWriteGuardError  # body runs on server.py globals
+    from hermes_store.errors import SessionActiveWriteGuardError  # body runs on server.py globals
 
     if not (target := params.get("session_id", "")):
         return _err(rid, 4006, "session_id required")

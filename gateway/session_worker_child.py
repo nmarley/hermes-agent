@@ -40,8 +40,8 @@ def delegation_limits(authority, execution_id, session_id):
 
 
 def reserve_child_execution(db, conn, session_id, payload, *, epoch, execution_id, identity, principal, limits, refused):
-    from hermes_state_ids import new_session_id
-    from hermes_state_keys import admission_fingerprint
+    from hermes_store.ids import new_session_id
+    from hermes_store.keys import admission_fingerprint
     from hermes_state_runtime import _secret_digest
     from hermes_state_worker_lifecycle import insert_session_row_in_transaction
     secret = payload.get('secret') if isinstance(payload, dict) else None

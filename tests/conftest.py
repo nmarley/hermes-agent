@@ -94,7 +94,7 @@ def _hermes_home_points_at_production(value: str) -> bool:
         # ``%LOCALAPPDATA%\hermes``, and a dev shell exporting that path used to be honored as
         # "custom", pinning import-time paths (``tui_gateway.server._hermes_home``) to the live
         # install so the state.db guard tripped on every store-touching test (#112692).
-        from hermes_state_guard import _real_platform_state_root
+        from hermes_store.guard import _real_platform_state_root
 
         resolved = Path(value).expanduser().resolve()
         real_root = _real_platform_state_root() or (Path.home() / ".hermes").resolve()
@@ -127,7 +127,7 @@ if _HERMES_EXPORTED_TMP:
             del os.environ[_key]
     del os.environ[SCRATCH_DIR_MARKER_ENV]
 
-from hermes_state_guard import _real_platform_state_root
+from hermes_store.guard import _real_platform_state_root
 
 _real_test_root = _real_platform_state_root() or (Path.home() / ".hermes").resolve()
 _guarded_tmp_roots = [_real_test_root]
@@ -533,7 +533,7 @@ def _close_leaked_session_dbs():
     if wait is not None:
         wait()
     try:
-        from hermes_state_guard import _test_instance_registry as registry
+        from hermes_store.guard import _test_instance_registry as registry
     except Exception:
         return
     if not registry:

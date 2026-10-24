@@ -283,7 +283,7 @@ def _integrity_problem(path: Path, budget: _Budget):
     except sqlite3.DatabaseError as exc:
         if budget.expired:
             raise BrowseBudgetExceeded('integrity check exceeded the browse time budget') from exc
-        from hermes_state_errors import is_malformed_db_error
+        from hermes_store.errors import is_malformed_db_error
         if is_malformed_db_error(exc):
             return str(exc)
         raise
@@ -371,7 +371,7 @@ def _verify_clean_before_lock(path: Path, too_slow):
     the scan vouches for. Raises :class:`CorruptStoreError` for a damaged store (latched, so polls do
     not rescan it) and ``too_slow()`` when the scan cannot finish in its budget (remembered for the
     same signature, so a polling sidebar does not rescan a multi-GB file every few seconds)."""
-    from hermes_state_health import STORAGE_CORRUPT, mark_storage_corrupt, storage_corrupt_reason, storage_state
+    from hermes_store.health import STORAGE_CORRUPT, mark_storage_corrupt, storage_corrupt_reason, storage_state
     if storage_state(path) == STORAGE_CORRUPT:
         raise CorruptStoreError(storage_corrupt_reason(path) or 'latched corrupt')
     key = str(path.resolve())

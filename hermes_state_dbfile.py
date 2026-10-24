@@ -118,7 +118,7 @@ def _pread_db_header(db_path: Path, length: int) -> Optional[bytes]:
 
 def _read_sqlite_application_id(db_path: Path) -> Optional[int]:
     """application_id from the SQLite header, via the lock-safe :func:`_pread_db_header`."""
-    from hermes_state_errors import _STATE_DB_APPLICATION_ID_OFFSET
+    from hermes_store.errors import _STATE_DB_APPLICATION_ID_OFFSET
     end = _STATE_DB_APPLICATION_ID_OFFSET + 4
     header = _pread_db_header(db_path, end)
     if header is None or len(header) < end or header[:16] != b"SQLite format 3\x00":
@@ -386,7 +386,7 @@ def refuse_deleted_wal_generation(db_path) -> None:
     """Raise if any process holds a deleted WAL/SHM generation for *db_path*; called
     *before* ``sqlite3.connect`` so a second opener cannot mint a replacement WAL inode."""
     from hermes_state import DeletedWalGenerationError
-    from hermes_state_errors import _DELETED_WAL_GENERATION_MSG
+    from hermes_store.errors import _DELETED_WAL_GENERATION_MSG
     if not iter_deleted_sqlite_sidecar_holders(db_path):
         return
     logger.error(_DELETED_WAL_GENERATION_MSG)
@@ -504,7 +504,7 @@ def _parse_sqlite_header(header: bytes) -> dict[str, Any]:
     if len(header) < _SQLITE_HEADER_BYTES or header[:16] != b"SQLite format 3\x00":
         return {"valid": False}
     raw_page_size = struct.unpack(">H", header[16:18])[0]
-    from hermes_state_errors import _STATE_DB_APPLICATION_ID_OFFSET
+    from hermes_store.errors import _STATE_DB_APPLICATION_ID_OFFSET
     fields = {"change_counter": 24, "page_count": 28, "user_version": 60,
               "application_id": _STATE_DB_APPLICATION_ID_OFFSET, "version_valid_for": 92}
     parsed = {name: struct.unpack(">I", header[off:off + 4])[0] for name, off in fields.items()}

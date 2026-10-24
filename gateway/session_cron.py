@@ -12,7 +12,7 @@ from pathlib import Path
 import threading
 
 from gateway.session_contract import Principal, SessionRef
-from hermes_state_keys import CRON_PRINCIPAL_ID, cron_request_id
+from hermes_store.keys import CRON_PRINCIPAL_ID, cron_request_id
 from hermes_state_runtime import RuntimeStoreError, admit_session_input, get_session_admission
 
 _execution: ContextVar[tuple | None] = ContextVar('cron_owner_execution', default=None)

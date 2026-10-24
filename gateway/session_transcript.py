@@ -306,7 +306,7 @@ class SessionTranscriptMixin:
                 self._append_transcript_message(session_id, msg)
             except Exception as exc:
                 from hermes_state import StateDbCorruptError, StateDbReplacedError
-                from hermes_state_errors import CompressionSessionClosedError
+                from hermes_store.errors import CompressionSessionClosedError
                 if isinstance(exc, (StateDbReplacedError, StateDbCorruptError)):
                     self._divert_transcript_after_db_replaced(session_id, queue_session_id, exc)
                     return

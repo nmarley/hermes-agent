@@ -161,7 +161,7 @@ class GatewayPluginInjectionMixin:
         profile = self._served_profile_for_home(plugin_home)
         owner = profile
         if profile is not None and getattr(getattr(self, "config", None), "multiplex_profiles", False) is True:
-            from hermes_state_keys import profile_from_session_key
+            from hermes_store.keys import profile_from_session_key
             owner = profile_from_session_key(session_key)
         if profile is not None and owner == profile:
             return True

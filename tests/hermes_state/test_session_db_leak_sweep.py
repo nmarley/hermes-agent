@@ -23,7 +23,7 @@ from __future__ import annotations
 import threading
 import time
 
-import hermes_state_guard
+from hermes_store import guard as hermes_state_guard
 from hermes_state import SessionDB
 
 # Deliberate cross-test handoff: test_leaked_instance_* leaks an instance;

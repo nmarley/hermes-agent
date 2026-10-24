@@ -29,7 +29,7 @@ from pathlib import Path
 import pytest
 
 import hermes_state
-import hermes_state_guard
+from hermes_store import guard as hermes_state_guard
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 

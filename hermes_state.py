@@ -35,17 +35,17 @@ from hermes_state_common import (
     stat_db_file_identity as _stat_db_file_identity,
 )
 from hermes_state_holders import read_only_db_uri
-from hermes_state_pidns import holder_pid_checkable
-from hermes_state_health import (
+from hermes_store.pidns import holder_pid_checkable
+from hermes_store.health import (
     STORAGE_CORRUPT, mark_storage_corrupt, note_storage_error, storage_corrupt_reason, storage_state,
 )
-from hermes_state_errors import (
+from hermes_store.errors import (
     _DELETED_WAL_GENERATION_MSG, _DISK_IO_ERROR_MARKER, _STATE_DB_CORRUPT_MSG, _STATE_DB_GENERATION_KEY,
     _STATE_DB_REPLACED_MSG, DeletedWalGenerationError, SessionCompressionInProgressError, StateDbCorruptError,
     StateDbReplacedError, _is_no_more_rows, classify_persistence_error, is_malformed_db_error,
     is_malformed_schema_error, is_sqlite_lock_error,
 )
-from hermes_state_guard import (
+from hermes_store.guard import (
     _STATE_DB_GUARD_BYPASS_ENV, _in_test_context, _is_production_state_db, _real_platform_state_root,
     _register_test_instance, _set_last_init_error, get_last_init_error,
 )
@@ -57,7 +57,7 @@ from hermes_state_telegram import SessionTelegramTopicsMixin
 from hermes_state_profile_repair import SessionProfileRepairMixin
 from hermes_state_schema import SessionSchemaMixin
 import hermes_state_holders as _state_holders
-import hermes_state_lockguard as _lockguard
+from hermes_store import lockguard as _lockguard
 from hermes_state_lockowners import log_write_lock_holders
 from hermes_state_dbfile import (
     _connect_tracked_db, _fd_is_truly_unlinked, _prepare_connection_retirement,
@@ -399,7 +399,7 @@ def format_session_db_unavailable(
             f"{prefix}. {_SESSION_DB_CONSEQUENCE} Run `hermes {profile_arg}doctor` to check the "
             "storage location."
         )
-    from hermes_state_user_copy import describe_storage_failure
+    from hermes_store.user_copy import describe_storage_failure
     failure = describe_storage_failure(cause)
     gloss, action, hint = failure.gloss, failure.action, ""
     if any(m in cause.lower() for m in _WAL_INCOMPAT_MARKERS):
@@ -409,7 +409,7 @@ def format_session_db_unavailable(
             hint = _NETWORK_DRIVE_HINT
     text = f"{prefix}: {gloss}. {_SESSION_DB_CONSEQUENCE} {action}{hint}"
     if details:
-        from hermes_state_user_copy import storage_failure_details
+        from hermes_store.user_copy import storage_failure_details
         text += f"\nDetails: {storage_failure_details(cause)}"
     return text
 

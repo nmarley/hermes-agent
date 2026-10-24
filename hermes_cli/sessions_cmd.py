@@ -16,7 +16,7 @@ from pathlib import Path
 
 from hermes_cli.cli_output import print_truncated
 from hermes_cli.sessions_cmd_browse import _relative_time, _session_browse_picker
-from hermes_state_errors import SessionActiveWriteGuardError
+from hermes_store.errors import SessionActiveWriteGuardError
 
 
 def get_hermes_home():

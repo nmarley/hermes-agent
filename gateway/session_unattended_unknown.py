@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import logging
 
-from hermes_state_keys import CRON_PRINCIPAL_ID
+from hermes_store.keys import CRON_PRINCIPAL_ID
 
 logger = logging.getLogger(__name__)
 

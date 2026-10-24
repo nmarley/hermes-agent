@@ -60,7 +60,7 @@ def branch_in_transaction(db, conn, session_id, payload, prepared=None):
     # Late: the routing entry/key are gateway types (the gateway imports this store at module level).
     from gateway.session import SessionEntry, SessionSource
     from gateway.config import Platform
-    from hermes_state_keys import local_identity, profile_from_session_key
+    from hermes_store.keys import local_identity, profile_from_session_key
     request_id = prepared['request_id'] if prepared else 'branch:' + uuid.uuid4().hex
     child = local_identity(saved['profile_id'], saved['principal_id'], request_id)
     policy = _child_policy(saved['policy'], child, prepared)

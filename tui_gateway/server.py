@@ -29,7 +29,7 @@ from hermes_constants import (
     reset_hermes_home_override, set_hermes_home_override)
 from hermes_cli.env_loader import load_hermes_dotenv
 from utils import file_signature, is_truthy_value
-from hermes_state_ids import new_session_id
+from hermes_store.ids import new_session_id
 from tools.environments.local import hermes_subprocess_env
 from agent.fast_mode import STATIC_TIERS
 from agent.replay_cleanup import canonicalize_replay_history
@@ -569,7 +569,7 @@ def _response_profile_name(profile: str | None = None) -> str:
 
 
 def _db_unavailable_error(rid, *, code: int):
-    from hermes_state_user_copy import describe_storage_failure, storage_failure_details
+    from hermes_store.user_copy import describe_storage_failure, storage_failure_details
     failure = describe_storage_failure(_db_error)
     return _err(
         rid, code,

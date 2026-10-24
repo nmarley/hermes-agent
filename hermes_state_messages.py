@@ -225,7 +225,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
         unowned turn lease in that same transaction.
         """
         from hermes_state import SessionCompressionInProgressError
-        from hermes_state_errors import CompressionSessionClosedError, SessionTurnLeaseLostError
+        from hermes_store.errors import CompressionSessionClosedError, SessionTurnLeaseLostError
         # NOTE (#75316 redesign): appends do NOT check compression_locks. The lock's job is to stop two
         # COMPRESSIONS colliding, not to fence ordinary transcript writes. Concurrent appends during a
         # compression are safe by construction: archive_and_compact() commits against a watermark captured
@@ -749,7 +749,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
         """:meth:`replace_messages` inside the caller's write transaction (the gateway ``/retry``
         rewrite commits in its re-send's own admission). ``expected_active_ids`` pins the active set
         the replacement was computed from: a row committed since refuses (``RuntimeError``)."""
-        from hermes_state_errors import CompressionSessionClosedError
+        from hermes_store.errors import CompressionSessionClosedError
         if reject_active_turn_lease:
             self._check_transcript_write_guards(
                 conn, session_id, None, reject_active_turn_lease=True, reject_active_compression_lock=True)
@@ -968,7 +968,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
         if held_for_cas:
             mismatches = getattr(self, "held_row_mismatches", None)
             if callable(mismatches) and mismatches(conn, session_id, held_for_cas):
-                from hermes_state_errors import HeldRowRewrittenError
+                from hermes_store.errors import HeldRowRewrittenError
                 raise HeldRowRewrittenError(
                     f"a held row of session {session_id} was rewritten in place before the commit")
         proved = self._proved_coverage(conn, session_id, covered_ids, unresolved_held, watermark)

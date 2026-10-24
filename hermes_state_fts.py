@@ -13,7 +13,7 @@ from typing import Sequence
 from hermes_constants import get_hermes_home
 from hermes_state_common import (FTS_CJK_STALE_KEY, FTS_SQL, FTS_STALE_KEY, FTS_TRIGRAM_SQL, _FTS_CJK_TRIGGERS,
     _FTS_TRIGGERS, routed_sessions_setting)
-from hermes_state_errors import is_fts_scoped_corruption_error, is_sqlite_lock_error
+from hermes_store.errors import is_fts_scoped_corruption_error, is_sqlite_lock_error
 
 # caplog tests pin the "hermes_state" logger name.
 logger = logging.getLogger("hermes_state")

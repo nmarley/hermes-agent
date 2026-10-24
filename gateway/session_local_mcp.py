@@ -467,7 +467,7 @@ async def prepare_branch_editor(authority, ref, servers, gate):
     Discovery starts every server, so *gate* (the branch's prepare-only fences: receipt, revision,
     generation, idle) runs first; an exact retry's durable receipt comes back as ``prepared``."""
     from gateway.session_policy import restore_policy
-    from hermes_state_keys import local_identity
+    from hermes_store.keys import local_identity
     from hermes_state_local import local_receipt
     try:
         saved = await asyncio.to_thread(local_receipt, authority.db, ref.session_id)

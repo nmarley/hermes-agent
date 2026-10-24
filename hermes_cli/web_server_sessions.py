@@ -340,7 +340,7 @@ def _open_session_db_at_path(db_path: Path, *, read_only: bool):
 
     from fastapi import HTTPException
     from hermes_state import SessionDB
-    from hermes_state_errors import is_transient_sqlite_error
+    from hermes_store.errors import is_transient_sqlite_error
     from hermes_state_registry import acquire
 
     if not read_only:
@@ -387,7 +387,7 @@ def _open_session_db_at_path(db_path: Path, *, read_only: bool):
                 raise HTTPException(status_code=503, detail=str(drift)) from exc
             return _open_probed()
     except (sqlite3.DatabaseError, UnicodeDecodeError) as exc:
-        from hermes_state_errors import is_malformed_db_error
+        from hermes_store.errors import is_malformed_db_error
         if isinstance(exc, sqlite3.DatabaseError) and is_malformed_db_error(exc):
             # Same structured 503 the analytics routers publish (``corrupt_store_as_status``): a
             # corrupt image names the repair (`hermes doctor`), never a generic "schema unavailable".

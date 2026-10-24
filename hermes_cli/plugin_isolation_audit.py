@@ -32,8 +32,9 @@ VERDICT_PORTABLE = "portable"
 # Top-level packages that are Hermes's own process state when imported by a plugin.
 HERMES_PACKAGES: frozenset = frozenset({
     "agent", "tools", "hermes_cli", "gateway", "cron", "providers", "plugins", "tui_gateway",
-    "acp_adapter", "run_agent", "cli", "model_tools", "toolsets", "hermes_state", "hermes_constants",
-    "hermes_logging", "hermes_time", "utils", "registration_lifecycle", "hermes_platform",
+    "acp_adapter", "run_agent", "cli", "model_tools", "toolsets", "hermes_state", "hermes_store",
+    "hermes_constants", "hermes_logging", "hermes_time", "utils", "registration_lifecycle",
+    "hermes_platform",
 })
 # ``<module>.<callable>`` that mutate a Hermes-process registry when called from plugin code.
 _DIRECT_REGISTRY_CALLS: frozenset = frozenset({

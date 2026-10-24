@@ -12,8 +12,8 @@ import sqlite3
 import pytest
 
 from hermes_state import SessionDB, StateDbCorruptError
-from hermes_state_errors import classify_persistence_error
-from hermes_state_health import (
+from hermes_store.errors import classify_persistence_error
+from hermes_store.health import (
     is_structural_corruption_error,
     note_storage_error,
     reset_storage_state,

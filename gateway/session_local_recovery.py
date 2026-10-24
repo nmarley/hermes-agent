@@ -7,7 +7,7 @@ from pathlib import Path
 from gateway.config import Platform
 from gateway.session import SessionEntry, SessionSource
 from gateway.session_contract import SessionRef
-from hermes_state_keys import local_identity
+from hermes_store.keys import local_identity
 from hermes_state_local import POLICY_PREFIX, local_receipt
 from hermes_state_runtime import RuntimeStoreError, list_session_admissions
 
