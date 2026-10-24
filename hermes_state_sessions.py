@@ -11,7 +11,8 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
-from agent.session_activity import (
+from hermes_store.sessions.model_config import parse_model_config as _parse_model_config
+from hermes_store.sessions.activity import (
     ActivityProvenance, bound_activity_description, normalize_activity_provenance,
 )
 from hermes_store.errors import SessionActiveWriteGuardError
@@ -67,16 +68,6 @@ _LINEAGE_CTE_SQL = """
                 UNION
                 SELECT id FROM descendants
               )"""
-
-
-def _parse_model_config(raw: Any) -> dict[str, Any]:
-    """Tolerant ``model_config`` decode: JSON text or dict -> dict copy; anything else -> {}."""
-    if isinstance(raw, str) and raw.strip():
-        try:
-            raw = json.loads(raw)
-        except (json.JSONDecodeError, TypeError):
-            return {}
-    return dict(raw) if isinstance(raw, dict) else {}
 
 
 def _cwd_prefix_clause(cwd_prefix: str) -> tuple[str, list[str]]:
@@ -787,12 +778,12 @@ class SessionSessionsMixin:
     def update_conversation_model_config_value(self, session_id: str, key: str,
                                                update: Callable[[Any], Any]) -> Optional[str]:
         """Write ``update(value)`` of a conversation-wide key at the compression tip (one transaction)."""
-        from hermes_state_sessions_model_config import update_conversation_model_config_value
+        from hermes_store.sessions.sessions_model_config import update_conversation_model_config_value
         return update_conversation_model_config_value(self, session_id, key, update)
 
     def session_ids_with_model_config_key(self, key: str) -> list[str]:
         """Ids of the sessions whose model_config carries ``key``, newest first."""
-        from hermes_state_sessions_model_config import session_ids_with_model_config_key
+        from hermes_store.sessions.sessions_model_config import session_ids_with_model_config_key
         return session_ids_with_model_config_key(self, key)
 
     def update_session_runtime_lock(

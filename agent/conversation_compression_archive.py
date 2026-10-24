@@ -10,22 +10,14 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-ABSORBED_ROW_IDS = "_absorbed_row_ids"
-# How many durable rows an alternation repair folded into one user dict. A reload without row ids
-# has no other way to tell that dict from a prompt that was never persisted.
-MERGED_DURABLE_ROWS = "_merged_durable_rows"
-# How many more durable rows a dict stands for on a reload without row ids, besides a merged user
-# run: rows the repair dropped behind it (a tool call with no result, a result with no call) or
-# folded into an assistant turn. The caller was handed them, and nothing else names them.
-UNNAMED_DURABLE_ROWS = "_unnamed_durable_rows"
-# What names those rows at commit: role, content and tool-call ids of each, one per counted row.
-# The commit matches each to one active row, so the rest of the held history keeps exact coverage.
-RETIRED_DURABLE_ROWS = "_retired_durable_rows"
-# Tags an entry of RETIRED_DURABLE_ROWS once coverage_for_commit hands it to the commit as unresolved.
-RETIRED_ROW = "_retired_row"
-# Marks the entry for the dict's own row: an assistant fold rewrote its text, so content no longer names it.
-# It stands in the dict's own tail slot and is not one of the counted rows behind it.
-OWN_ROW = "_own_row"
+from hermes_store.common.compression import (
+    ABSORBED_ROW_IDS,
+    MERGED_DURABLE_ROWS,
+    OWN_ROW,
+    RETIRED_DURABLE_ROWS,
+    RETIRED_ROW,
+    UNNAMED_DURABLE_ROWS,
+)
 
 
 def retired_row_payload(message: dict[str, Any]) -> dict[str, Any]:

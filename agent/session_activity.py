@@ -11,67 +11,11 @@ from enum import Enum
 from typing import Any, Mapping, Optional
 
 from agent.i18n import t
-
-ACTIVITY_DESCRIPTION_MAX = 120
-
-# Durable SessionDB heartbeat cadence. Contract: MUST stay >= 30s — the SessionDB write path is contended and
-# this observation-only projection never justifies extra write pressure. A code constant on purpose (no config
-# can make it a high-frequency writer); matches the kanban auto-heartbeat. force_persist and terminal
-# compression stamps (see TERMINAL_COMPRESSION_PROVENANCES) are the only bypasses.
-SESSION_ACTIVITY_HEARTBEAT_MIN_INTERVAL_SECONDS = 60.0
-
-
-class ActivityProvenance(str, Enum):
-    """Where a durable/in-memory activity stamp came from."""
-
-    UNKNOWN = "unknown"
-    # Compression writers: heartbeat, host timeout, cooldown, turn hold.
-    # See #72424.
-    AGENT_COMPRESSION = "agent.compression"
-    AGENT_COMPRESSION_TIMEOUT = "agent.compression_timeout"
-    AGENT_COMPRESSION_COOLDOWN = "agent.compression_cooldown"
-    AGENT_COMPRESSION_TURNHOLD = "agent.compression_turnhold"
-
-
-# Provenances that END the user-visible "compressing" phase: the host's progress timeout, a cooldown/
-# backoff block, and the gateway's hygiene turn-hold. Each is written once, at a terminal edge, and must
-# reach the durable projection IMMEDIATELY — the heartbeat above wrote "context compression in progress"
-# moments earlier, so a rate-limited terminal stamp leaves `sessions.last_activity_description` advertising
-# a compression that has already stopped, with no later writer to correct it (the agent may be idle, the
-# process gone). That is the permanently "stuck / compressing" chat users see.
-#
-# Distinct from ``conversation_compression._TERMINAL_COMPRESSION_PROVENANCES``, which answers a different
-# question — "may a detached heartbeat still overwrite this stamp?" — and deliberately excludes TURNHOLD,
-# because after a turn-hold the worker may still be alive and adoptable.
-TERMINAL_COMPRESSION_PROVENANCES = frozenset(
-    {
-        ActivityProvenance.AGENT_COMPRESSION_TIMEOUT,
-        ActivityProvenance.AGENT_COMPRESSION_COOLDOWN,
-        ActivityProvenance.AGENT_COMPRESSION_TURNHOLD,
-    }
+from hermes_store.sessions.activity import (
+    ACTIVITY_DESCRIPTION_MAX, SESSION_ACTIVITY_HEARTBEAT_MIN_INTERVAL_SECONDS, ActivityProvenance,
+    TERMINAL_COMPRESSION_PROVENANCES,
+    bound_activity_description, is_terminal_compression_provenance, normalize_activity_provenance,
 )
-
-
-def is_terminal_compression_provenance(provenance: Optional[ActivityProvenance | str]) -> bool:
-    """True when this stamp ends a compression phase and must bypass the persist rate limit."""
-    return normalize_activity_provenance(provenance) in TERMINAL_COMPRESSION_PROVENANCES
-
-
-def bound_activity_description(description: Optional[str]) -> str:
-    """Clamp free-form activity text to the shared description budget."""
-    text = (description or "").strip()
-    return text if len(text) <= ACTIVITY_DESCRIPTION_MAX else text[: ACTIVITY_DESCRIPTION_MAX - 1] + "…"
-
-
-def normalize_activity_provenance(provenance: Optional[ActivityProvenance | str]) -> ActivityProvenance:
-    """Return a known provenance, or ``UNKNOWN`` when unset/unrecognized."""
-    if isinstance(provenance, ActivityProvenance):
-        return provenance
-    try:
-        return ActivityProvenance((provenance or "").strip())
-    except ValueError:
-        return ActivityProvenance.UNKNOWN
-
 
 def format_iteration_progress(api_call_count: Any, max_iterations: Any) -> str:
     """``iteration N/M`` for user-facing status lines, or ``iteration N`` when the cap is unbounded.

@@ -6,7 +6,7 @@ from hermes_state_local import POLICY_PREFIX
 from hermes_state_local_lineage import validate_local_lineage
 from hermes_state_mutation_guards import require_idle
 from hermes_state_runtime import RuntimeStoreError, _json
-from hermes_state_titles import lineage_title_on_conn
+from hermes_store.sessions.titles import lineage_title_on_conn
 
 
 def _branch_boundary(conn, target, through):

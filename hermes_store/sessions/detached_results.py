@@ -7,7 +7,8 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from agent.message_metadata import stamp_message_uid
+from hermes_store.sessions.message_metadata import stamp_message_uid
+from hermes_store.sessions.message_sql import _INSERT_MESSAGE_SQL
 
 # Rows of a session and of the parents it was compressed from; a detached result's match condition follows.
 _LINEAGE_MATCH_SQL = """WITH RECURSIVE lineage(id) AS (SELECT ? UNION
@@ -42,7 +43,6 @@ class SessionDetachedResultsMixin:
         """Record a result that arrived between turns as a user row once, including replay after rotation: a row
         ``match_sql`` (a condition on ``m``) finds in the compression lineage is returned instead. Check and insert
         share the writer transaction, so independent gateway processes cannot duplicate it; a live turn refuses it."""
-        from hermes_state_messages import _INSERT_MESSAGE_SQL  # that module binds this mixin
         msg = {"content": content, "display_kind": display_kind, "display_metadata": metadata}
         stamp_message_uid(msg)  # a fresh occurrence: mint its durable id
         row = self._message_row_params(session_id, "user", msg, None, time.time(), keep_reasoning=True)

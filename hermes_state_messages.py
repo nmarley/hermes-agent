@@ -10,39 +10,27 @@ import re
 import time
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from agent.context_compressor import (
-    _DB_PERSISTED_MARKER as _DB_PERSISTED_MARKER_KEY, MODEL_ONLY_DISPLAY_METADATA_KEY, _is_checkpoint_item,
-    _newest_checkpoint_carrier, split_user_originated_turn)
-from agent.memory_context import sanitize_context
-from agent.message_metadata import (
+from hermes_store.common.compression import (
+    _DB_PERSISTED_MARKER as _DB_PERSISTED_MARKER_KEY, MODEL_ONLY_DISPLAY_METADATA_KEY,
+    is_checkpoint_item as _is_checkpoint_item, newest_checkpoint_carrier as _newest_checkpoint_carrier)
+from hermes_store.sessions.memory_context import sanitize_context
+from hermes_store.sessions.message_metadata import (
     CANONICAL_ROW, DATA_USE, DB_ROW_SNAPSHOT, lift_data_use, MESSAGE_UID, TOOL_CALL_UID, TOOL_CALL_UIDS,
     index_tool_call_uids, message_uid_or_none, resolve_tool_call_uid, mint_uid, stamp_message_uid)
-from agent.message_sanitization import _sanitize_surrogates, coalesce_tool_call_id
+from hermes_store.sessions.sanitization import _sanitize_surrogates, _scrub_surrogates, coalesce_tool_call_id
+from hermes_store.sessions.turn_view import repair_message_sequence, split_user_originated_turn
 from hermes_store.common.time import coerce_epoch
-from hermes_store.common.messages import _COMPRESSION_LOCK_ROW_SQL, _ENDED_ROW_SQL, _ended_by_compression
+from hermes_store.common.messages import DISPLAY_VISIBLE_SQL, _COMPRESSION_LOCK_ROW_SQL, _ENDED_ROW_SQL, _ended_by_compression
 from hermes_store.common.sessions import _RESET_END_REASONS, _RESET_END_REASONS_SQL, _legacy_reset_child_sql
 from hermes_store.common.sql import _json_or, _placeholders, _sql_json_extract
-from hermes_state_detached_results import SessionDetachedResultsMixin
+from hermes_store.sessions.detached_results import SessionDetachedResultsMixin
+from hermes_store.sessions.message_sql import _INSERT_MESSAGE_SQL, _MESSAGE_WRITE_COLUMNS
 from hermes_state_todo import SessionTodoResultMixin
-from hermes_state_identity import (
+from hermes_store.sessions.identity import (
     _absorbed_uids_json, _restore_identity_columns, _stable_tool_key, _tool_call_uid_map, _tool_call_uid_or_none, _tool_call_uids_json, _uid_list)
 
 logger = logging.getLogger("hermes_state")  # caplog tests pin the origin module's name
 
-# One INSERT shape for every message writer (append, batch, replace, compact, import).
-_INSERT_MESSAGE_SQL = """INSERT INTO messages (session_id, role, content, tool_call_id,
-                   tool_calls, tool_name, effect_disposition, timestamp, token_count, finish_reason,
-                   reasoning, reasoning_content, reasoning_details, codex_reasoning_items,
-                   codex_message_items, platform_message_id, observed, _compressed_summary, active, api_content, display_kind,
-                   display_metadata, display_identity, message_uid, absorbed_message_uids, tool_call_uids,
-                   tool_call_uid)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
-# Every column this module knows how to read: the ones it writes plus the three SQLite/compaction
-# owns. `_row_to_message_dict` drops raw bytes ONLY outside this set — a schema column keeps its
-# key (and its typed decoder) even when a row holds a BLOB, so no reader ever loses msg["content"].
-_MESSAGE_WRITE_COLUMNS = tuple(
-    re.findall(r"\w+", _INSERT_MESSAGE_SQL.split("(", 1)[1].split(")", 1)[0])
-)
 _MESSAGE_SCHEMA_KEYS = frozenset(_MESSAGE_WRITE_COLUMNS) | {"id", "compacted", "display_order"}
 _BUMP_GENERATION_SQL = """
             INSERT INTO conversation_generations (source, session_key, generation)
@@ -54,10 +42,6 @@ _BUMP_GENERATION_SQL = """
 _TURN_LEASE_ROW_SQL = "SELECT holder, expires_at FROM session_turn_leases WHERE conversation_id = ?"
 _DELETE_COMPRESSION_LOCK_SQL = "DELETE FROM compression_locks WHERE session_id = ? AND holder = ?"
 _DISPLAY_ACTIVE_CLAUSE = " AND (active = 1 OR compacted = 1)"
-# Model-only rows (see MODEL_ONLY_DISPLAY_METADATA_KEY) never enter a display projection. Unqualified on
-# purpose: inside a correlated subquery it binds to the innermost ``messages`` alias.
-DISPLAY_VISIBLE_SQL = (
-    f" AND COALESCE({_sql_json_extract('display_metadata', '$.' + MODEL_ONLY_DISPLAY_METADATA_KEY)}, 0) = 0")
 _DISPLAY_META_ROW_SQL = "SELECT display_metadata FROM messages WHERE id = ? AND session_id IN ({ids})" + _DISPLAY_ACTIVE_CLAUSE
 # A display row is indexed only when both halves are set; the read path backfills before projecting, so
 # the in-transaction delete fence must refuse (not project) any session this probe still matches.
@@ -106,11 +90,6 @@ def _tool_calls_len(raw: Any, scalar: int = 0) -> int:
     """Count of a stored ``tool_calls`` column: list length, *scalar* for a truthy non-list, else 0."""
     parsed = _parse_tool_calls(raw)
     return len(parsed) if isinstance(parsed, list) else (scalar if parsed else 0)
-
-
-def _scrub_surrogates(value: Any) -> Any:
-    """Lone surrogates make sqlite3 raise UnicodeEncodeError and abort the whole write."""
-    return _sanitize_surrogates(value) if isinstance(value, str) else value
 
 
 def _stale_holder(row, now: float) -> bool:
@@ -451,7 +430,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
             compression_lock_holder=None, turn_lease_holder=None, turn_lease_ttl_seconds=300.0):
         self._check_transcript_write_guards(conn, session_id, compression_lock_holder,
             turn_lease_holder=turn_lease_holder, turn_lease_ttl_seconds=turn_lease_ttl_seconds)
-        from agent.transcript_repair import resolve_and_repair_transcript_batch
+        from hermes_store.sessions.transcript_repair import resolve_and_repair_transcript_batch
         inserted_rows = resolve_and_repair_transcript_batch(
             conn,
             session_id,
@@ -690,7 +669,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
         # Every inserter (flush, compaction clone, replace, rotation handoff, import) gets the new rows' own
         # stored-row digest, so a later re-flush of these dicts takes the versioned rewrite path instead of the
         # legacy one. One batched SELECT; hash the STORED rows (column affinity rewrites bind values).
-        from agent.transcript_repair import stamp_inserted_row_snapshots
+        from hermes_store.sessions.transcript_repair import stamp_inserted_row_snapshots
         stamp_inserted_row_snapshots(conn, session_id, messages)
         return inserted, tool_calls_total
 
@@ -1554,7 +1533,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
         so replay keeps the provider prompt cache byte-stable."""
         from hermes_store.api import _strip_background_review_harness, _strip_stale_tool_call_markers
         # Runtime import avoids the transcript_repair -> hermes_state_messages module cycle.
-        from agent.transcript_repair import transcript_row_snapshot
+        from hermes_store.sessions.transcript_repair import transcript_row_snapshot
         # Only the unaddressed live replay gets the digest: row-addressed loaders (include_row_ids) keep the
         # legacy resumed-dict path, whose rewrite never re-writes columns the projection does not decode
         # (a CAS-match rewrite of a resumed row would otherwise null token_count).
@@ -1630,7 +1609,6 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
         # session_id) plus its curator reply, and bare tool-call marker content ("[memory]") persisted as an answer.
         messages = _strip_stale_tool_call_markers(_strip_background_review_harness(messages))
         if repair_alternation and messages:
-            from agent.agent_runtime_helpers import repair_message_sequence
             repaired = repair_message_sequence(None, messages)
             if repaired:
                 logger.info("Repaired %d message-alternation violation(s) while "

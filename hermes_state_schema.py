@@ -29,7 +29,7 @@ from hermes_state_fts import (_drop_orphan_fts_shadow_tables, base_index_recogni
 from hermes_state_holders import _read_proc_argv
 from hermes_state_search import _delete_meta, _meta_row
 from hermes_store.errors import is_sqlite_lock_error
-from hermes_state_titles import next_title_in_lineage
+from hermes_store.sessions.titles import next_title_in_lineage
 
 # Pre-split logger identity so log filtering/capture is unchanged.
 logger = logging.getLogger("hermes_state")

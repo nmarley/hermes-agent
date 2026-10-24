@@ -53,3 +53,31 @@ _SUMMARY_END_MARKER = "--- END OF CONTEXT SUMMARY — respond to the message bel
 # these delimiters, so the summary prefix is not at content start.
 _MERGED_PRIOR_CONTEXT_HEADER = "[PRIOR CONTEXT — for reference only; not a new message]"
 _MERGED_SUMMARY_DELIMITER = "[END OF PRIOR CONTEXT — COMPACTION SUMMARY BELOW]"
+
+# Durable held-row coverage markers shared by transcript repair, compaction, and replay.
+ABSORBED_ROW_IDS = "_absorbed_row_ids"
+MERGED_DURABLE_ROWS = "_merged_durable_rows"
+UNNAMED_DURABLE_ROWS = "_unnamed_durable_rows"
+RETIRED_DURABLE_ROWS = "_retired_durable_rows"
+RETIRED_ROW = "_retired_row"
+OWN_ROW = "_own_row"
+
+# Set on a live dict once its current bytes are durable; popped by any in-place rewrite.
+_DB_PERSISTED_MARKER = "_db_persisted"
+MODEL_ONLY_DISPLAY_METADATA_KEY = "model_only"
+
+
+def is_checkpoint_item(item):
+    return isinstance(item, dict) and item.get("type") == "compaction"
+
+
+def newest_checkpoint_carrier(messages: list, key: str) -> int:
+    """Index of the last assistant message carrying a ``type: "compaction"`` item under *key*, or -1."""
+    for i in range(len(messages) - 1, -1, -1):
+        msg = messages[i]
+        if not isinstance(msg, dict) or msg.get("role") != "assistant":
+            continue
+        items = msg.get(key)
+        if isinstance(items, list) and any(is_checkpoint_item(item) for item in items):
+            return i
+    return -1

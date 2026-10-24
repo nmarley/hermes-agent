@@ -133,7 +133,7 @@ class TestUntrustedWrapping:
 class TestMakeToolResultMessage:
 
     def test_message_is_timestamped_when_result_is_created(self, monkeypatch):
-        monkeypatch.setattr("agent.message_metadata.wall_time", lambda: 123.5)
+        monkeypatch.setattr("hermes_store.sessions.message_metadata.wall_time", lambda: 123.5)
 
         msg = make_tool_result_message("terminal", "ok", "call_timestamp")
 

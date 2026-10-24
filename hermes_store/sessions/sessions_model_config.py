@@ -7,6 +7,7 @@ import json
 from typing import Any, Callable, Optional
 
 from hermes_store.common.sql import _sql_json_extract
+from hermes_store.sessions.model_config import parse_model_config as _parse_model_config
 
 
 def update_conversation_model_config_value(db, session_id: str, key: str,
@@ -16,8 +17,6 @@ def update_conversation_model_config_value(db, session_id: str, key: str,
     copy, and a rotation cannot publish between finding the tip and writing it (the child would keep
     the old copy). ``update`` may run more than once (lock retry) and must be pure; returning None
     removes the key. Returns the id written, None when the row does not exist."""
-    from hermes_state_sessions import _parse_model_config
-
     def _do(conn) -> Optional[str]:
         tip = db._compression_tip_on(conn, session_id)
         row = conn.execute("SELECT model_config FROM sessions WHERE id = ?", (tip,)).fetchone()

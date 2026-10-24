@@ -138,7 +138,7 @@ def test_fallback_timestamp_survives_delayed_sqlite_persistence(
 
     created_at = 1_781_976_577.25
     persisted_at = created_at + 600
-    monkeypatch.setattr("agent.message_metadata.wall_time", lambda: created_at)
+    monkeypatch.setattr("hermes_store.sessions.message_metadata.wall_time", lambda: created_at)
     monkeypatch.setattr("hermes_state.time.time", lambda: persisted_at)
     monkeypatch.setattr("hermes_cli.plugins.invoke_hook", lambda *_a, **_kw: [])
 

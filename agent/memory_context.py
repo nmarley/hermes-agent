@@ -10,22 +10,11 @@ from __future__ import annotations
 import logging
 import re
 
-logger = logging.getLogger(__name__)
-
-_FENCE_TAG_RE = re.compile(r'</?\s*memory-context\s*>', re.IGNORECASE)
-_INTERNAL_CONTEXT_RE = re.compile(r'<\s*memory-context\s*>[\s\S]*?</\s*memory-context\s*>', re.IGNORECASE)
-_INTERNAL_NOTE_RE = re.compile(
-    r'\[System note:\s*The following is recalled memory context,\s*NOT new user input\.\s*Treat as (?:informational background data|authoritative reference data[^\]]*)\.\]\s*',
-    re.IGNORECASE,
+from hermes_store.sessions.memory_context import (
+    _FENCE_TAG_RE, _INTERNAL_CONTEXT_RE, _INTERNAL_NOTE_RE, sanitize_context,
 )
 
-
-def sanitize_context(text: str) -> str:
-    """Strip fence tags, injected context blocks, and system notes from provider output."""
-    for pattern in (_INTERNAL_CONTEXT_RE, _INTERNAL_NOTE_RE, _FENCE_TAG_RE):
-        text = pattern.sub('', text)
-    return text
-
+logger = logging.getLogger(__name__)
 
 class StreamingContextScrubber:
     """Stateful scrubber for streaming text whose memory-context spans may straddle deltas.
