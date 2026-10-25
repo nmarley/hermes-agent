@@ -13,9 +13,9 @@ from types import SimpleNamespace
 
 import pytest
 
-import hermes_logging
+import hermes_platform.logging as hermes_logging
 from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-from hermes_logging import RotatingFileHandler, _ProfileRoutingFileHandler
+from hermes_platform.logging import RotatingFileHandler, _ProfileRoutingFileHandler
 
 
 @pytest.fixture(autouse=True)

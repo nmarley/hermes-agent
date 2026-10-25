@@ -1258,7 +1258,7 @@ def _build_gateway_agent_history(
     """Convert stored gateway transcript rows into agent replay messages.
 
     Observed context stays out of ``conversation_history`` so consecutive-user repair can't merge it in."""
-    from hermes_time import get_timezone as _get_msg_tz
+    from hermes_platform.time import get_timezone as _get_msg_tz
     from gateway.message_timestamps import (
         render_user_content_with_timestamp as _render_msg_ts,
         strip_leading_message_timestamps as _strip_msg_ts,
@@ -1716,7 +1716,7 @@ def _enable_multiplex_log_routing(config: object) -> bool:
     if not getattr(config, "multiplex_profiles", False):
         return False
     try:
-        from hermes_logging import enable_profile_log_routing
+        from hermes_platform.logging import enable_profile_log_routing
         return enable_profile_log_routing([home for _name, home in _multiplex_profile_homes(config)])
     except Exception:
         logger.debug("could not enable per-profile log routing", exc_info=True)
@@ -5165,7 +5165,7 @@ def main():
 
     config = None
     if args.config:
-        import hermes_yaml as yaml
+        from hermes_platform import yaml
         with open(args.config, encoding="utf-8-sig") as f:
             config = GatewayConfig.from_dict(yaml.safe_load(f) or {})
         # Same boot-time verdict the loaded config gets when the file leaves the flag unset.
@@ -5231,7 +5231,7 @@ def _exit_after_graceful_shutdown(exit_code: int) -> None:
     def _drain_logs() -> None:
         # os._exit bypasses the listener's atexit drain. Bounded, no restart — NOT flush_log_queue():
         # a listener wedged on the rotation lock would re-freeze shutdown in an unbounded stop() join.
-        from hermes_logging import drain_log_queue
+        from hermes_platform.logging import drain_log_queue
         drain_log_queue(timeout=1.0)
 
     for _step in (_release_locks, _mark_exited, _drain_logs):

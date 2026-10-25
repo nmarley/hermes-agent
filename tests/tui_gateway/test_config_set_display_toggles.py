@@ -7,7 +7,7 @@ shipped with a toggle that never reached the backend gating the tool.
 """
 
 import pytest
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 from tui_gateway import server
 

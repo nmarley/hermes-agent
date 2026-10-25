@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 from agent import model_metadata_http
 from agent.model_metadata_cache import _write_context_cache, locked_context_cache

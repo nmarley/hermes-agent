@@ -369,7 +369,7 @@ def test_refusals_are_written_to_gateway_log():
     import logging
 
     from agent import memory_caller_scope
-    from hermes_logging import COMPONENT_PREFIXES, _ComponentFilter
+    from hermes_platform.logging import COMPONENT_PREFIXES, _ComponentFilter
     record = logging.LogRecord(memory_caller_scope.logger.name, logging.WARNING, __file__, 1, "refused", (), None)
     assert _ComponentFilter(COMPONENT_PREFIXES["gateway"]).filter(record)
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 
 def _invalidate_config_cache():

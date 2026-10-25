@@ -15,7 +15,7 @@ import pytest
 from datetime import datetime, timedelta, timezone, UTC
 from unittest.mock import patch
 
-import hermes_time
+import hermes_platform.time as hermes_time
 
 
 def _reset_hermes_time_cache():

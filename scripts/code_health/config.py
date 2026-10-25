@@ -97,6 +97,11 @@ PACKAGE_LAYERS: dict[str, frozenset[str]] = {
 # import of the old path as the new module, so a pure move is not new debt. A head import of
 # the old path still counts as new: the move is only free for code that follows it.
 MOVED_MODULES: dict[str, str] = {
+    "hermes_logging": "hermes_platform.logging",
+    "hermes_time": "hermes_platform.time",
+    "hermes_yaml": "hermes_platform",
+    "hermes_constants_scratch": "hermes_platform.scratch",
+    "hermes_constants_scratch_stuck": "hermes_platform.scratch_stuck",
     "hermes_state_compression": "hermes_store.compression.session",
     "hermes_state_coverage": "hermes_store.repair.coverage",
     "hermes_state_dbfile": "hermes_store.schema.dbfile",

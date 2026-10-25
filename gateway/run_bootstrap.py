@@ -144,7 +144,7 @@ def _start_gateway_configure_logging(verbosity: Optional[int]) -> None:
     _best_effort(_sync_skills)
 
     # Centralized logging (agent.log INFO+, errors.log WARNING+, gateway.log gateway-only); idempotent.
-    from hermes_logging import setup_logging, _safe_stderr
+    from hermes_platform.logging import setup_logging, _safe_stderr
     setup_logging(hermes_home=_hermes_home, mode="gateway")
 
     def _security_audit() -> None:

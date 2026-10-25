@@ -8,7 +8,7 @@ import json
 import os
 
 import pytest
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 from gateway import relay
 from gateway.config import Platform, load_gateway_config

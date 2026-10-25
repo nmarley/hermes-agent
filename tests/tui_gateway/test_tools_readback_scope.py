@@ -10,7 +10,7 @@ session's own profile would build with; the launch profile's session still sees 
 
 from __future__ import annotations
 
-import hermes_yaml as yaml
+from hermes_platform import yaml
 import pytest
 
 from tui_gateway import server

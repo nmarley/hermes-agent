@@ -78,7 +78,7 @@ class PluginEviction:
     """Config edits disabling the plugins in *reasons*; published like a plugin selection."""
 
     def __init__(self, entries: list[Entry], reasons: dict[Path, str]):
-        from hermes_yaml import roundtrip_yaml
+        from hermes_platform.yaml import roundtrip_yaml  # health: allow LATE_IMPORT -- lazy YAML import keeps ruamel optional
         from pm.publication import selection_snapshot
 
         self.configs = selection_snapshot()

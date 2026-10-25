@@ -345,7 +345,7 @@ def managed() -> bool:
 def decide(enable: bool, home: Optional[Path] = None) -> bool:
     """Persist the user's answer as an explicit ``sessions.auto_prune``; ends the prompt for good.
     False when the save failed or did not take effect (an administrator-managed value wins)."""
-    import hermes_yaml as yaml
+    from hermes_platform import yaml
     from hermes_constants import mkdir_under_hermes_home
     from utils import atomic_roundtrip_yaml_update
     if managed():

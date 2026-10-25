@@ -18,7 +18,7 @@ from utils import fast_safe_load
 from hermes_cli.plugin_capabilities import parse_declared_capabilities as _parse_declared_capabilities
 
 try:
-    import hermes_yaml as yaml
+    from hermes_platform import yaml
 except ImportError:  # pragma: no cover – yaml is optional at import time
     yaml = None  # type: ignore[assignment]
 

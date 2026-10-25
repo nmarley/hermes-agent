@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 import httpx
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 from tests.fakes.fake_llm_provider import FakeLLMServer
 

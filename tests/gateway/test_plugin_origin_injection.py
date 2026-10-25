@@ -10,7 +10,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 import gateway.run as gateway_run
 from gateway.config import GatewayConfig, Platform, PlatformConfig

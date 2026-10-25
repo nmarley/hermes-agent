@@ -25,7 +25,7 @@ def _darwin_feed(channel: str, light: bool = False) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 def parse_mac_feed(text: str) -> dict[str, Any]:
-    import hermes_yaml as yaml  # lazy: YAML support loads only on the feed path
+    from hermes_platform import yaml  # lazy: YAML support loads only on the feed path
 
     feed = yaml.safe_load(text)
     if (
@@ -88,7 +88,7 @@ def merge_mac_feeds(legs: dict[str, str], tag: str, light: bool = False,
     if "arm64" not in arches or not set(arches) <= set(ARCHES) or len(set(arches)) != len(arches):
         raise ValueError("macOS feeds need the arm64 leg and only known architectures")
     arches = tuple(arch for arch in ARCHES if arch in arches)
-    import hermes_yaml as yaml  # lazy
+    from hermes_platform import yaml  # lazy
 
     version = tag[1:] if isinstance(tag, str) and tag.startswith("v") else ""
     if not is_release_version(version):

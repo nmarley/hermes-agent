@@ -59,7 +59,7 @@ def yaml_load(content: str):
     """Parse YAML with the shared safe loader, imported lazily."""
     global _yaml_load_fn
     if _yaml_load_fn is None:
-        from hermes_yaml import safe_load
+        from hermes_platform.yaml import safe_load  # health: allow LATE_IMPORT -- lazy YAML import keeps ruamel optional
         _yaml_load_fn = safe_load
     return _yaml_load_fn(content)
 

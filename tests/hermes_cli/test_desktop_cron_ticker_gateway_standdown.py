@@ -123,7 +123,7 @@ def test_gated_ticker_resumes_after_the_gateway_stops(ticker_env, gateway, monke
     ticker still starts, and its per-tick gate stands down only while that gateway runs."""
     import cron.scheduler_provider as sp
     from hermes_cli import profiles
-    import hermes_logging
+    import hermes_platform.logging as hermes_logging
     from hermes_cli import web_server
 
     home, started = ticker_env

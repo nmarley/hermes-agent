@@ -14,7 +14,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict
 
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 
 def _write_plugin(

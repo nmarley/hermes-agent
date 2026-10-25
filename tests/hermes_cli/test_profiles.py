@@ -16,7 +16,7 @@ import types
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-import hermes_yaml as yaml
+from hermes_platform import yaml
 import pytest
 
 from hermes_cli import profiles

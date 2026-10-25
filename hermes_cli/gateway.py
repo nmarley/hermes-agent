@@ -4593,7 +4593,7 @@ def run_gateway(verbose: int = 0, quiet: bool = False, replace: bool = False, fo
             pass  # best-effort; don't block gateway startup
 
     if _gateway_detached_env():
-        from hermes_logging import redact_detached_stdio
+        from hermes_platform.logging import redact_detached_stdio
         redact_detached_stdio()
     from gateway.run import start_gateway
     print("┌─────────────────────────────────────────────────────────┐")

@@ -424,7 +424,7 @@ def _read_permanent_allowlist() -> set:
     legacy = isinstance(raw, str)
     if legacy:
         # Old config-set versions serialized list values as scalar strings.
-        import hermes_yaml as yaml
+        from hermes_platform import yaml
         try:
             raw = yaml.safe_load(raw)
         except yaml.YAMLError:

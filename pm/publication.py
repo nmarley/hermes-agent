@@ -61,7 +61,7 @@ def validate_manifest(source: Path) -> dict:
 
 class PluginSelection:
     def __init__(self, selection: dict):
-        from hermes_yaml import roundtrip_yaml
+        from hermes_platform.yaml import roundtrip_yaml  # health: allow LATE_IMPORT -- lazy YAML import keeps ruamel optional
 
         self.configs = selection_snapshot()
         self.home = Path(selection["home"]).resolve()

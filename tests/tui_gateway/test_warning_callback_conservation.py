@@ -4,7 +4,7 @@ import queue
 from types import SimpleNamespace
 
 import pytest
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 from agent.status_output import StatusOutputMixin
 from tui_gateway import server

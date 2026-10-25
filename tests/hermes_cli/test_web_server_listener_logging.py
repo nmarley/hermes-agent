@@ -12,7 +12,7 @@ import logging
 import pytest
 
 import hermes_cli.web_server as ws_mod
-import hermes_logging
+import hermes_platform.logging as hermes_logging
 from hermes_cli.web_server_lifecycle import build_listener_server
 from hermes_constants import reset_hermes_home_override, set_hermes_home_override
 

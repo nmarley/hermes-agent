@@ -33,7 +33,7 @@ VERDICT_PORTABLE = "portable"
 HERMES_PACKAGES: frozenset = frozenset({
     "agent", "tools", "hermes_cli", "gateway", "cron", "providers", "plugins", "tui_gateway",
     "acp_adapter", "run_agent", "cli", "model_tools", "toolsets", "hermes_state", "hermes_store",
-    "hermes_constants", "hermes_logging", "hermes_time", "utils", "registration_lifecycle",
+    "hermes_constants", "hermes_platform.logging", "hermes_platform.time", "utils", "registration_lifecycle",
     "hermes_platform",
 })
 # ``<module>.<callable>`` that mutate a Hermes-process registry when called from plugin code.
@@ -226,7 +226,7 @@ def _read_manifest(plugin_dir: Path) -> dict[str, Any]:
         path = plugin_dir / name
         if path.is_file():
             try:
-                import hermes_yaml as yaml
+                from hermes_platform import yaml
                 data = yaml.safe_load(path.read_text(encoding="utf-8-sig"))
                 return data if isinstance(data, dict) else {}
             except Exception:

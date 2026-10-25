@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import hermes_yaml as yaml
+from hermes_platform import yaml
 from datetime import UTC
 
 logger = logging.getLogger(__name__)

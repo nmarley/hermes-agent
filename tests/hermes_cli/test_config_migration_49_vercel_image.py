@@ -8,7 +8,7 @@ user chose themselves survives untouched. Driven through ``run_migrations`` agai
 import os
 from unittest.mock import patch
 
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 
 def _run(tmp_path, runtime):

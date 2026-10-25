@@ -174,7 +174,7 @@ def test_primary_drain_delivers_credentialless_satellite_queue_row_through_prima
     import threading
     from unittest.mock import patch
 
-    import hermes_yaml as yaml
+    from hermes_platform import yaml
 
     from cron import delivery_queue
     from gateway.config import Platform

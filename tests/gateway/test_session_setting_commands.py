@@ -90,7 +90,7 @@ def _get(label, key):
 
 
 def _yaml(home):
-    from hermes_yaml import safe_load
+    from hermes_platform.yaml import safe_load
     return safe_load((home / 'config.yaml').read_text())
 
 

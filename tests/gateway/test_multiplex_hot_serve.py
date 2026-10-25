@@ -356,7 +356,7 @@ async def test_unserve_releases_gateway_held_log_and_mcp_handles(tmp_path, monke
     ``logs/.__agent.lock`` / ``logs/.__errors.lock`` / ``mcp-stderr.log`` (WinError 32)."""
     import logging as _logging
 
-    import hermes_logging
+    import hermes_platform.logging as hermes_logging
     from hermes_constants import (
         hermes_home_key,
         mark_named_profile_deleted,

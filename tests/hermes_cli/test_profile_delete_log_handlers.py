@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_logging
+import hermes_platform.logging as hermes_logging
 from hermes_cli import profiles
 from hermes_constants import reset_hermes_home_override, set_hermes_home_override
 

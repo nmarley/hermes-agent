@@ -864,7 +864,7 @@ class CLIInfoMixin:
         cache** (the next message re-sends the full input prefix, expensive on long-context / high-reasoning
         models). See #1474.
         """
-        import hermes_yaml as _yaml
+        import hermes_platform.yaml as _yaml  # health: allow LATE_IMPORT -- lazy YAML import keeps ruamel optional
 
         now = time.monotonic()
         if now - self._last_config_check < CONFIG_WATCH_INTERVAL:

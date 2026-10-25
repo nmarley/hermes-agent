@@ -5,7 +5,7 @@ message the dispatch then drops (PLG-6). Real GatewayRunner, DiscordAdapter and 
 import asyncio
 
 import pytest
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 from hermes_cli.plugins import PluginContext, PluginManager, PluginManifest
 from tests.waiting import async_wait_until

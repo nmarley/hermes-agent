@@ -16,7 +16,7 @@ from datetime import datetime, timezone, UTC
 from typing import Any, Dict, List, Optional, Union
 
 from hermes_store.common.sessions import _BOUNDARY_END_REASONS
-from hermes_time import safe_strftime
+from hermes_platform.time import safe_strftime
 
 # Hidden from browsing/searching — integrations (HERMES_SESSION_SOURCE=tool), delegate
 # subagent runs, kanban workers are not the user's history.

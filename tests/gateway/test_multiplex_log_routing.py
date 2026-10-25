@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_logging
+import hermes_platform.logging as hermes_logging
 from gateway import run
 
 

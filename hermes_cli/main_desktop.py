@@ -1658,7 +1658,7 @@ def cmd_gui(args: argparse.Namespace):
         sys.exit(1)
 
     with contextlib.suppress(Exception):
-        from hermes_logging import setup_logging as _setup_logging_gui
+        from hermes_platform.logging import setup_logging as _setup_logging_gui
         _setup_logging_gui(mode="gui")
 
     env, config_electron_flags = _desktop_launch_env(args)

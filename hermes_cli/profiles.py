@@ -698,7 +698,7 @@ def _load_yaml_dict(path: Path) -> Optional[dict]:
     if not path.is_file():
         return None
     try:
-        import hermes_yaml as yaml
+        from hermes_platform import yaml
         data = yaml.safe_load(path.read_text(encoding="utf-8-sig")) or {}
     except Exception:
         return None
@@ -1067,7 +1067,7 @@ def profile_is_standalone(home: Path) -> bool:
     (``gateway.standalone: true``)? Memoised by file signature. The DEFAULT profile is
     never standalone — it IS the host — and warns once per process if the key is set there."""
     global _STANDALONE_WARNED
-    from hermes_yaml import YAMLError
+    from hermes_platform.yaml import YAMLError  # health: allow LATE_IMPORT -- lazy YAML import keeps ruamel optional
     from utils import file_signature
 
     home = Path(home)
@@ -1824,7 +1824,7 @@ def delete_profile(name: str, yes: bool = False) -> Path:
     # QueueListener. On Windows those ConcurrentRotatingFileHandler instances retain their
     # ``.__*.lock`` files until explicitly closed, so rmtree otherwise fails with WinError 32.
     with contextlib.suppress(Exception):
-        from hermes_logging import release_profile_log_handlers
+        from hermes_platform.logging import release_profile_log_handlers
         _released_logs = release_profile_log_handlers(profile_dir)
         if _released_logs:
             print(f"✓ Released {_released_logs} profile log handler(s) held by this process")

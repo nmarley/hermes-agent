@@ -20,7 +20,7 @@ from pathlib import Path
 from time import monotonic as _monotonic
 from typing import Optional, Sequence
 
-from hermes_constants import (
+from hermes_platform.constants import (
     get_config_path, get_hermes_home, mkdir_under_hermes_home, named_profile_is_deleted,
 )
 
@@ -172,8 +172,8 @@ class _RedactingStdio:
         self._stream = stream
 
     def write(self, text):
-        from agent.redact import redact_sensitive_text
-        return self._stream.write(redact_sensitive_text(text) if isinstance(text, str) else text)
+        from hermes_platform.hooks import platform_hooks
+        return self._stream.write(platform_hooks().redact_sensitive_text(text) if isinstance(text, str) else text)
 
     def __getattr__(self, name):
         return getattr(self._stream, name)
@@ -221,7 +221,7 @@ def _warn_windows_lock_timeout_once() -> None:
         if _windows_lock_timeout_warned:
             return
         _windows_lock_timeout_warned = True
-    logging.getLogger("hermes_logging").warning(
+    logging.getLogger("hermes_platform.logging").warning(
         "concurrent-log-handler timed out acquiring the cross-process log "
         "lock; this and later records were dropped (the Desktop slash-worker "
         "surface stays clean, but file logging is degraded)."
@@ -387,7 +387,8 @@ def setup_logging(
     max_bytes = (max_size_mb or cfg_max_size or 5) * 1024 * 1024
     backups = backup_count or cfg_backup or 3
 
-    from agent.redact import RedactingFormatter  # lazy: circular at module load
+    from hermes_platform.hooks import platform_hooks
+    RedactingFormatter = platform_hooks().redacting_formatter()
 
     root = logging.getLogger()
 
@@ -412,7 +413,7 @@ def setup_logging(
         # One-shot, and the file handlers above are already live, so this lands
         # in errors.log/agent.log — the fallback must never be invisible again.
         _fallback_warned = True
-        logging.getLogger("hermes_logging").warning(
+        logging.getLogger("hermes_platform.logging").warning(
             "concurrent-log-handler unavailable on this Windows install (%s); "
             "file logging fell back to stdlib rotation without rollover.",
             _WINDOWS_CLH_FALLBACK_REASON or "portalocker probe failed",
@@ -431,7 +432,8 @@ def setup_logging(
 
 def setup_verbose_logging() -> None:
     """Enable DEBUG-level console logging for ``--verbose`` / ``-v`` mode."""
-    from agent.redact import RedactingFormatter
+    from hermes_platform.hooks import platform_hooks
+    RedactingFormatter = platform_hooks().redacting_formatter()
 
     root = logging.getLogger()
 
@@ -469,8 +471,8 @@ class _ManagedRotatingFileHandler(RotatingFileHandler):
     """
 
     def __init__(self, *args, **kwargs):
-        from hermes_cli.config import is_managed
-        self._managed = is_managed()
+        from hermes_platform.hooks import platform_hooks
+        self._managed = platform_hooks().is_managed()
         self._unavailable_reported = False
         # Set by _ProfileRoutingFileHandler: a vanished logs/ dir means the profile was deleted,
         # so skip the write (the router re-routes the record) instead of a FileNotFoundError traceback.
@@ -746,7 +748,7 @@ class _ProfileRoutingFileHandler(logging.Handler):
                 return
             # Formatted here, on the listener thread, where the record's profile scope is gone: bind its home so
             # RedactingFormatter applies THAT profile's redact_secrets policy and vault values, not the launch's.
-            from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+            from hermes_platform.constants import reset_hermes_home_override, set_hermes_home_override
             token = set_hermes_home_override(str(home))
             try:
                 handler.handle(record)
@@ -1027,10 +1029,10 @@ def _read_logging_config():
         # can pin logging.*) so this reuses hermes_cli.main's early parse (one config.yaml parse
         # per process); fall back to a direct parse for bare hermes_logging consumers.
         try:
-            from hermes_cli.config_effective import load_user_config_effective
-            cfg = load_user_config_effective(get_config_path())
+            from hermes_platform.hooks import platform_hooks
+            cfg = platform_hooks().load_user_config_effective(get_config_path())
         except Exception:
-            from utils import fast_safe_load
+            from hermes_platform.utils import fast_safe_load
             config_path = get_config_path()
             cfg = {}
             if config_path.exists():

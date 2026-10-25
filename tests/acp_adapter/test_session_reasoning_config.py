@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 from acp_adapter.session import SessionManager
 

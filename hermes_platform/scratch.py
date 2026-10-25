@@ -21,7 +21,7 @@ import time
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-import hermes_constants_scratch_stuck as stuck
+from hermes_platform import scratch_stuck as stuck
 
 logger = logging.getLogger(__name__)
 
@@ -182,8 +182,8 @@ def _registered_live_pids(home: Path) -> set[int]:
     matches is a reused pid, not ownership."""
     import psutil
 
-    from hermes_cli.process_identity import spawner_is_dead
-    from hermes_constants import get_default_hermes_root
+    from hermes_platform.hooks import platform_hooks
+    from hermes_platform.constants import get_default_hermes_root
 
     root = get_default_hermes_root(home=home)
     sources = [(root / "spawn-ledger.json", "create_time")]
@@ -201,7 +201,7 @@ def _registered_live_pids(home: Path) -> set[int]:
             # An MCP helper whose recorded spawner is provably gone is an orphan, not owned: the
             # rule reap_orphaned_mcp_helpers applies. Long-lived entry points (gateway, serve) that
             # outlive their launcher stay owned; an unprovable spawner keeps ownership.
-            if entry.get("purpose") == "mcp-helper" and spawner_is_dead(entry) is True:
+            if entry.get("purpose") == "mcp-helper" and platform_hooks().spawner_is_dead(entry) is True:
                 continue
             try:
                 if stamp is None:
@@ -209,9 +209,7 @@ def _registered_live_pids(home: Path) -> set[int]:
                 elif stamp_key == "create_time":
                     alive = abs(psutil.Process(pid).create_time() - float(stamp)) < 2.0
                 else:
-                    from gateway.status import get_process_start_time
-
-                    alive = get_process_start_time(pid) == stamp
+                    alive = platform_hooks().process_start_time(pid) == stamp
             except (psutil.Error, OSError, TypeError, ValueError):
                 continue
             if alive:

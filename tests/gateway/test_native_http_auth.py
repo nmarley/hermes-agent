@@ -146,7 +146,7 @@ def test_native_http_grants_are_single_use_and_bound_to_daemon(tmp_path):
             'display': {'skin': 'ares'}}}, headers=headers(ticket(home, descriptor)))
         assert updated.status_code == 200, updated.text
         assert client.get('/api/config', headers=headers(ticket(home, descriptor))).json()['display']['skin'] == 'ares'
-        import hermes_yaml as yaml
+        from hermes_platform import yaml
         assert yaml.safe_load((home / 'config.yaml').read_text())['display']['skin'] == 'ares'
         query_ticket = ticket(home, descriptor)
         assert client.get('/api/config', params={'ticket': query_ticket}).status_code == 401

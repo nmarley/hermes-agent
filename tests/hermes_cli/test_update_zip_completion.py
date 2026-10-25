@@ -14,7 +14,7 @@ from hermes_cli import main, update_cmd, update_cmd_fleet as fleet, update_cmd_m
 from hermes_cli import update_cmd_fleet_verify as fleet_verify, update_cmd_zip, update_receipt
 from hermes_cli.config_defaults import DEFAULT_CONFIG
 from hermes_cli.update_inventory import RuntimeRecord, UpdatePlan
-import hermes_yaml
+import hermes_platform.yaml as hermes_yaml
 
 
 def _swap_leftovers(root):

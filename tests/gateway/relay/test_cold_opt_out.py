@@ -7,7 +7,7 @@ import sys
 import textwrap
 
 import pytest
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 
 @pytest.mark.parametrize("case", ["native", "url-only", "disabled", "managed", "managed-only", "scoped"])

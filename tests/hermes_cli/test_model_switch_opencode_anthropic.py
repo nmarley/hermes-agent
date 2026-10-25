@@ -190,7 +190,7 @@ class TestStaleConfigDefaultDoesNotWedgeResolver:
     """
 
     def test_kimi_switch_keeps_v1_despite_claude_config_default(self, tmp_path, monkeypatch):
-        import hermes_yaml as yaml
+        from hermes_platform import yaml
         import importlib
 
         monkeypatch.setenv("HERMES_HOME", str(tmp_path))

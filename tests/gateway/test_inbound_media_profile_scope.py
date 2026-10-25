@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 from agent import secret_scope as ss
 from gateway.platforms.base import cache_media_bytes

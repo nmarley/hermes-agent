@@ -8,7 +8,7 @@ from threading import Event
 from time import monotonic, sleep
 from types import MethodType
 
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 
 def _write_plugin(hermes_home: Path) -> None:

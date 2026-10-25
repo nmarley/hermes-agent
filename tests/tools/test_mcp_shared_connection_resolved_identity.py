@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 _MODEL = {"default": "x", "provider": "custom", "base_url": "http://127.0.0.1:9/v1"}
 

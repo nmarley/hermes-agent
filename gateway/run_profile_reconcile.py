@@ -527,7 +527,7 @@ class GatewayProfileReconcileMixin:
                     from tools.mcp_tool_lifecycle import shutdown_mcp_servers
                     await asyncio.to_thread(shutdown_mcp_servers, scope=hermes_home_key(home))
                 with _log_suppressed(logging.DEBUG, "profile log handler release failed", exc_info=True):
-                    from hermes_logging import release_profile_log_handlers
+                    from hermes_platform.logging import release_profile_log_handlers
                     await asyncio.to_thread(release_profile_log_handlers, home)
             finally:
                 release_profile_home(self, home)

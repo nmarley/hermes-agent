@@ -8,7 +8,7 @@ These tests pin the new behavior: reads and writes land in the REQUESTED
 profile's HERMES_HOME, and the dashboard's own profile stays untouched.
 """
 import pytest
-import hermes_yaml as yaml
+from hermes_platform import yaml
 import gateway.status as _gw_status
 
 

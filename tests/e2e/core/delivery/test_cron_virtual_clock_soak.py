@@ -578,7 +578,7 @@ def soak_env(tmp_path, monkeypatch):
     else:
         os.environ["TZ"] = original_tz
     time.tzset()
-    import hermes_time
+    import hermes_platform.time as hermes_time
 
     hermes_time.reset_cache()
 

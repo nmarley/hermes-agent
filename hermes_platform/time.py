@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Dict, Optional, Tuple
 from zoneinfo import ZoneInfo
 
-from hermes_constants import get_config_path
+from hermes_platform.constants import get_config_path
 
 logger = logging.getLogger(__name__)
 
@@ -68,9 +68,9 @@ def _env_timezone() -> str:
     """``HERMES_TIMEZONE`` when it may speak for the active profile. Under the multiplexed
     gateway the env var holds only the DEFAULT profile's value (bridged from its config.yaml at
     startup), so every routed profile must read its own config.yaml instead."""
-    from agent.secret_scope import is_multiplex_active  # lazy: secret_scope pulls in more than a clock needs
+    from hermes_platform.hooks import platform_hooks
 
-    if is_multiplex_active():
+    if platform_hooks().is_multiplex_active():
         return ""
     return os.getenv("HERMES_TIMEZONE", "").strip()
 
@@ -91,10 +91,10 @@ def _resolve_timezone_name() -> str:
         # config.yaml costs ~100 ms and this ran inside the FIRST system prompt build. The bare
         # parse is the stdlib-safe fallback for bootstrap consumers without hermes_cli importable.
         try:
-            from hermes_cli.config_effective import load_user_config_effective
-            cfg = load_user_config_effective(get_config_path())
+            from hermes_platform.hooks import platform_hooks
+            cfg = platform_hooks().load_user_config_effective(get_config_path())
         except Exception:
-            import hermes_yaml as yaml
+            from hermes_platform import yaml
             config_path = get_config_path()
             cfg = (yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}) if config_path.exists() else {}
         if cfg:

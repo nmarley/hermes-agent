@@ -35,7 +35,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 from . import _helpers as H
 

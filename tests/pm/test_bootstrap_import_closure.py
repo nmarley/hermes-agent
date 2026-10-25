@@ -48,7 +48,8 @@ def _constants_stage(tmp_path, *, with_acl: bool) -> Path:
     shutil.copy2(repo / "hermes_constants.py", stage / "hermes_constants.py")
     package = stage / "hermes_platform"
     package.mkdir()
-    shutil.copy2(repo / "hermes_platform" / "__init__.py", package / "__init__.py")
+    for name in ("__init__.py", "constants.py"):
+        shutil.copy2(repo / "hermes_platform" / name, package / name)
     if with_acl:
         shutil.copy2(repo / "hermes_platform" / "fs.py", package / "fs.py")
     return stage

@@ -131,7 +131,7 @@ def _start_desktop_cron_ticker(stop_event: threading.Event, interval: int = 60) 
                 # Desktop races its dedicated gateway for the same cron store.
                 start_kwargs["profile_homes"] = profile_homes
                 start_kwargs["profile_gate"] = profile_gate
-                from hermes_logging import enable_profile_log_routing
+                from hermes_platform.logging import enable_profile_log_routing
 
                 enable_profile_log_routing(initial_profile_homes)
                 _log.info(

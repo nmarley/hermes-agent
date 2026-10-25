@@ -15,7 +15,7 @@ import os
 import stat
 from pathlib import Path
 import pytest
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 
 @pytest.fixture

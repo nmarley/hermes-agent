@@ -19,6 +19,8 @@ def test_stamp_uses_built_commit_even_with_dispatch_sha_and_refuses_mismatch(tmp
         dest = repo / relative
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / relative, dest)
+    shutil.copytree(ROOT / 'hermes_platform', repo / 'hermes_platform',
+                    ignore=shutil.ignore_patterns('__pycache__'))
     # commit_build/distance -> versioning -> semver import each other; copy the
     # whole package so a new sibling import cannot break the fixture.
     shutil.copytree(ROOT / 'scripts/releases', repo / 'scripts/releases',

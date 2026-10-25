@@ -7,7 +7,7 @@ import time
 
 import pytest
 
-import hermes_constants_scratch as scratch
+from hermes_platform import scratch
 
 pytestmark = [
     pytest.mark.platforms("posix"),

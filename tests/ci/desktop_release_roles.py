@@ -14,7 +14,7 @@ import ast
 import re
 from pathlib import Path
 
-import hermes_yaml
+import hermes_platform.yaml as hermes_yaml
 
 from scripts.releases.job_groups import JOB_GROUPS
 

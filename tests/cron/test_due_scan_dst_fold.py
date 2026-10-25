@@ -3,7 +3,7 @@
 from datetime import datetime, timezone, UTC
 from zoneinfo import ZoneInfo
 
-import hermes_time
+import hermes_platform.time as hermes_time
 import pytest
 
 from cron import jobs

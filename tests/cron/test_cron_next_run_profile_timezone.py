@@ -19,7 +19,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-import hermes_time
+import hermes_platform.time as hermes_time
 
 
 @pytest.fixture(autouse=True)

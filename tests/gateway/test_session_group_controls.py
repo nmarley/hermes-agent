@@ -223,7 +223,7 @@ def test_profiles_list_reuses_its_disk_scan_until_a_profile_changes(tmp_path, mo
     import os
 
     from hermes_cli import profiles
-    import hermes_yaml
+    import hermes_platform.yaml as hermes_yaml
     home = _roster_home(tmp_path, monkeypatch)
     scans, parses = [], []
     real_iter, real_load = profiles._iter_named_profile_dirs, hermes_yaml.safe_load

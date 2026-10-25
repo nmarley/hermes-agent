@@ -58,6 +58,7 @@ def test_bundle_stages_git_tree_and_runs_native_children_before_manifest(tmp_pat
     for name in ("__init__.py", "runtime_state.py"):
         shutil.copy2(source / "hermes_cli" / name, repo / "hermes_cli" / name)
     shutil.copy2(source / "hermes_constants.py", repo / "hermes_constants.py")
+    shutil.copytree(source / "hermes_platform", repo / "hermes_platform", ignore=shutil.ignore_patterns("__pycache__"))
     wheels = repo / "wheels"
     wheels.mkdir()
     witness = tmp_path / "inventory-python.json"

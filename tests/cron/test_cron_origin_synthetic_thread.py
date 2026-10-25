@@ -25,7 +25,7 @@ import json
 from datetime import timedelta
 from unittest.mock import patch
 
-import hermes_time
+import hermes_platform.time as hermes_time
 from tools.cronjob_tools import _origin_from_env
 
 

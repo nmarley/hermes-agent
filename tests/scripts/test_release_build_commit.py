@@ -37,6 +37,8 @@ def fixture_repo(tmp_path):
         dest = repo / relative
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / relative, dest)
+    shutil.copytree(ROOT / 'hermes_platform', repo / 'hermes_platform',
+                    ignore=shutil.ignore_patterns('__pycache__'))
     driver = tmp_path / 'drive.py'
     driver.write_text('''import json, os, pathlib, runpy, subprocess, sys
 root = pathlib.Path(sys.argv[1])

@@ -12,7 +12,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-import hermes_yaml as yaml
+from hermes_platform import yaml
 import pytest
 
 pytestmark = pytest.mark.platforms("linux")

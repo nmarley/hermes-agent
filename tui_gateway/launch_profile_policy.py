@@ -109,7 +109,7 @@ def activate_multi_profile_hosting_eagerly() -> bool:
     # Route each home's records to its own logs/ now: the Desktop cron ticker used to be the only
     # caller, and it stands down when a live gateway owns cron, leaving every secondary profile's
     # model/cwd lines in the launch profile's agent.log.
-    from hermes_logging import enable_profile_log_routing
+    from hermes_platform.logging import enable_profile_log_routing
     enable_profile_log_routing(sorted(homes))
     return True
 

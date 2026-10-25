@@ -11,7 +11,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 
 def _write_config(tmp_path, config):

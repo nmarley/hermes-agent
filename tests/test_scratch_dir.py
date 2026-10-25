@@ -304,7 +304,7 @@ def test_prune_records_removals_and_kills_in_scratch_prune_log(tmp_path: Path) -
             real_rmtree(path, *args, **kwargs)
 
     try:
-        with patch("hermes_constants_scratch.shutil.rmtree", rmtree):
+        with patch("hermes_platform.scratch.shutil.rmtree", rmtree):
             assert prune_scratch_dir(scratch) == 1
         assert worker.wait(timeout=10) is not None
     finally:
@@ -353,7 +353,7 @@ def test_prune_log_keeps_record_when_another_prune_rotated_first(
     """Two prunes of one home can both reach rollover: the other one renames
     ``scratch-prune.log`` between this one's existence check and its rename. The rotation is
     already done, so the record goes to the new file instead of being dropped."""
-    import hermes_constants_scratch
+    import hermes_platform.scratch as hermes_constants_scratch
 
     scratch = get_scratch_dir(tmp_path, prune=False)
     entry = scratch / "idle-lane"
@@ -423,7 +423,7 @@ def test_write_during_size_walk_is_rescued(tmp_path: Path) -> None:
     A writer overwrites an old file while the prune is sizing the doomed entry; the
     re-check must still see it. Red when the size walk runs after the re-check: the
     entry is destroyed with the fresh write inside."""
-    import hermes_constants_scratch as scratch_mod
+    import hermes_platform.scratch as scratch_mod
 
     scratch = get_scratch_dir(tmp_path, prune=False)
     entry = scratch / "sized-lane"
@@ -439,7 +439,7 @@ def test_write_during_size_walk_is_rescued(tmp_path: Path) -> None:
         payload.write_text("FRESH", encoding="utf-8")
         return real_tree_bytes(path)
 
-    with patch("hermes_constants_scratch._tree_bytes", write_during_size_walk):
+    with patch("hermes_platform.scratch._tree_bytes", write_during_size_walk):
         assert prune_scratch_dir(scratch) == 0
     assert payload.read_text(encoding="utf-8-sig") == "FRESH", "write during size walk was destroyed"
     log = (tmp_path / "logs" / "scratch-prune.log").read_text(encoding="utf-8-sig")
@@ -467,7 +467,7 @@ def test_midprune_resumed_write_is_rescued(tmp_path: Path) -> None:
         fresh.write_text("FRESH RESUMED WORK\n", encoding="utf-8")
         return 0
 
-    with patch("hermes_constants_scratch.reap_processes_rooted_in", write_during_reap):
+    with patch("hermes_platform.scratch.reap_processes_rooted_in", write_during_reap):
         assert prune_scratch_dir(scratch) == 0  # rescued — not counted as removed
     assert fresh.exists(), "fresh mid-prune write was destroyed"
     assert entry.exists()
@@ -501,7 +501,7 @@ def test_midprune_nested_overwrite_is_rescued_by_descending_recheck(tmp_path: Pa
         payload.write_text("FRESH OVERWRITE, DEEP\n", encoding="utf-8")
         return 0
 
-    with patch("hermes_constants_scratch.reap_processes_rooted_in", overwrite_during_reap):
+    with patch("hermes_platform.scratch.reap_processes_rooted_in", overwrite_during_reap):
         assert prune_scratch_dir(scratch) == 0  # rescued — not counted as removed
     assert payload.read_text(encoding="utf-8-sig") == "FRESH OVERWRITE, DEEP\n", (
         "deep mid-prune overwrite was destroyed"
@@ -530,7 +530,7 @@ def test_midprune_vanished_entry_is_recorded_not_counted(tmp_path: Path) -> None
         shutil.rmtree(entry)
         return 0
 
-    with patch("hermes_constants_scratch.reap_processes_rooted_in", remove_during_reap):
+    with patch("hermes_platform.scratch.reap_processes_rooted_in", remove_during_reap):
         assert prune_scratch_dir(scratch) == 0  # gone, but not by our hand
     assert not entry.exists()
     log = (tmp_path / "logs" / "scratch-prune.log").read_text(encoding="utf-8-sig")
@@ -571,9 +571,9 @@ def test_postremoval_unreadable_entry_is_not_counted_as_removed(tmp_path: Path) 
             raise PermissionError("post-rmtree visibility denied")
         return real_lstat(path, *args, **kwargs)
 
-    with patch("hermes_constants_scratch.reap_processes_rooted_in", lambda *a, **k: 0), \
-         patch("hermes_constants_scratch.shutil.rmtree", rmtree_leaves_residue), \
-         patch("hermes_constants_scratch.os.lstat", lstat):
+    with patch("hermes_platform.scratch.reap_processes_rooted_in", lambda *a, **k: 0), \
+         patch("hermes_platform.scratch.shutil.rmtree", rmtree_leaves_residue), \
+         patch("hermes_platform.scratch.os.lstat", lstat):
         assert prune_scratch_dir(scratch) == 0  # unknown, not removed
     assert entry.exists() and payload.read_text(encoding="utf-8-sig") == "still here"
     log = log_file.read_text(encoding="utf-8-sig")

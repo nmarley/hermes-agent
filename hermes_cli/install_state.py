@@ -477,7 +477,7 @@ def _read_mapping(path: Path, parse: Callable[[str], Any]) -> dict[str, Any]:
 
 
 def _parse_yaml(text: str) -> Any:
-    import hermes_yaml
+    import hermes_platform.yaml as hermes_yaml  # health: allow LATE_IMPORT -- lazy YAML import keeps ruamel optional
 
     try:
         return hermes_yaml.safe_load(text)

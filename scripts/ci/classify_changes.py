@@ -358,7 +358,7 @@ _UPDATE_DEPENDENCIES = (
     "hermes_cli/steward.py",
     "hermes_cli/observability/shared_metrics_update.py",
     "hermes_cli/main_install_repair.py",
-    "hermes_logging.py",
+    "hermes_platform.logging.py",
     "hermes_platform/host/__init__.py",
     "hermes_platform/host/facts.py",
     "hermes_platform/resolver/__init__.py",  # update_cmd_commit's interpreter lookup

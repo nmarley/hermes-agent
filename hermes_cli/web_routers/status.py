@@ -853,7 +853,7 @@ async def get_logs(
         return {"file": file, "lines": []}
 
     try:
-        from hermes_logging import COMPONENT_PREFIXES
+        from hermes_platform.logging import COMPONENT_PREFIXES
     except ImportError:
         COMPONENT_PREFIXES = {}
     # "ALL"/"all"/empty → no filter (None, not (): _matches_filters treats an empty tuple as

@@ -321,7 +321,7 @@ def _yaml():
     """Shared YAML helpers or None (not a hard requirement for proxy discovery)."""
 
     try:
-        import hermes_yaml as yaml
+        from hermes_platform import yaml
         return yaml
     except ImportError:
         return None

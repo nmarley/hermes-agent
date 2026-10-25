@@ -20,7 +20,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 # Ensure the repo root is importable when running via `pytest tests/...`.
 _REPO_ROOT = Path(__file__).resolve().parent.parent

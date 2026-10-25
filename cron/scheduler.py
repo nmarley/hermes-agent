@@ -44,7 +44,7 @@ from hermes_cli._subprocess_compat import windows_hide_flags
 from hermes_cli.config import (
     load_config, load_config_readonly)
 from hermes_cli.fallback_config import get_fallback_chain, scoped_fallback_chain
-from hermes_time import now as _hermes_now, safe_strftime
+from hermes_platform.time import now as _hermes_now, safe_strftime
 from agent.interrupt_compat import request_hard_interrupt
 from agent.delegation_context import (
     enter_non_dispatcher_owned_context, exit_non_dispatcher_owned_context)
@@ -4421,7 +4421,7 @@ if __name__ == "__main__":
         # log handler every adoption/ack failure below would otherwise be
         # invisible to the persistent log.
         try:
-            from hermes_logging import setup_logging
+            from hermes_platform.logging import setup_logging
 
             setup_logging(hermes_home=_get_hermes_home(), mode="cron")
         except Exception:

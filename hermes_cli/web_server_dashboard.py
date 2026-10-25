@@ -10,7 +10,7 @@ import sys
 import threading
 import time
 from contextlib import contextmanager
-import hermes_yaml as yaml
+from hermes_platform import yaml
 from fastapi import Depends, FastAPI, HTTPException, Request, WebSocketException
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles

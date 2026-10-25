@@ -17,7 +17,7 @@ import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import hermes_logging
+import hermes_platform.logging as hermes_logging
 from hermes_state import SessionDB
 
 

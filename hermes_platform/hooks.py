@@ -1,0 +1,56 @@
+"""Surface callbacks the host platform layer cannot import directly."""
+
+from typing import Any, Callable, Optional, Protocol
+
+
+class PlatformHooks(Protocol):
+    def windows_hide_flags(self) -> int: ...
+
+    def installed_package(self, name: str) -> Any: ...
+
+    def env_for(self, spec: str, base_env: Any = None) -> Any: ...
+
+    def venv_bin_dir(self, venv_dir: Any, *, windows: Optional[bool] = None) -> Any: ...
+
+    def site_packages(self, venv_dir: Any) -> Any: ...
+
+    def venv_python(self, venv_dir: Any, *, windows: Optional[bool] = None) -> Any: ...
+
+    def retry_backoff(self, attempt: int, *, base_delay: float, max_delay: float) -> float: ...
+
+    def split_key_path(self, key_path: str) -> list: ...
+
+    def greedy_literal_match(self, mapping: dict, keys: list) -> Any: ...
+
+    def require_readable_config_before_write(self, path: Any) -> Any: ...
+
+    def redact_sensitive_text(self, text: str) -> str: ...
+
+    def redacting_formatter(self) -> type: ...
+
+    def is_managed(self) -> bool: ...
+
+    def load_user_config_effective(self, path: Any) -> Any: ...
+
+    def is_multiplex_active(self) -> bool: ...
+
+    def spawner_is_dead(self, entry: Any) -> Optional[bool]: ...
+
+    def process_start_time(self, pid: int) -> Any: ...
+
+
+_provider: Optional[Callable[[], PlatformHooks]] = None
+
+
+def set_platform_hooks_provider(provider: Optional[Callable[[], PlatformHooks]]) -> None:
+    global _provider
+    _provider = provider
+
+
+def platform_hooks() -> PlatformHooks:
+    global _provider
+    if _provider is None:
+        import hermes_state  # health: allow LATE_IMPORT -- self-bootstrap for direct platform imports
+    if _provider is None:
+        raise RuntimeError("platform hooks are not installed")
+    return _provider()

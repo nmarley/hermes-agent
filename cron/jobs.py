@@ -38,8 +38,8 @@ from typing import Optional, Dict, List, Any, Callable, Set, Tuple, Union, Colle
 
 logger = logging.getLogger(__name__)
 
-from hermes_time import now as _hermes_now
-from hermes_time import get_timezone
+from hermes_platform.time import now as _hermes_now
+from hermes_platform.time import get_timezone
 from hermes_cli.observability.shared_metrics_gateway import record_cron_missed
 from utils import atomic_replace, atomic_write_text, fsync_directory, mkstemp_beside
 

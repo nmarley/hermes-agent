@@ -27,7 +27,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 from tests.fakes.fake_llm_provider import Error, FakeLLMServer, Text
 

@@ -25,7 +25,7 @@ resolved result.
 
 import types
 
-import hermes_yaml as yaml
+from hermes_platform import yaml
 import pytest
 
 from gateway.config import Platform

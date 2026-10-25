@@ -14,7 +14,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 from hermes_constants import get_hermes_home
 from utils import atomic_write_text

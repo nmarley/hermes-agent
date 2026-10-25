@@ -14,7 +14,7 @@ import pytest
 
 import hermes_cli.web_routers.cron as cron_routes
 import hermes_cli.web_routers.sessions as session_routes
-import hermes_time
+import hermes_platform.time as hermes_time
 from cron import executions, jobs
 from hermes_store.runtime.transactions import claim_session_input, settle_session_input
 from tests.fakes.cron_owner import admit_fire, cron_owner

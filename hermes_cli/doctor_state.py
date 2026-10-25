@@ -262,7 +262,7 @@ def _check_scratch_dir(hermes_home: Path, _DHH: str) -> None:
     scratch = get_scratch_dir(hermes_home, prune=False)
     size = _human_bytes(scratch_dir_usage_bytes(scratch))
     check_ok(f"{_DHH}/cache/scratch/ is the scratch dir (TMPDIR; {size}, entries pruned after {SCRATCH_MAX_IDLE_HOURS}h idle)")
-    from hermes_constants_scratch_stuck import removal_hint, stuck_entries
+    from hermes_platform.scratch_stuck import removal_hint, stuck_entries
     for entry in stuck_entries(scratch):
         check_warn(f"{_DHH}/cache/scratch/{entry.name}/ holds files you may not delete, so the prune skips it — {removal_hint(entry)}")
     for name, nbytes in unpruned_cache_hogs(hermes_home):

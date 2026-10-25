@@ -22,7 +22,7 @@ closure the PR changed, against a real temp ``HERMES_HOME``.
 import asyncio
 import types
 
-import hermes_yaml as yaml
+from hermes_platform import yaml
 import pytest
 
 from gateway.config import Platform

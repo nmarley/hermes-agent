@@ -265,7 +265,7 @@ def _config_default_interface_early() -> str:
     value = "cli"
     try:
         if os.path.exists(cfg_path):
-            import hermes_yaml as _yaml_iface
+            import hermes_platform.yaml as _yaml_iface  # health: allow LATE_IMPORT -- lazy YAML import keeps ruamel optional
 
             with open(cfg_path, encoding="utf-8-sig") as _f:
                 raw = _yaml_iface.safe_load(_f) or {}
@@ -746,7 +746,7 @@ except Exception:
 # Centralized file logging for every subcommand (agent.log + errors.log).
 # Dashboard entrypoints use GUI mode so gui.log captures pre-dispatch failures.
 try:
-    from hermes_logging import setup_logging as _setup_logging
+    from hermes_platform.logging import setup_logging as _setup_logging
 
     _setup_logging(
         mode=(
@@ -2584,7 +2584,7 @@ def _dashboard_prepare_runtime(args, headless_backend) -> bool:
     # Attach gui.log early so dashboard startup/build failures are captured in
     # the same logs directory as every other Hermes surface.
     try:
-        from hermes_logging import setup_logging as _setup_logging_gui
+        from hermes_platform.logging import setup_logging as _setup_logging_gui
         _setup_logging_gui(mode="gui")
     except Exception:
         pass

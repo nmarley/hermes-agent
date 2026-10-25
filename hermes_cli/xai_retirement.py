@@ -138,7 +138,7 @@ def apply_migration(
     if not issues:
         return unchanged
 
-    from hermes_yaml import ROUNDTRIP_YAML_WIDTH
+    from hermes_platform.yaml import ROUNDTRIP_YAML_WIDTH  # health: allow LATE_IMPORT -- lazy YAML import keeps ruamel optional
     yaml = YAML(typ="rt")
     yaml.width = ROUNDTRIP_YAML_WIDTH
     yaml.preserve_quotes = True

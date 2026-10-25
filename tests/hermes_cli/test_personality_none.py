@@ -7,7 +7,7 @@ persistence flows exclusively through persist_personality().
 import os
 import pytest
 from unittest.mock import MagicMock, patch
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 # ── CLI tests ──────────────────────────────────────────────────────────────
 

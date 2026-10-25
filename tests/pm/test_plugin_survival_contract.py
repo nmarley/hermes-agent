@@ -33,7 +33,7 @@ import sys
 from pathlib import Path
 
 import pytest
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 import pm.workspace as ws
 from pm.plugin_inputs import Members

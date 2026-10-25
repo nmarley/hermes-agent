@@ -23,7 +23,7 @@ from agent.agent_runtime_helpers import (
     repair_empty_non_final_messages,
 )
 from agent.agent_runtime_helpers_placeholders import _INTERRUPTED_PLACEHOLDER
-from hermes_logging import clear_session_context, set_session_context
+from hermes_platform.logging import clear_session_context, set_session_context
 
 
 @pytest.fixture(autouse=True)

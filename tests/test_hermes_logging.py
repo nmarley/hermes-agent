@@ -11,14 +11,14 @@ from unittest.mock import patch
 
 import pytest
 
-import hermes_logging
+import hermes_platform.logging as hermes_logging
 # Use whatever RotatingFileHandler class hermes_logging actually resolved so
 # the autouse fixture's isinstance checks (which strip rotating handlers
 # between tests) match the real handlers on every platform. hermes_logging
 # aliases concurrent-log-handler's ConcurrentRotatingFileHandler on Windows
 # (the #44873 fix) but keeps stdlib RotatingFileHandler on POSIX, so importing
 # the name from the module under test keeps the two in lockstep.
-from hermes_logging import RotatingFileHandler
+from hermes_platform.logging import RotatingFileHandler
 
 
 @pytest.fixture(autouse=True)
@@ -454,7 +454,7 @@ class TestSetupLogging:
 
     def test_explicit_params_override_config(self, hermes_home):
         """Explicit function params take precedence over config.yaml."""
-        import hermes_yaml as yaml
+        from hermes_platform import yaml
         config = {"logging": {"level": "DEBUG"}}
         (hermes_home / "config.yaml").write_text(yaml.safe_dump(config))
 
@@ -600,7 +600,7 @@ class TestWindowsConcurrentLogLockTimeout:
                 captured_warnings.append(record)
 
         listener = _Capture()
-        logging.getLogger("hermes_logging").addHandler(listener)
+        logging.getLogger("hermes_platform.logging").addHandler(listener)
         monkeypatch = pytest.MonkeyPatch()
         monkeypatch.setattr(hermes_logging, "_windows_lock_timeout_warned", False)
         try:
@@ -621,7 +621,7 @@ class TestWindowsConcurrentLogLockTimeout:
             assert "concurrent-log-handler" in captured_warnings[0].getMessage()
         finally:
             monkeypatch.undo()
-            logging.getLogger("hermes_logging").removeHandler(listener)
+            logging.getLogger("hermes_platform.logging").removeHandler(listener)
             logger.removeHandler(handler)
             handler.close()
 
@@ -634,7 +634,7 @@ class TestWindowsConcurrentLogLockTimeout:
         monkeypatch = pytest.MonkeyPatch()
         monkeypatch.setattr(hermes_logging, "_windows_lock_timeout_warned", False)
         try:
-            with caplog.at_level(logging.WARNING, logger="hermes_logging"):
+            with caplog.at_level(logging.WARNING, logger="hermes_platform.logging"):
                 hermes_logging._warn_windows_lock_timeout_once()
                 hermes_logging._warn_windows_lock_timeout_once()
         finally:
@@ -726,7 +726,7 @@ class TestReadLoggingConfig:
         assert backup is None
 
     def test_reads_logging_section(self, hermes_home):
-        import hermes_yaml as yaml
+        from hermes_platform import yaml
         config = {"logging": {"level": "DEBUG", "max_size_mb": 10, "backup_count": 5}}
         (hermes_home / "config.yaml").write_text(yaml.safe_dump(config), encoding="utf-8")
 

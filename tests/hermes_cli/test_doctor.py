@@ -344,7 +344,7 @@ class TestDoctorMemoryProviderSection:
         """Create a minimal HERMES_HOME with config.yaml."""
         home = tmp_path / ".hermes"
         home.mkdir(parents=True, exist_ok=True)
-        import hermes_yaml as yaml
+        from hermes_platform import yaml
         config = dict(memory_config or {})
         if provider:
             config["provider"] = provider
@@ -452,7 +452,7 @@ def test_run_doctor_accepts_named_provider_from_providers_section(monkeypatch, t
     home = tmp_path / ".hermes"
     home.mkdir(parents=True, exist_ok=True)
 
-    import hermes_yaml as yaml
+    from hermes_platform import yaml
 
     (home / "config.yaml").write_text(
         yaml.safe_dump(
@@ -1526,7 +1526,7 @@ def test_docker_daemon_probe_uses_version_not_info(monkeypatch):
 def test_doctor_reports_auxiliary_blocks_that_do_not_resolve(tmp_path, monkeypatch):
     """A routed auxiliary.<task> block that the runtime resolver rejects is a doctor finding, not a
     silent fall-back to the main model (#116055); a resolvable one is not flagged."""
-    import hermes_yaml as yaml
+    from hermes_platform import yaml
     from hermes_cli import doctor_config
 
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test")

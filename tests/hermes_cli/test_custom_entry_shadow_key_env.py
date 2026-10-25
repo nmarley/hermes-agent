@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 
-import hermes_yaml as yaml
+from hermes_platform import yaml
 import pytest
 
 ENDPOINT = "http://127.0.0.1:18080/v1"

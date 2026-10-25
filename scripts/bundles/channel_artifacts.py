@@ -15,7 +15,7 @@ ALL_TARGETS = tuple((platform, arch) for platform in ("macos", "windows") for ar
 
 def _leg_sha512(root: Path, files: dict, arch: str) -> dict[str, str]:
     """sha512 per artifact from the receipt-bound per-arch electron feed (``<arch>-*-mac.yml``)."""
-    import hermes_yaml as yaml
+    from hermes_platform import yaml
 
     leg = single(name for name in files if name.startswith(f"{arch}-") and name.endswith("-mac.yml"))
     if not (root / leg).is_file():

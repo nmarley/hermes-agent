@@ -19,7 +19,7 @@ import types
 from typing import Any, Dict, List
 
 import pytest
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 
 @pytest.fixture(autouse=True)

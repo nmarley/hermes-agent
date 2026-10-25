@@ -8,7 +8,7 @@ import pytest
 
 import hermes_state  # installs store hooks for direct store imports
 import hermes_store.schema.wal
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 
 def _write_config(monkeypatch: pytest.MonkeyPatch, tmp_path, config: object) -> None:

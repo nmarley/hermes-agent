@@ -4,7 +4,7 @@ from queue import SimpleQueue
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-import hermes_yaml as yaml
+from hermes_platform import yaml
 
 import hermes_cli.plugins as plugins_mod
 from agent import secret_scope

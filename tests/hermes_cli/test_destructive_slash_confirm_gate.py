@@ -28,7 +28,7 @@ class TestUserConfigMerge:
     user didn't override)."""
 
     def test_existing_user_config_without_key_gets_default(self, tmp_path, monkeypatch):
-        import hermes_yaml as yaml
+        from hermes_platform import yaml
 
         home = tmp_path / ".hermes"
         home.mkdir()

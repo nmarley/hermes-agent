@@ -98,7 +98,7 @@ def test_browser_manage_use_swaps_the_profiles_browser_tools_for_new_agents(monk
     from hermes_constants import get_hermes_home
     from tools import browser_use_cli
     import model_tools
-    import hermes_yaml as yaml
+    from hermes_platform import yaml
 
     monkeypatch.setattr(browser_use_cli, "_find_cli", lambda: ["browser-harness"])
     manage = lambda **p: server.handle_request({"id": "1", "method": "browser.manage", "params": p})["result"]

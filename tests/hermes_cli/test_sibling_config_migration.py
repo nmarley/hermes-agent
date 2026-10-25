@@ -10,7 +10,7 @@ These tests use REAL config files on disk and the REAL migration pipeline —
 only the profile-root location is pointed at tmp_path.
 """
 
-import hermes_yaml as yaml
+from hermes_platform import yaml
 from pathlib import Path
 
 from hermes_cli import update_cmd

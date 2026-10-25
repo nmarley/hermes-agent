@@ -208,7 +208,7 @@ def tail_log(
 
     component_prefixes = None
     if component:
-        from hermes_logging import COMPONENT_PREFIXES
+        from hermes_platform.logging import COMPONENT_PREFIXES
         component_lower = component.lower()
         if component_lower not in COMPONENT_PREFIXES:
             available = ", ".join(sorted(COMPONENT_PREFIXES))
