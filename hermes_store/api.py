@@ -317,6 +317,36 @@ def runtime_hooks() -> RuntimeHooks:
     return _runtime_hooks_provider()
 
 
+class MediaHooks(Protocol):
+    """Ingress-media and spillover helpers the media cluster cannot import."""
+
+    def admission_media_references(self, payload: Any) -> list: ...
+
+    def hosted_document_references(self, request_id: str, payload: Any) -> list: ...
+
+    def release_unheld_media(self, db: Any, references: list) -> Any: ...
+
+    def spillover_sql_filter(self) -> str: ...
+
+    def spillover_names_in_text(self, content: Any, api_content: Any) -> list: ...
+
+    def referenced_spillover_names(self, spill_dir: Any) -> Any: ...
+
+
+_media_hooks_provider: Optional[Callable[[], MediaHooks]] = None
+
+
+def set_media_hooks_provider(provider: Optional[Callable[[], MediaHooks]]) -> None:
+    global _media_hooks_provider
+    _media_hooks_provider = provider
+
+
+def media_hooks() -> MediaHooks:
+    if _media_hooks_provider is None:
+        raise RuntimeError("media hooks are not installed; import hermes_state first")
+    return _media_hooks_provider()
+
+
 # Import-time snapshot lets _default_db_path() detect a re-pointed DEFAULT_DB_PATH
 # (tests monkeypatch the constant directly).
 DEFAULT_DB_PATH = _IMPORT_DEFAULT_DB_PATH = get_hermes_home() / "state.db"

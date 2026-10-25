@@ -2,7 +2,7 @@
 import json
 import time
 from hermes_state_local import POLICY_PREFIX, retire_local_receipts
-from hermes_state_media import retire_media, retire_spillover
+from hermes_store.media.retirement import retire_media, retire_spillover
 from hermes_state_runtime import RuntimeStoreError, admission_fingerprint, mutation_receipt_key, _json, _text
 import hermes_state_terminal as _terminal
 

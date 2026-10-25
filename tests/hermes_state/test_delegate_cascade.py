@@ -11,6 +11,7 @@ the deletion set, permanently deleting the parent session and its messages.
 import json
 import sqlite3
 
+import hermes_state  # installs the store hooks used by session deletion
 from hermes_state_schema import reconcile_state_schema
 from hermes_state_sessions import _collect_delegate_child_ids, _delete_delegate_children
 
