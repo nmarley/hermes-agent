@@ -9,7 +9,7 @@ from contextlib import closing
 
 import pytest
 
-import hermes_state_runtime as rt
+import hermes_store.runtime.transactions as rt
 from hermes_state import SessionDB
 from hermes_store.errors import classify_persistence_error
 

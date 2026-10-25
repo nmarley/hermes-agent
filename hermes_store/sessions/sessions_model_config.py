@@ -1,5 +1,5 @@
 """Conversation-wide ``sessions.model_config`` keys: read-modify-write at the compression tip and the
-key scan. Bodies of :class:`hermes_state_sessions.SessionSessionsMixin`'s two methods of the same names."""
+key scan. Bodies of :class:`hermes_store.sessions.sessions.SessionSessionsMixin`'s two methods of the same names."""
 
 from __future__ import annotations
 

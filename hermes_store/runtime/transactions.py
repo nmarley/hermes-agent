@@ -12,7 +12,7 @@ from hermes_store.runtime.errors import RuntimeStoreError
 from hermes_store.runtime.primitives import (
     _epoch, _json, _row, _secret_digest, _text, admission_fingerprint,
 )
-from hermes_state_usage import _MODEL_USAGE_FIELDS, _TOKEN_COUNTERS
+from hermes_store.sessions.usage import _MODEL_USAGE_FIELDS, _TOKEN_COUNTERS
 from hermes_store.adapters.terminal import (
     RESULT_PREFIX, compact_result, encode_result, retry_terminal_admission, terminal_admission,
 )

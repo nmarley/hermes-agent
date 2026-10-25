@@ -16,6 +16,7 @@ Covers the three ownership invariants the PR review demanded:
    WAL, drains the read pool — none of which may stall acquisition for
    every state.db in the process).
 """
+import hermes_state  # installs store hooks for direct store imports
 
 import os
 import shutil
@@ -25,7 +26,7 @@ from pathlib import Path
 
 import pytest
 
-import hermes_state_registry as registry
+from hermes_store.schema import registry
 
 
 @pytest.fixture(autouse=True)

@@ -14,8 +14,8 @@ from unittest import mock
 import pytest
 
 import hermes_state
-import hermes_state_wal
-import hermes_state_schema
+import hermes_store.schema.wal
+import hermes_store.schema.schema
 from agent.session_activity import ActivityProvenance, build_activity_snapshot
 from hermes_state import SessionDB
 from hermes_store.search import FTS_SQL, FTS_STORAGE_VERSION
@@ -179,7 +179,7 @@ class TestConnectionLifecycle:
         import subprocess
         import sys
 
-        from hermes_state_dbfile import iter_deleted_sqlite_sidecar_holders
+        from hermes_store.schema.dbfile import iter_deleted_sqlite_sidecar_holders
 
         db_path = tmp_path / "state.db"
         first = SessionDB(db_path=db_path)
@@ -1815,7 +1815,7 @@ class TestSessionTitleIndexRepair:
                 [(*row, sid) for sid, row in seed.items()],
             )
         if broken_rename:
-            monkeypatch.setattr(hermes_state_schema, "next_title_in_lineage", lambda conn, title: title)
+            monkeypatch.setattr(hermes_store.schema.schema, "next_title_in_lineage", lambda conn, title: title)
         reopened = SessionDB(db_path=db_path)
         try:
             titles = dict(reopened._conn.execute("SELECT id, title FROM sessions").fetchall())
@@ -1930,7 +1930,7 @@ class TestSanitizeTitle:
 class TestSchemaInit:
     def test_wal_mode(self, db):
         """Prefer WAL on fixed SQLite; DELETE on WAL-reset-vulnerable builds (#69784)."""
-        from hermes_state_wal import is_sqlite_wal_reset_vulnerable
+        from hermes_store.schema.wal import is_sqlite_wal_reset_vulnerable
 
         cursor = db._conn.execute("PRAGMA journal_mode")
         mode = cursor.fetchone()[0].lower()
@@ -2403,7 +2403,7 @@ class TestFtsRebuildLoopWithoutTrigram:
         otherwise silently reintroduce an unsatisfiable check.
         """
         from hermes_store.search import FTS_SQL, FTS_TRIGRAM_SQL, LEGACY_FTS_SQL, LEGACY_FTS_TRIGRAM_SQL, _FTS_TRIGGERS
-        from hermes_state_schema import _FTS_BASE_TRIGGERS, _FTS_TRIGRAM_TRIGGERS
+        from hermes_store.schema.schema import _FTS_BASE_TRIGGERS, _FTS_TRIGRAM_TRIGGERS
 
         # Exhaustive and disjoint: nothing may fall out of the classification.
         assert set(_FTS_BASE_TRIGGERS) | set(_FTS_TRIGRAM_TRIGGERS) == set(_FTS_TRIGGERS)
@@ -3317,7 +3317,7 @@ class TestCompressionChainProjection:
         ``_COMPRESSION_LINEAGE_CTE``. Resuming a reset fork of a compression-ended parent must
         re-key only the fork: the CTE has to stop at the reset child exactly like
         ``get_compression_lineage`` does, or the real lineage's ancestors land on the fork's peer."""
-        import hermes_state_gateway as gateway_mod
+        import hermes_store.adapters.gateway as gateway_mod
 
         t0 = time.time() - 3600
         db.create_session("root", "cli")
@@ -4855,14 +4855,14 @@ class TestApplyWalProbe:
         """These cases cover the fixed-SQLite WAL path (not the #69784 gate)."""
 
         monkeypatch.setattr(
-            hermes_state_wal, "is_sqlite_wal_reset_vulnerable", lambda version_info=None: False
+            hermes_store.schema.wal, "is_sqlite_wal_reset_vulnerable", lambda version_info=None: False
         )
 
 
     def test_sets_wal_on_fresh_connection(self, tmp_path):
         """Probe sees 'delete', then set-pragma runs and returns 'wal'."""
         import sqlite3
-        from hermes_state_wal import apply_wal_with_fallback
+        from hermes_store.schema.wal import apply_wal_with_fallback
 
         class _TracingConn(sqlite3.Connection):
             def __init__(self, *a, **kw):
@@ -4895,7 +4895,7 @@ class TestApplyWalProbe:
         import sys
         import threading
         import sqlite3
-        from hermes_state_wal import apply_wal_with_fallback
+        from hermes_store.schema.wal import apply_wal_with_fallback
 
         db_path = tmp_path / "concurrent.db"
         errors = []
@@ -6340,7 +6340,7 @@ class TestPerformancePragmasEndToEnd:
         # path. Force WAL eligibility so _get_read_conn is truly exercised
         # (established pattern used by the WAL tests above).
         monkeypatch.setattr(
-            hermes_state_wal, "is_sqlite_wal_reset_vulnerable",
+            hermes_store.schema.wal, "is_sqlite_wal_reset_vulnerable",
             lambda version_info=None: False,
         )
         home = tmp_path / "hermes_home"
@@ -6427,7 +6427,7 @@ class TestFts5SanitizerCharacterClass:
 
     @staticmethod
     def _sanitize(query):
-        from hermes_state_search import SessionSearchMixin
+        from hermes_store.search.messages import SessionSearchMixin
 
         return SessionSearchMixin._sanitize_fts5_query(query)
 

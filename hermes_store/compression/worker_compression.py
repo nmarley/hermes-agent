@@ -8,12 +8,12 @@ from functools import partial
 import math
 import time
 
-from hermes_state_messages import SessionMessagesMixin
-from hermes_state_runtime import (
+from hermes_store.sessions.messages import SessionMessagesMixin
+from hermes_store.runtime.transactions import (
     HANDOFF_MESSAGE_FIELDS, RuntimeStoreError, _text, _worker_assignment, row_annotations,
 )
-from hermes_state_sessions import SessionSessionsMixin
-from hermes_state_worker_context import SIDECAR_KEYS, worker_context
+from hermes_store.sessions.sessions import SessionSessionsMixin
+from hermes_store.runtime.worker_context import SIDECAR_KEYS, worker_context
 from hermes_store.compression.session import SessionCompressionMixin, _claim_lease_row
 from hermes_store.sessions.model_config import parse_model_config
 

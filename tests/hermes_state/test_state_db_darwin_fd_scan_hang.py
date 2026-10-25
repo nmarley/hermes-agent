@@ -21,8 +21,8 @@ import struct
 import threading
 import time
 
-import hermes_state_dbfile as dbfile
-from hermes_state_dbfile import (
+from hermes_store.schema import dbfile
+from hermes_store.schema.dbfile import (
     _DARWIN_FD_INO_OFFSET,
     _DARWIN_FD_PATH_OFFSET,
     _DARWIN_FD_DEV_OFFSET,

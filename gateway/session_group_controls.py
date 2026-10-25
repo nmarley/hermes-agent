@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import weakref
 
-from hermes_state_runtime import RuntimeStoreError
+from hermes_store.runtime.transactions import RuntimeStoreError
 
 logger = logging.getLogger(__name__)
 
@@ -315,8 +315,8 @@ def _bot_sessions(authority, actor):
 
 
 def _read_bot_sessions(db, subject, operator):
-    from hermes_state_local_migration import LEGACY_PREFIX
-    from hermes_state_sessions import INTERNAL_LISTING_SOURCES
+    from hermes_store.repair.local_migration import LEGACY_PREFIX
+    from hermes_store.sessions.sessions import INTERNAL_LISTING_SOURCES
     hidden_sources = ','.join('?' * len(INTERNAL_LISTING_SOURCES))
     owner_filter, owner_params = ('', ()) if operator else ('user_id=? AND ', (subject,))
     # One read connection for the whole row. A store closed meanwhile (its profile unserved

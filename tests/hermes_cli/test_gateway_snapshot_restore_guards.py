@@ -1,3 +1,5 @@
+import hermes_state  # installs store hooks for direct store imports
+
 """CLI-16: the restore's own outcome decides the reply; a supervised owner or bad id never drains."""
 from types import SimpleNamespace
 

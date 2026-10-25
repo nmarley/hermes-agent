@@ -106,8 +106,8 @@ class SessionLifecycleMixin:
             return None
         import sqlite3
 
-        from hermes_state_local import local_receipt
-        from hermes_state_runtime import RuntimeStoreError
+        from hermes_store.sessions.local import local_receipt
+        from hermes_store.runtime.transactions import RuntimeStoreError
         try:
             receipt = local_receipt(db, str(origin.chat_id))
             if receipt.get("route") != entry.session_key:

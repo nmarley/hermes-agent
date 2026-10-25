@@ -808,7 +808,7 @@ async def get_session_timeline(
     ``next_cursor`` is a stable logical first-row id; pass it as ``after_row_id``.
     Entry ``row_id`` addresses the current representative for /messages/around.
     """
-    from hermes_state_timeline import get_session_timeline as read_timeline
+    from hermes_store.sessions.timeline import get_session_timeline as read_timeline
 
     owner = _serving_profile(profile)
 
@@ -826,7 +826,7 @@ async def get_session_messages_around(
     limit: int = Query(120, ge=1, le=120),
 ):
     """Bounded display page starting at a timeline prompt; no intervening payloads."""
-    from hermes_state_timeline import get_session_messages_around as read_around
+    from hermes_store.sessions.timeline import get_session_messages_around as read_around
 
     owner = _serving_profile(profile)
 

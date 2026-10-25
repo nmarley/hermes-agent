@@ -1,6 +1,6 @@
 """The ``api_content`` sidecar backfill writers for SessionDB (#124102 FILE_LINES split).
 
-Split out of :mod:`hermes_state_messages`: the two row-addressed sidecar UPDATEs the turn prologue
+Split out of :mod:`hermes_store.sessions.messages`: the two row-addressed sidecar UPDATEs the turn prologue
 uses when the current turn's user row was materialized before the sidecar could be composed. Bound
 into ``SessionDB`` via this mixin, so every existing ``session_db.set_message_api_content(...)``
 call site and test patch seam keeps working unchanged.

@@ -229,7 +229,7 @@ function summarizeErrorMessage(message: string, fallback: string) {
 }
 
 // The owner's refusal of an edit, restore or regenerate whose target is not a live user turn
-// (hermes_state_mutations._rewind): invalid_params on target_message_id. Its detail starts with
+// (hermes_store.mutations.actions._rewind): invalid_params on target_message_id. Its detail starts with
 // `compacted:` only when compaction summarized the turn; a turn another window already undid, an
 // assistant row or an unknown id is stale for another reason. Every other invalid_params keeps the
 // generic toast.

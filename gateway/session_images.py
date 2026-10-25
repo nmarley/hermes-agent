@@ -2,7 +2,7 @@
 import asyncio
 from pathlib import Path
 
-from hermes_state_runtime import RuntimeStoreError
+from hermes_store.runtime.transactions import RuntimeStoreError
 
 
 async def attach_bytes(connection, ref, params):

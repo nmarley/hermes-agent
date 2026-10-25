@@ -21,7 +21,7 @@ def _no_delegations():
 
 
 def _human(authority, ref, request_id, text):
-    from hermes_state_runtime import admit_session_input
+    from hermes_store.runtime.transactions import admit_session_input
     return admit_session_input(authority.db, epoch=authority.epoch, principal_id='test-owner',
                                session_id=ref.session_id, request_id=request_id, payload={'text': text})
 
@@ -278,7 +278,7 @@ async def test_completion_after_new_is_noted_on_the_closed_session(tmp_path, mon
     """The viewer closed the session (exit, /new): work finishing afterwards is a note on that original
     session, never dropped and never delivered into the session opened next."""
     from gateway.session_local import create_local_session
-    from hermes_state_local import end_idle_local_session
+    from hermes_store.sessions.local import end_idle_local_session
     runner, authority, ref, actor = await _local(tmp_path, monkeypatch)
     try:
         target = _target(runner, authority, ref)
@@ -325,7 +325,7 @@ async def test_compressed_then_closed_completion_is_noted_on_the_closed_tip(tmp_
     """Work started before compression stays pinned to the ancestor; the user then closed the compressed
     continuation (exit, /new). The result is a note on that closed tip, not the ancestor, not the replacement."""
     from gateway.session_local import create_local_session
-    from hermes_state_local import end_idle_local_session
+    from hermes_store.sessions.local import end_idle_local_session
     runner, authority, ref, actor = await _local(tmp_path, monkeypatch)
     try:
         ancestor = _target(runner, authority, ref)
@@ -360,7 +360,7 @@ async def test_compressed_then_closed_completion_is_noted_on_the_closed_tip(tmp_
 async def test_closed_tip_note_needs_the_route_to_name_it(tmp_path, monkeypatch):
     """Only the conversation's own continuation qualifies: a local route that names another session is
     never retargeted onto the closed lineage."""
-    from hermes_state_local import end_idle_local_session
+    from hermes_store.sessions.local import end_idle_local_session
     runner, authority, ref, _actor = await _local(tmp_path, monkeypatch)
     try:
         ancestor = _target(runner, authority, ref)

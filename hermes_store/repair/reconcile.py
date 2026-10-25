@@ -13,10 +13,10 @@ import threading
 from contextlib import closing
 from pathlib import Path
 
-from hermes_state_holders import (
+from hermes_store.schema.holders import (
     _looks_like_hermes, _read_proc_argv, describe_holder_pid, foreign_state_db_holders,
 )
-import hermes_state_schema as _schema
+import hermes_store.schema.schema as _schema
 from hermes_store.repair import repair as _repair
 from hermes_store.repair._hooks import hooks
 

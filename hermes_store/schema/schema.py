@@ -21,13 +21,14 @@ from hermes_constants import get_hermes_home
 from hermes_startup_watchdog import report_startup_progress
 from utils import safe_json_loads
 from hermes_store.schema import DEFERRED_INDEX_SQL, SCHEMA_SQL, SCHEMA_VERSION
+import hermes_constants
 from hermes_store.search import FTS_CJK_STALE_KEY, FTS_REBUILD_DEFERRAL_KEY, FTS_STALE_KEY, FTS_SQL, FTS_STORAGE_VERSION, FTS_TOOL_CONTENT_PREFIX_CHARS, FTS_TRIGRAM_SQL, LEGACY_FTS_SQL, LEGACY_FTS_TRIGRAM_SQL, _FTS_CJK_TRIGGERS, _FTS_TRIGGERS, fts_rebuild_admission
 from hermes_store.common.sessions import _ephemeral_child_sql
 from hermes_store.common.sql import _sql_json_extract
-from hermes_state_fts import (_drop_orphan_fts_shadow_tables, base_index_recognised, base_source_view_is_stale,
+from hermes_store.search.index import (_drop_orphan_fts_shadow_tables, base_index_recognised, base_source_view_is_stale,
                               fts_layout_current)
-from hermes_state_holders import _read_proc_argv
-from hermes_state_search import _delete_meta, _meta_row
+from hermes_store.schema.holders import _read_proc_argv
+from hermes_store.search.messages import _delete_meta, _meta_row
 from hermes_store.errors import is_sqlite_lock_error
 from hermes_store.sessions.titles import next_title_in_lineage
 
@@ -728,8 +729,7 @@ class SessionSchemaMixin:
         schema_hash = hashlib.sha256(schema_sql.encode("utf-8")).hexdigest()
         with contextlib.suppress(Exception):  # missing/corrupt cache → recompute below
             # Late import: resolves a test-patched hermes_constants.get_hermes_home.
-            from hermes_constants import get_hermes_home as _home
-            cache_path = _home() / "cache" / "schema_columns.json"
+            cache_path = hermes_constants.get_hermes_home() / "cache" / "schema_columns.json"
             blob = json.loads(cache_path.read_text(encoding="utf-8"))
             tables = blob.get("tables") if isinstance(blob, dict) and blob.get("schema_hash") == schema_hash else None
             if isinstance(tables, dict) and all(

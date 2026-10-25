@@ -12,7 +12,7 @@ from gateway.config import Platform
 from gateway.session_contract import CANONICAL_GATEWAY_PROTOCOL, Principal, SessionRef, Submission
 from gateway.session_llm_oneshot import DeferredReply
 from hermes_constants import profile_name_for_home
-from hermes_state_runtime import RuntimeStoreError
+from hermes_store.runtime.transactions import RuntimeStoreError
 
 logger = logging.getLogger(__name__)
 
@@ -437,7 +437,7 @@ class AuthorityConnection:
         from gateway.session_local_title import resolve_titled_session, title_new_session
         from gateway.session_policy import BYPASS_FIELDS
         from gateway.session_runtime_workers import tracked_write
-        from hermes_state_local import commit_local_session
+        from hermes_store.sessions.local import commit_local_session
         # Bot Mode's forever-chat mint: born hidden from the sidebar. `follow_profile_config` stays in
         # the frozen request: the policy re-reads the profile's current route every turn.
         hidden = params.pop('hidden', False)
@@ -476,7 +476,7 @@ class AuthorityConnection:
             # `--accept-hooks`: record this launch's consent; ``resume`` below registers the hooks.
             if params.get('accept_hooks') is True:
                 from gateway.session_policy import accept_launch_hooks, restore_policy
-                from hermes_state_local import local_receipt
+                from hermes_store.sessions.local import local_receipt
                 policy = restore_policy(local_receipt(self.authority.db, ref.session_id)['policy'])
                 await asyncio.to_thread(accept_launch_hooks, policy)
             if title:
@@ -541,7 +541,7 @@ class AuthorityConnection:
                                   'message_count': row.get('message_count', 0),
                                   'running': found.session_id in self.authority.sessions}],
                     'scope': 'stored'}
-        from hermes_state_sessions import INTERNAL_LISTING_SOURCES
+        from hermes_store.sessions.sessions import INTERNAL_LISTING_SOURCES
         from gateway.session_live_listing import live_entries
         sessions = []
         for entry in await live_entries(self.authority, self.actor):
@@ -580,7 +580,7 @@ class AuthorityConnection:
                     ref = SessionRef(ref.profile_id, resolved_id)
             from gateway.session_local_migration import resolve_local_target
             from gateway.session_policy_refresh import refresh_settled
-            from hermes_state_local_migration import LEGACY_LOCAL_SOURCES
+            from hermes_store.repair.local_migration import LEGACY_LOCAL_SOURCES
             # Another viewer's refresh mid-cleanup has committed a policy it has not published yet.
             await refresh_settled(self.authority, ref.session_id)
             row = self.authority.db.get_session(ref.session_id)
@@ -771,7 +771,7 @@ class AuthorityConnection:
 
     async def mutate(self, ref, params):
         from gateway.session_mutations import mutate_session
-        from hermes_state_mutation_guards import MUTATION_GUARD_REFUSALS, busy_refusal
+        from hermes_store.mutations.guards import MUTATION_GUARD_REFUSALS, busy_refusal
         try:
             result = await mutate_session(self.authority, self.actor, ref, params)
         except MUTATION_GUARD_REFUSALS as exc:

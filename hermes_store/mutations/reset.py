@@ -6,8 +6,8 @@ import time
 from hermes_store.keys import POLICY_PREFIX
 from hermes_store.repair.local_lineage import advance_local_target, validate_local_lineage
 from hermes_store.mutations.guards import require_target_advanceable
-from hermes_state_runtime import RuntimeStoreError
-from hermes_state_runtime_workers import discard_orphan_workers_on_reset, runtime_lineage
+from hermes_store.runtime.transactions import RuntimeStoreError
+from hermes_store.runtime.workers import discard_orphan_workers_on_reset, runtime_lineage
 
 
 def reset_in_transaction(db, conn, session_id, payload):

@@ -20,7 +20,7 @@ import logging
 import threading
 
 from gateway.session_busy_controls import authorize
-from hermes_state_runtime import RuntimeStoreError
+from hermes_store.runtime.transactions import RuntimeStoreError
 
 logger = logging.getLogger(__name__)
 

@@ -424,7 +424,7 @@ _E2E_LANES: dict[str, tuple[str, ...]] = {
         "hermes_cli/_update_",
         "hermes_cli/old_updater",
         # The downgrade refusal (hermes_cli/update_downgrade_guard.py) reads state.db through it.
-        "hermes_state_holders.py",
+        "hermes_store/schema/holders.py",
         # The search-index notice (hermes_cli/update_cmd_maint.py) reads the stored FTS layout through it.
         "hermes_store/search/index.py",
         "hermes_cli/_old_updater",

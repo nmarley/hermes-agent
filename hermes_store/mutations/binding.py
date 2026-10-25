@@ -1,7 +1,7 @@
 """Control-only ownership for unbound legacy history; never an execution policy."""
 import json
 from hermes_store.repair.local_migration import LEGACY_LOCAL_SOURCES, legacy_account_label
-from hermes_state_runtime import RuntimeStoreError
+from hermes_store.runtime.transactions import RuntimeStoreError
 
 BINDING_PREFIX = 'gateway.history_control.v1.'
 

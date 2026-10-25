@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from hermes_store.common.time import coerce_epoch
 from hermes_store.common.sql import _placeholders
-from hermes_state_messages import _parse_tool_calls
+from hermes_store.sessions.messages import _parse_tool_calls
 from hermes_store.common.compression import (
     ABSORBED_ROW_IDS, MERGED_DURABLE_ROWS, OWN_ROW, RETIRED_DURABLE_ROWS, RETIRED_ROW, UNNAMED_DURABLE_ROWS,
     _DB_PERSISTED_MARKER,

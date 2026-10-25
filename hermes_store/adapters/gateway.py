@@ -13,8 +13,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from hermes_store.common.sessions import _RECOVERABLE_END_REASONS_SQL, _RESET_CHILD_SQL, _RESET_END_REASONS_SQL, _sql_session_last_active
-from hermes_state_dbfile import _concrete_state_db_holder_pids, _is_inactive_orphan_desktop_holder
-from hermes_state_local import owned_lineage_ids
+from hermes_store.schema.dbfile import _concrete_state_db_holder_pids, _is_inactive_orphan_desktop_holder
+from hermes_store.sessions.local import owned_lineage_ids
 from hermes_store.common.sql import _sql_json_extract
 from hermes_store.mutations.retirement import ROUTE_RETIRED_SQL, fence_shared_routes, route_retired_params
 

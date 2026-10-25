@@ -825,7 +825,7 @@ def _workdir_owner_db(session: dict, fail_log: str):
     db, close_db = None, False
     if profile_home := session.get("profile_home"):
         try:
-            from hermes_state_registry import acquire
+            from hermes_store.schema.registry import acquire
             db, close_db = acquire(Path(profile_home) / "state.db"), True
         except Exception:
             logger.debug(fail_log, exc_info=True)
@@ -837,7 +837,7 @@ def _workdir_owner_db(session: dict, fail_log: str):
     finally:
         if close_db and db is not None:
             with contextlib.suppress(Exception):
-                from hermes_state_registry import release_or_close
+                from hermes_store.schema.registry import release_or_close
                 release_or_close(db)
 
 

@@ -5,7 +5,7 @@ from dataclasses import asdict, replace
 from typing import NamedTuple
 
 from gateway.session_route_identity import ROUTE_BOUND_KEYS
-from hermes_state_runtime import RuntimeStoreError
+from hermes_store.runtime.transactions import RuntimeStoreError
 
 
 class _Route(NamedTuple):

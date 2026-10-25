@@ -1,6 +1,6 @@
 """SQLite journal-mode and PRAGMA policy for state.db (split from hermes_state).
 
-Patchable helpers are looked up as module globals at call time, so tests patch ``hermes_state_wal.<name>``.
+Patchable helpers are looked up as module globals at call time, so tests patch ``hermes_store.schema.wal.<name>``.
 """
 
 from __future__ import annotations
@@ -15,8 +15,8 @@ import threading
 import time
 from typing import Any, Dict, Optional
 
-from hermes_cli.sqlite_runtime import is_sqlite_wal_reset_vulnerable as _is_sqlite_wal_reset_vulnerable
 from hermes_store.errors import is_sqlite_lock_error
+from hermes_store.schema.sqlite_version import is_sqlite_wal_reset_vulnerable as _is_sqlite_wal_reset_vulnerable
 
 # Log-record parity with the origin module (caplog tests pin "hermes_state").
 logger = logging.getLogger("hermes_state")
@@ -31,7 +31,7 @@ _WAL_INCOMPAT_MARKERS = ("locking protocol", "not authorized", "disk i/o error")
 _WAL_SIZE_LIMIT_BYTES = 64 * 1024 * 1024  # 64 MiB
 
 # Once-per-process-per-db_label dedup sets (kanban_db.connect() runs on every kanban operation, so an undeduped
-# line would repeat per connection). Tests clear these via ``hermes_state_wal.<name>``.
+# line would repeat per connection). Tests clear these via ``hermes_store.schema.wal.<name>``.
 _wal_fallback_warned_paths: set[str] = set()
 _wal_fallback_warned_lock = threading.Lock()
 
@@ -158,8 +158,8 @@ def resolve_journal_mode() -> str:
     """The configured ``database.journal_mode`` (``wal`` default; ``delete`` for filesystems without WAL-safe
     durability: macOS virtiofs, NFS, SMB). Invalid values fail safe to ``wal``."""
     try:
-        from hermes_cli.config import load_config_readonly
-        database = (load_config_readonly() or {}).get("database", {})
+        from hermes_store.api import storage_hooks
+        database = (storage_hooks().load_config_readonly() or {}).get("database", {})
         raw = database.get("journal_mode", "wal") if isinstance(database, dict) else "wal"
     except Exception:
         return "wal"
@@ -491,9 +491,10 @@ def _wal_reset_repair_hint() -> str:
     See #75153.
     """
     try:
-        from hermes_cli.config import detect_install_method, get_project_root, recommended_update_command_for_method
-        method = detect_install_method(get_project_root())
-        cmd = recommended_update_command_for_method(method)
+        from hermes_store.api import storage_hooks
+        h = storage_hooks()
+        method = h.detect_install_method(h.get_project_root())
+        cmd = h.recommended_update_command_for_method(method)
         if method in {"git", "unknown"}:
             return f"Hermes-managed installs can repair the embedded runtime with `{cmd}`"
         return f"update the container image with `{cmd}`" if method == "docker" else cmd  # else nix/nixos
@@ -650,12 +651,13 @@ def apply_database_pragmas(conn: sqlite3.Connection, *, db_label: str = "state.d
     between bundled/distro/Homebrew builds). Best-effort: failures are ignored so DB init never breaks on a
     malformed section. Applied to ALL connection types: writer, read_only, WAL readers."""
     try:
-        from hermes_cli.config import cfg_get, load_config_readonly  # local: avoids a circular import
-        cfg = load_config_readonly()
+        from hermes_store.api import storage_hooks
+        h = storage_hooks()
+        cfg = h.load_config_readonly()
     except Exception:
         return
     for pragma_name in ("cache_size", "mmap_size", "temp_store", "wal_autocheckpoint", "journal_size_limit"):
-        if (raw_value := cfg_get(cfg, "database", pragma_name, default=None)) is None:
+        if (raw_value := h.cfg_get(cfg, "database", pragma_name, default=None)) is None:
             continue
         try:
             value = int(str(raw_value).strip())
@@ -665,5 +667,5 @@ def apply_database_pragmas(conn: sqlite3.Connection, *, db_label: str = "state.d
         with contextlib.suppress(sqlite3.OperationalError):
             conn.execute(f"PRAGMA {pragma_name}={value}")
     # Last: sizing pragmas cannot change durability (see _apply_synchronous_pragma).
-    if (raw_synchronous := cfg_get(cfg, "database", "synchronous", default=None)) is not None:
+    if (raw_synchronous := h.cfg_get(cfg, "database", "synchronous", default=None)) is not None:
         _apply_synchronous_pragma(conn, raw_synchronous, db_label=db_label)

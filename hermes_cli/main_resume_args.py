@@ -30,8 +30,8 @@ def _frozen_cwd(db, session_id) -> str:
     row's cwd is main's stamp, which for a classic ``-w`` session is the repo root, not the tree."""
     import sqlite3
 
-    from hermes_state_local import local_receipt
-    from hermes_state_runtime import RuntimeStoreError
+    from hermes_store.sessions.local import local_receipt
+    from hermes_store.runtime.transactions import RuntimeStoreError
     try:
         return str(local_receipt(db, session_id)["policy"].get("cwd") or "").strip()
     except (RuntimeStoreError, KeyError, AttributeError, sqlite3.Error):  # no readable policy: use the row's cwd

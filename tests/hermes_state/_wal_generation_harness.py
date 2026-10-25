@@ -18,16 +18,16 @@ from pathlib import Path
 
 import pytest
 
-import hermes_state_wal
+import hermes_store.schema.wal
 from hermes_state import SessionDB
 
 
 def pin_wal(monkeypatch) -> None:
     """Pin WAL so this host's vulnerable SQLite still matches production topology."""
     monkeypatch.setattr(
-        hermes_state_wal, "is_sqlite_wal_reset_vulnerable", lambda version_info=None: False
+        hermes_store.schema.wal, "is_sqlite_wal_reset_vulnerable", lambda version_info=None: False
     )
-    monkeypatch.setattr(hermes_state_wal, "resolve_journal_mode", lambda: "wal")
+    monkeypatch.setattr(hermes_store.schema.wal, "resolve_journal_mode", lambda: "wal")
 
 
 def make_db(path: Path, session_id: str, content: str) -> SessionDB:
@@ -119,10 +119,11 @@ _GATEWAY_CHILD = textwrap.dedent(
     repo, hermes_home, db_path = sys.argv[1], sys.argv[2], sys.argv[3]
     sys.path.insert(0, repo)
     os.environ["HERMES_HOME"] = hermes_home
-    import hermes_state_wal
-    if hermes_state_wal.is_sqlite_wal_reset_vulnerable():
-        hermes_state_wal.is_sqlite_wal_reset_vulnerable = lambda version_info=None: False
-    hermes_state_wal.resolve_journal_mode = lambda: "wal"
+    import hermes_state  # installs store hooks
+    import hermes_store.schema.wal
+    if hermes_store.schema.wal.is_sqlite_wal_reset_vulnerable():
+        hermes_store.schema.wal.is_sqlite_wal_reset_vulnerable = lambda version_info=None: False
+    hermes_store.schema.wal.resolve_journal_mode = lambda: "wal"
     from hermes_state import DeletedWalGenerationError, SessionDB
 
     def emit(**e):

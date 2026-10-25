@@ -1532,7 +1532,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
         reactions); reasoning restored on assistant rows only; ``api_content`` VERBATIM (no sanitize/strip)
         so replay keeps the provider prompt cache byte-stable."""
         from hermes_store.api import _strip_background_review_harness, _strip_stale_tool_call_markers
-        # Runtime import avoids the transcript_repair -> hermes_state_messages module cycle.
+        # Runtime import avoids the transcript_repair -> hermes_store.sessions.messages module cycle.
         from hermes_store.sessions.transcript_repair import transcript_row_snapshot
         # Only the unaddressed live replay gets the digest: row-addressed loaders (include_row_ids) keep the
         # legacy resumed-dict path, whose rewrite never re-writes columns the projection does not decode
@@ -1809,7 +1809,7 @@ class SessionMessagesMixin(SessionDetachedResultsMixin, SessionTodoResultMixin):
         ``expected_active_ids`` / ``expected_target_content`` pin the active set and canonical live payload
         in-txn before any mutation (presentation-only metadata changes don't invalidate a rewind). A live turn
         lease refuses; expired/dead holders are reclaimed. ``rewind_count`` always increments."""
-        from hermes_state_mutation_transcript import rewind_in_transaction
+        from hermes_store.mutations.transcript import rewind_in_transaction
         def _do(conn):
             target_row, ids, head_id, replacement_id = rewind_in_transaction(
                 self, conn, session_id, target_message_id,

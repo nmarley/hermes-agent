@@ -8,8 +8,8 @@ from gateway.config import Platform
 from gateway.session import SessionEntry, SessionSource
 from gateway.session_contract import SessionRef
 from hermes_store.keys import local_identity
-from hermes_state_local import POLICY_PREFIX, local_receipt
-from hermes_state_runtime import RuntimeStoreError, list_session_admissions
+from hermes_store.sessions.local import POLICY_PREFIX, local_receipt
+from hermes_store.runtime.transactions import RuntimeStoreError, list_session_admissions
 
 
 def local_adapter_map(authority):
@@ -67,7 +67,7 @@ def _with_untracked_compression(authority, sid, receipt):
     (``session_local_adoption``); a sync restore on the loop that still finds it hands it to a tracked
     worker, which publishes the session once it commits, and refuses this read.
     """
-    from hermes_state_local_lineage import adopt_untracked_compression, adoptable_compression
+    from hermes_store.repair.local_lineage import adopt_untracked_compression, adoptable_compression
     with authority.db._read_ctx() as conn:
         if adoptable_compression(conn, receipt) is None:
             return receipt
@@ -147,7 +147,7 @@ def restore_local_session(authority, sid):
         if adopted is not receipt:  # re-read after a catch-up: check the copy that will be served
             receipt, entry = adopted, _checked_entry(authority, adopted, source, route)
         target = entry.session_id
-        from hermes_state_local_lineage import validate_local_lineage
+        from hermes_store.repair.local_lineage import validate_local_lineage
         with authority.db._read_ctx() as conn:
             validate_local_lineage(conn, receipt)
     except _CatchUpPending:
@@ -337,7 +337,7 @@ def reopen_local_session(authority, ref):
 
 
 def reset_local_session(store, old_entry, session_id, now, display_name):
-    from hermes_state_local_lineage import reset_local_target
+    from hermes_store.repair.local_lineage import reset_local_target
     entry = SessionEntry(old_entry.session_key, session_id, now, now,
         origin=old_entry.origin, platform=old_entry.platform, chat_type=old_entry.chat_type,
         display_name=display_name if display_name is not None else old_entry.display_name,

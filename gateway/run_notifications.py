@@ -941,7 +941,7 @@ class GatewayNotificationsMixin(GatewayUpdateNotificationsMixin, GatewayNotifica
             authority = active_authority(self)
             if authority is not None:
                 from gateway.session_automation import admit_process_notice
-                from hermes_state_runtime import RuntimeStoreError
+                from hermes_store.runtime.transactions import RuntimeStoreError
                 try:
                     await admit_process_notice(self, authority, adapter, synth_event, evt)
                 except RuntimeStoreError as exc:

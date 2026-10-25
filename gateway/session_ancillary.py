@@ -10,7 +10,7 @@ from pathlib import Path
 import sys
 
 from gateway.session_busy_controls import authorize
-from hermes_state_runtime import RuntimeStoreError
+from hermes_store.runtime.transactions import RuntimeStoreError
 
 
 _SUBAGENT_FIELDS = (
@@ -330,7 +330,7 @@ def _session_servers(authority, sid, ready):
     import json
     from gateway.session_policy import restore_policy
     from hermes_cli.tools_config import enabled_mcp_server_names
-    from hermes_state_local import local_receipt
+    from hermes_store.sessions.local import local_receipt
     policy = restore_policy(local_receipt(authority.db, sid)['policy'])
     return sorted(set(policy.toolsets) & enabled_mcp_server_names(json.loads(policy.config_json)) & set(ready))
 
@@ -411,7 +411,7 @@ def _owner_objects(authority, ref, *, include_fallback_evicted=False):
 def physical_target(authority, ref):
     from gateway.config import Platform
     if authority.sessions[ref.session_id].source.platform == Platform.LOCAL:
-        from hermes_state_local import local_receipt
+        from hermes_store.sessions.local import local_receipt
         return local_receipt(authority.db, ref.session_id)['entry']['session_id']
     return ref.session_id
 

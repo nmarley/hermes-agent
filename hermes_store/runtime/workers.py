@@ -1,7 +1,7 @@
 """Worker exclusion follows the logical conversation and its physical transcript lineage."""
 import json
 
-from hermes_state_sessions import _expand_compression_lineage_ids
+from hermes_store.sessions.sessions import _expand_compression_lineage_ids
 from hermes_store.compression.session import _CHAIN_CAP
 from hermes_store.keys import POLICY_PREFIX
 from hermes_store.repair.local_lineage import local_physical_target

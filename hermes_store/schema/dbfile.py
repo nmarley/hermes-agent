@@ -24,7 +24,7 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from hermes_state_holders import canonical_sqlite_path, read_only_db_uri
+from hermes_store.schema.holders import canonical_sqlite_path, read_only_db_uri
 from hermes_store.search import FTS_REBUILD_DEFERRAL_KEY
 from hermes_store.common.files import stat_db_file_identity as _stat_db_file_identity
 
@@ -183,7 +183,7 @@ def _fd_is_truly_unlinked(fd_path: str, watched_path: str) -> bool:
     except OSError as exc:
         # ENOENT: the descriptor was closed after /proc was read. ESRCH: the whole
         # process exited mid-scan. Neither can keep a retired generation alive, so
-        # do not turn this scan race into a refusal (mirrors hermes_state_holders).
+        # do not turn this scan race into a refusal (mirrors hermes_store.schema.holders).
         if exc.errno in (errno.ENOENT, errno.ESRCH):
             return False
         return True
@@ -583,9 +583,8 @@ def capture_retired_wal_generation(
             _fsync_path(header_file)
             main.update(mode="header_only", file=header_file.name, bytes=len(header))
         manifest["main"] = main
-        # Late import: utils pulls agent-side deps; the capture must stay dependency-light.
-        from utils import atomic_json_write
-        atomic_json_write(staging / RETIRED_GENERATION_MANIFEST, manifest, sort_keys=True)
+        from hermes_store.api import storage_hooks
+        storage_hooks().atomic_json_write(staging / RETIRED_GENERATION_MANIFEST, manifest, sort_keys=True)
         _fsync_path(staging)
         os.replace(staging, final)
         _fsync_path(final.parent)
@@ -606,9 +605,10 @@ def _connect_tracked_db(path, tracking_path=None, **kwargs):
     without hermes_cli); a real connection failure must propagate — a silent untracked retry
     would disable the guard for that connection."""
     try:
-        from hermes_cli.sqlite_safe_read import connect_tracked
-    except ImportError:
-        logger.debug("hermes_cli.sqlite_safe_read unavailable; opening %s untracked "
+        from hermes_store.api import storage_hooks
+        connect_tracked = storage_hooks().connect_tracked
+    except (ImportError, RuntimeError):
+        logger.debug("sqlite tracking unavailable; opening %s untracked "
                      "(byte-probe guard inactive in this install)", path)
         return sqlite3.connect(str(path), **kwargs)
     # Open through THIS module's sqlite3.connect so tests patching hermes_state.sqlite3.connect keep control.
@@ -624,10 +624,11 @@ def _preopen_header(path: Path, probe_bytes: int, force: bool) -> Optional[bytes
         if not path.is_file():
             return None
         path.stat()
-        from hermes_cli.sqlite_safe_read import has_live_connection, read_header_bytes_preopen
-        if not force and has_live_connection(path):
+        from hermes_store.api import storage_hooks
+        h = storage_hooks()
+        if not force and h.has_live_connection(path):
             return None
-        return read_header_bytes_preopen(path, length=max(16, probe_bytes), force=force)
+        return h.read_header_bytes_preopen(path, length=max(16, probe_bytes), force=force)
     except Exception:
         return None
 
@@ -637,8 +638,8 @@ def is_zeroed_state_db(path: Path, *, probe_bytes: int = 100, force: bool = Fals
     ``hermes_cli.backup.is_zeroed_sqlite_file``; this copy keeps SessionDB openable without the CLI
     package in constrained embed paths."""
     with contextlib.suppress(Exception):
-        from hermes_cli.backup import is_zeroed_sqlite_file
-        return is_zeroed_sqlite_file(path, probe_bytes=probe_bytes, force=force)
+        from hermes_store.api import storage_hooks
+        return storage_hooks().is_zeroed_sqlite_file(path, probe_bytes=probe_bytes, force=force)
     head = _preopen_header(path, probe_bytes, force)
     # b"" (0-byte file) is zeroed; all() over an empty header is True.
     return head is not None and not head.startswith(b"SQLite format 3") and all(b == 0 for b in head)
@@ -801,7 +802,7 @@ def collect_state_db_stats(db_path: Path) -> dict[str, Any]:
         # Raw state_meta reads — cheap, and independent of SessionDB.
         stats["fts_storage_version"] = _meta_int("fts_storage_version")
         with contextlib.suppress(Exception):
-            from hermes_state_fts import fts_layout_drift
+            from hermes_store.search.index import fts_layout_drift
             stats["fts_storage_upgrade_needed"] = bool(fts_layout_drift(conn.cursor()))
         with contextlib.suppress(Exception):
             # Demoted old-index tables still awaiting teardown: an optimize-storage run stopped after its backfill.

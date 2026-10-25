@@ -88,7 +88,7 @@ def _ref(sid, profile_id='fixture'):
 
 
 async def _refused(tmp_path, sid, reason='not_found', **cold_args):
-    from hermes_state_runtime import RuntimeStoreError
+    from hermes_store.runtime.transactions import RuntimeStoreError
     cold = await _cold(tmp_path, **cold_args)
     with pytest.raises(RuntimeStoreError, match=reason):
         cold.authority.authorize(cold.actor, _ref(sid), 'session:read')
@@ -177,7 +177,7 @@ async def test_an_entry_without_an_origin_falls_back_to_the_row(tmp_path):
 async def test_a_row_with_neither_origin_nor_chat_id_cannot_be_rebuilt(tmp_path):
     cold = await _cold(tmp_path)
     cold.authority.db.create_session('hollow', source='telegram', session_key='agent:main:telegram:dm:x')
-    from hermes_state_runtime import RuntimeStoreError
+    from hermes_store.runtime.transactions import RuntimeStoreError
     with pytest.raises(RuntimeStoreError, match='not_found'):
         cold.authority.authorize(cold.actor, _ref('hollow'), 'session:read')
     assert 'hollow' not in cold.authority.sessions
@@ -207,7 +207,7 @@ async def test_an_origin_that_contradicts_the_row_is_not_trusted(tmp_path):
 
 @pytest.mark.asyncio
 async def test_a_foreign_profile_ref_is_still_refused(tmp_path):
-    from hermes_state_runtime import RuntimeStoreError
+    from hermes_store.runtime.transactions import RuntimeStoreError
     _seed(tmp_path, 'lane-foreign', _source())
     cold = await _cold(tmp_path)
     with pytest.raises(RuntimeStoreError, match='profile_mismatch'):
@@ -250,7 +250,7 @@ async def test_a_lane_of_another_profile_is_not_mounted_by_this_authority(tmp_pa
 
 @pytest.mark.asyncio
 async def test_a_draining_gateway_mounts_nothing(tmp_path):
-    from hermes_state_runtime import RuntimeStoreError
+    from hermes_store.runtime.transactions import RuntimeStoreError
     _seed(tmp_path, 'lane-drain', _source())
     cold = await _cold(tmp_path)
     cold.authority.runner._draining = True
@@ -273,7 +273,7 @@ async def test_a_row_its_route_moved_past_is_read_only(tmp_path):
     """#140183 review F2: the old row's only route is the lane's CURRENT key, so a Stop, an agent
     lookup or a turn on it reached the successor conversation. One gateway owns every session and
     never crosses them: the historic row reads (its own transcript) and refuses every write by name."""
-    from hermes_state_runtime import RuntimeStoreError
+    from hermes_store.runtime.transactions import RuntimeStoreError
     from gateway.session_contract import Principal, Submission
     cold, _successor = await _superseded(tmp_path)
     cold.authority.authorize(cold.actor, _ref('old'), 'session:read')
@@ -420,7 +420,7 @@ async def test_resume_by_a_messaging_segment_shares_the_lanes_next_inbound_mount
 async def test_a_live_mount_goes_read_only_when_its_lane_publishes_another_conversation(tmp_path):
     """Mounted while nothing named another conversation, then the lane's next inbound starts a fresh
     session on the same route: from then on the old mount's route is the newer session's."""
-    from hermes_state_runtime import RuntimeStoreError
+    from hermes_store.runtime.transactions import RuntimeStoreError
     from gateway.session_contract import Principal
     _seed(tmp_path, 'unrouted', _source(), routed=False)
     cold = await _cold(tmp_path)

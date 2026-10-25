@@ -5,7 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from hermes_state_runtime import RuntimeStoreError
+from hermes_store.runtime.transactions import RuntimeStoreError
 
 
 def handlers(connection):

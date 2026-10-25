@@ -19,9 +19,9 @@ import logging
 import uuid
 from functools import partial
 
-from hermes_state_local import local_receipt
-from hermes_state_mutation_retirement import VIEWER_CLOSE_PREFIX
-from hermes_state_runtime import RuntimeStoreError
+from hermes_store.sessions.local import local_receipt
+from hermes_store.mutations.retirement import VIEWER_CLOSE_PREFIX
+from hermes_store.runtime.transactions import RuntimeStoreError
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +94,7 @@ async def close_viewer_session(authority, session_id, reason):
 
 
 def _persist_close(authority, session_id, record):
-    from hermes_state_runtime import _epoch
+    from hermes_store.runtime.transactions import _epoch
 
     def write(conn):
         _epoch(conn, authority.epoch)
@@ -107,7 +107,7 @@ def forget_persisted_close(authority, session_id, record):
     """Blocking: drop *session_id*'s stored close only if it is still exactly *record* (that close
     completed or was cancelled), and only while this authority owns the store. Returns whether a
     row went."""
-    from hermes_state_runtime import _epoch
+    from hermes_store.runtime.transactions import _epoch
 
     def write(conn):
         _epoch(conn, authority.epoch)
@@ -195,7 +195,7 @@ async def _resolve_abandoned_unknown(authority, session_id, live, close):
     transcript boundary written) and the drain moves on; a queued successor still runs before the
     close. A viewer back first cancels the close and keeps the decision. Returns whether the
     close may go on to its idle check (no ``unknown`` turn is left)."""
-    from hermes_state_runtime import list_session_admissions
+    from hermes_store.runtime.transactions import list_session_admissions
     rows = await asyncio.to_thread(list_session_admissions, authority.db, session_id=session_id)
     unknown = [row for row in rows if row['status'] == 'unknown']
     if not unknown:

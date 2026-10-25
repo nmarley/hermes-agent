@@ -8,7 +8,7 @@ one fenced transaction.
 """
 import json
 
-from hermes_state_runtime import (
+from hermes_store.runtime.transactions import (
     RuntimeStoreError, _epoch, _json, _text, mutation_receipt_key, replay_mutation_receipt,
 )
 

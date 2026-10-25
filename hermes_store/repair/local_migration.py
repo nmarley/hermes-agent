@@ -2,7 +2,7 @@
 import json
 import time
 
-from hermes_state_runtime import RuntimeStoreError, _json
+from hermes_store.runtime.transactions import RuntimeStoreError, _json
 
 LEGACY_PREFIX = 'gateway.local_legacy.v1:'
 

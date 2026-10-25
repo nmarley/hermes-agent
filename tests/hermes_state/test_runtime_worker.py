@@ -2,7 +2,7 @@ import pytest
 import sqlite3
 
 from hermes_state import SessionDB
-import hermes_state_runtime as rt
+import hermes_store.runtime.transactions as rt
 
 
 def setup_worker(tmp_path):

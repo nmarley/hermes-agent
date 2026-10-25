@@ -71,7 +71,7 @@ async def test_keyed_local_injection_stays_inside_the_plugins_own_profile(tmp_pa
     from gateway.session_local import create_local_session
     from gateway.session_policy import _ACTIVE_POLICY
     from hermes_state import SessionDB
-    from hermes_state_runtime import begin_runtime_epoch
+    from hermes_store.runtime.transactions import begin_runtime_epoch
 
     launch = tmp_path / ".hermes"
     beta = launch / "profiles" / "beta"

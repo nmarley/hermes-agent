@@ -14,7 +14,7 @@ import sqlite3
 import pytest
 
 from hermes_store.schema import DEFERRED_INDEX_SQL, SCHEMA_SQL
-from hermes_state_schema import SessionSchemaMixin, schema_read_probe_statements
+from hermes_store.schema.schema import SessionSchemaMixin, schema_read_probe_statements
 
 def _fresh_schema_conn() -> sqlite3.Connection:
     conn = sqlite3.connect(":memory:")

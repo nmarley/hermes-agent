@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from hermes_state_messages import SessionMessagesMixin
+from hermes_store.sessions.messages import SessionMessagesMixin
 from hermes_store.common.compression import _DB_PERSISTED_MARKER
 from hermes_store.sessions.message_metadata import MESSAGE_UID, message_uid_or_none
 

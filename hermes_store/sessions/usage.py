@@ -400,7 +400,7 @@ class SessionUsageMixin:
         # the creator upsert later replaces. An existing row keeps source and created_source,
         # including a NULL surface update_token_counts can still fill; the UPDATE below only
         # fills a NULL profile_name, without writing ``unknown`` anywhere.
-        from hermes_state_worker_lifecycle import insert_session_row_in_transaction
+        from hermes_store.runtime.worker_lifecycle import insert_session_row_in_transaction
 
         def _write(conn):
             if conn.execute("SELECT 1 FROM sessions WHERE id=?", (session_id,)).fetchone() is None:
@@ -420,7 +420,7 @@ class SessionUsageMixin:
             return {}
         chain = self._session_lineage_root_to_tip(session_id)
         # An explicit ``/branch`` copy owns its spend: cut the walk at the nearest branch node so a
-        # resumed branch never absorbs aux rows billed to its source (hermes_state_messages does the same).
+        # resumed branch never absorbs aux rows billed to its source (hermes_store.sessions.messages does the same).
         for i in range(len(chain) - 1, -1, -1):
             if self._is_explicit_branch_session(chain[i]):
                 chain = chain[i:]

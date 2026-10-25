@@ -7,7 +7,7 @@ import pytest
 import psutil
 
 from hermes_state import SessionDB
-from hermes_state_runtime import RuntimeStoreError
+from hermes_store.runtime.transactions import RuntimeStoreError
 from tools import async_delegation as ledger
 
 

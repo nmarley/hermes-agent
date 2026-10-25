@@ -9,12 +9,13 @@ read the developer's live production database.
 Duplication needs a guard, so these tests pin the two implementations in
 agreement across the documented upstream boundaries.
 """
+import hermes_state  # installs store hooks for direct store imports
 
 import sqlite3
 
 import pytest
 
-from hermes_state_wal import is_sqlite_wal_reset_vulnerable
+from hermes_store.schema.wal import is_sqlite_wal_reset_vulnerable
 from tests.conftest import _wal_is_usable
 
 

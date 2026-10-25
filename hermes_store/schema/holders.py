@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Set, Tuple
 
+import hermes_constants
 from hermes_store.errors import is_sqlite_lock_error
 
 try:  # Hard dependency, but tolerate scaffold-phase imports before pip install.
@@ -192,9 +193,7 @@ def _store_install_layout(this_home: str) -> tuple[Optional[str], Optional[str]]
     so ANY named-profile selection contradicts it.
     """
     try:
-        from hermes_constants import named_profile_home
-
-        profile_home = named_profile_home(this_home)
+        profile_home = hermes_constants.named_profile_home(this_home)
         if profile_home is not None:
             return os.path.abspath(str(profile_home.parent.parent)), profile_home.name
         if os.path.basename(this_home) == ".hermes":
@@ -574,7 +573,7 @@ def in_process_state_db_holders(
     (auto-VACUUM admission) need this arm too: a VACUUM plus its TRUNCATE checkpoint retires
     the generation a sibling SessionDB in this very process still holds.
     """
-    from hermes_state_registry import other_generations_for_path
+    from hermes_store.schema.registry import other_generations_for_path
 
     return [
         (os.getpid(), description)
@@ -593,7 +592,6 @@ def held_store_refusal(db_path: Path, *, command: str, force_hint: Optional[str]
     holders = foreign_state_db_holders(db_path)
     if not holders:
         return None
-    from hermes_constants import profile_cli_selector
     from hermes_store.errors import STORAGE_RECOVERY_DOCS_URL
 
     by_pid: dict[int, set[str]] = {}
@@ -607,7 +605,7 @@ def held_store_refusal(db_path: Path, *, command: str, force_hint: Optional[str]
     lines += [f"  {describe_holder_pid(pid)}: {', '.join(sorted(by_pid[pid]))}" for pid in sorted(by_pid)]
     if unknown:
         lines.append(f"  cannot prove the database is quiet (holder scan incomplete: {unknown[0][:120]})")
-    profile_arg = profile_cli_selector()
+    profile_arg = hermes_constants.profile_cli_selector()
     lines += [
         "Rewriting the database under a live writer is how every agent ends up refusing turns with the "
         "retired state.db-wal error. Nothing is lost.",

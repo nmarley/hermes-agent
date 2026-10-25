@@ -38,7 +38,7 @@ from hermes_store.common.titles import (
     TITLE_SOURCE_DERIVED as _TITLE_SOURCE_DERIVED, TITLE_SOURCE_LLM as _TITLE_SOURCE_LLM,
     TITLE_SOURCE_USER as _TITLE_SOURCE_USER,
 )
-from hermes_state_holders import read_only_db_uri
+from hermes_store.schema.holders import read_only_db_uri
 from hermes_store.pidns import holder_pid_checkable
 from hermes_store.health import (
     STORAGE_CORRUPT, mark_storage_corrupt, note_storage_error, storage_corrupt_reason, storage_state,
@@ -54,34 +54,34 @@ from hermes_store.guard import (
     _register_test_instance, _set_last_init_error, get_last_init_error,
 )
 from hermes_store.runtime.readpool import _READ_POOL_MAX, _proc_fd_targets, _read_budget_for
-import hermes_state_registry as _state_registry
-from hermes_state_sessions import SessionSessionsMixin
+import hermes_store.schema.registry as _state_registry
+from hermes_store.sessions.sessions import SessionSessionsMixin
 from hermes_store.search.index import SessionFtsSetupMixin, load_fts5_cjk_extension
 from hermes_store.repair.portability import SessionPortabilityMixin
 from hermes_store.adapters.telegram import SessionTelegramTopicsMixin
 from hermes_store.repair.profile_repair import SessionProfileRepairMixin
-from hermes_state_schema import SessionSchemaMixin
-import hermes_state_holders as _state_holders
+from hermes_store.schema.schema import SessionSchemaMixin
+import hermes_store.schema.holders as _state_holders
 from hermes_store import lockguard as _lockguard
 from hermes_store.runtime.lockowners import log_write_lock_holders
-from hermes_state_dbfile import (
+from hermes_store.schema.dbfile import (
     _connect_tracked_db, _fd_is_truly_unlinked, _prepare_connection_retirement,
     _read_sqlite_application_id, _stat_sqlite_sidecar_identity,
     _watched_sqlite_sidecar_paths, has_invalid_sqlite_header_preopen, is_zeroed_state_db, quarantine_cross_process_lock,
     quarantine_invalid_state_db,
     RetiredGenerationCaptureError, capture_retired_wal_generation, refuse_deleted_wal_generation,
 )
-from hermes_state_messages import SessionMessagesMixin
+from hermes_store.sessions.messages import SessionMessagesMixin
 from hermes_store.compression.prune_rewrite import SessionPruneRewriteMixin
 from hermes_store.sessions.api_content import SessionApiContentMixin
 from hermes_store.repair.coverage import SessionCoverageMixin
 from hermes_store.compression.rewind import SessionRewindMixin
-from hermes_state_wal import (
+from hermes_store.schema.wal import (
     _WAL_INCOMPAT_MARKERS, _on_disk_journal_mode, apply_database_pragmas, apply_wal_with_fallback,
 )
 from hermes_store.repair.repair import _claim_repair_attempt, preflight_db_writability, repair_state_db_schema
 from hermes_store.sessions.titles import SessionTitlesMixin
-from hermes_state_usage import SessionUsageMixin
+from hermes_store.sessions.usage import SessionUsageMixin
 from hermes_store.repair.maintenance import SessionMaintenanceMixin
 from hermes_store.adapters.gateway import SessionGatewayMixin
 from hermes_store.compression.session import SessionCompressionMixin
@@ -184,6 +184,15 @@ _BARE_BILLING_PROVIDERS = frozenset({"auto", "custom"})
 T = TypeVar("T")
 
 
+def _ensure_hook_providers() -> None:
+    """Install surface hooks through the root facade when a store API is used directly."""
+    if (_mutation_hooks_provider is None or _compression_hooks_provider is None
+            or _repair_hooks_provider is None or _runtime_hooks_provider is None
+            or _media_hooks_provider is None or _adapter_hooks_provider is None
+            or _storage_hooks_provider is None):
+        import hermes_state  # health: allow LATE_IMPORT -- self-bootstrap for direct store imports
+
+
 class MutationHooks(Protocol):
     """Surface types and display projections the store cannot import directly."""
 
@@ -206,6 +215,7 @@ def set_mutation_hooks_provider(provider: Optional[Callable[[], MutationHooks]])
 
 
 def mutation_hooks() -> MutationHooks:
+    _ensure_hook_providers()
     if _mutation_hooks_provider is None:
         raise RuntimeError("mutation hooks are not installed; import hermes_state first")
     return _mutation_hooks_provider()
@@ -244,6 +254,7 @@ def set_compression_hooks_provider(provider: Optional[Callable[[], CompressionHo
 
 
 def compression_hooks() -> CompressionHooks:
+    _ensure_hook_providers()
     if _compression_hooks_provider is None:
         raise RuntimeError("compression hooks are not installed; import hermes_state first")
     return _compression_hooks_provider()
@@ -290,6 +301,7 @@ def set_repair_hooks_provider(provider: Optional[Callable[[], RepairHooks]]) -> 
 
 
 def repair_hooks() -> RepairHooks:
+    _ensure_hook_providers()
     if _repair_hooks_provider is None:
         raise RuntimeError("repair hooks are not installed; import hermes_state first")
     return _repair_hooks_provider()
@@ -312,6 +324,7 @@ def set_runtime_hooks_provider(provider: Optional[Callable[[], RuntimeHooks]]) -
 
 
 def runtime_hooks() -> RuntimeHooks:
+    _ensure_hook_providers()
     if _runtime_hooks_provider is None:
         raise RuntimeError("runtime hooks are not installed; import hermes_state first")
     return _runtime_hooks_provider()
@@ -342,6 +355,7 @@ def set_media_hooks_provider(provider: Optional[Callable[[], MediaHooks]]) -> No
 
 
 def media_hooks() -> MediaHooks:
+    _ensure_hook_providers()
     if _media_hooks_provider is None:
         raise RuntimeError("media hooks are not installed; import hermes_state first")
     return _media_hooks_provider()
@@ -366,9 +380,53 @@ def set_adapter_hooks_provider(provider: Optional[Callable[[], AdapterHooks]]) -
 
 
 def adapter_hooks() -> AdapterHooks:
+    _ensure_hook_providers()
     if _adapter_hooks_provider is None:
         raise RuntimeError("adapter hooks are not installed; import hermes_state first")
     return _adapter_hooks_provider()
+
+
+class StorageHooks(Protocol):
+    """SQLite, config, and file helpers the schema and local clusters cannot import."""
+
+    def atomic_json_write(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def connect_tracked(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def has_live_connection(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def read_header_bytes_preopen(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def is_zeroed_sqlite_file(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def is_sqlite_wal_reset_vulnerable(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def load_config_readonly(self) -> Any: ...
+
+    def cfg_get(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def detect_install_method(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def get_project_root(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def recommended_update_command_for_method(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def retry_matches(self, *args: Any, **kwargs: Any) -> Any: ...
+
+
+_storage_hooks_provider: Optional[Callable[[], StorageHooks]] = None
+
+
+def set_storage_hooks_provider(provider: Optional[Callable[[], StorageHooks]]) -> None:
+    global _storage_hooks_provider
+    _storage_hooks_provider = provider
+
+
+def storage_hooks() -> StorageHooks:
+    _ensure_hook_providers()
+    if _storage_hooks_provider is None:
+        raise RuntimeError("storage hooks are not installed; import hermes_state first")
+    return _storage_hooks_provider()
 
 
 # Import-time snapshot lets _default_db_path() detect a re-pointed DEFAULT_DB_PATH
@@ -641,15 +699,15 @@ def divert_session_transcript_jsonl(session_id: str, messages) -> Optional[Path]
 
 
 # Process-wide shared SessionDB registry: long-lived in-process callers share ONE writer
-# connection per resolved path via hermes_state_registry.acquire(); one-shots use SessionDB() + close().
+# connection per resolved path via hermes_store.schema.registry.acquire(); one-shots use SessionDB() + close().
 def _foreign_state_db_holders(db_path: Path) -> list[tuple[int, str]]:
     """Compatibility delegate to the state-holder authority."""
     return _state_holders.foreign_state_db_holders(db_path)
 
 
-# ── Process-wide shared SessionDB registry (#90837) ── lives in hermes_state_registry.py (acquire /
+# ── Process-wide shared SessionDB registry (#90837) ── lives in hermes_store.schema.registry.py (acquire /
 # release / close_all / release_or_close). Long-lived in-process callers (gateway, tui_gateway, cron,
-# in-process tools) share ONE writer connection per resolved path via hermes_state_registry.acquire(); CLI
+# in-process tools) share ONE writer connection per resolved path via hermes_store.schema.registry.acquire(); CLI
 # one-shots, recovery flows, and read-only cross-profile opens use SessionDB() directly with their own close().
 
 
@@ -836,8 +894,8 @@ class SessionDB(
         self._token_writer_thread: Optional[threading.Thread] = None
         self._token_writer_stop = self._token_writer_busy = False
         self._token_atexit_hook: Optional[Callable[[], None]] = None
-        # Opened via hermes_state_registry.acquire(): close() releases a refcount instead.
-        # Set True when this instance is opened via hermes_state_registry.acquire(). Makes close() a no-op so the
+        # Opened via hermes_store.schema.registry.acquire(): close() releases a refcount instead.
+        # Set True when this instance is opened via hermes_store.schema.registry.acquire(). Makes close() a no-op so the
         # registry (not individual callers) controls the connection lifecycle (#90837).
         self._shared_registry_owned = False
         initialization_complete = False
@@ -1602,7 +1660,7 @@ class SessionDB(
         sqlite3_close would write the retired frames over the newer generation, so the exact
         connection is retired unclosed instead. A failed capture leaves the handle open for a retry
         -- but the pin is taken FIRST on such a runtime: every production caller reaches close()
-        through hermes_state_registry.release_or_close, which swallows the error, so an interpreter
+        through hermes_store.schema.registry.release_or_close, which swallows the error, so an interpreter
         exit before the retry must not be able to checkpoint the stale frames either."""
         self._db_wal_generation_lost = True
         retire_without_close = not self._disable_close_time_checkpoint() and self._retire_connection is not None
@@ -1655,7 +1713,7 @@ class SessionDB(
         return True
 
     def _foreign_state_db_holders(self) -> list[tuple[int, str]]:
-        """Foreign processes holding this DB or its WAL sidecars (see hermes_state_holders)."""
+        """Foreign processes holding this DB or its WAL sidecars (see hermes_store.schema.holders)."""
         return _foreign_state_db_holders(self.db_path)
 
     def _quarantine_reason(self) -> Optional[str]:
@@ -1718,7 +1776,7 @@ class SessionDB(
 
         Drains queued token deltas first (the background writer needs the connection). Read-only connections
         never request a checkpoint. See #45383.
-        When this instance is shared (opened via ``hermes_state_registry.acquire``), ``close()`` RELEASES one
+        When this instance is shared (opened via ``hermes_store.schema.registry.acquire``), ``close()`` RELEASES one
         refcount instead of tearing down the connection: the registry owns the lifecycle and only closes on
         the final release (#90837). This prevents one caller's close from tearing down the writer connection
         that other callers in the same process are still using — while still letting legacy ``close()`` call

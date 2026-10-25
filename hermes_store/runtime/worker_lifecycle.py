@@ -2,7 +2,7 @@
 import json
 import time
 
-from hermes_state_sessions import _UPSERT_KEEP_EXISTING_SQL, classify_session_status
+from hermes_store.sessions.sessions import _UPSERT_KEEP_EXISTING_SQL, classify_session_status
 from hermes_store.runtime.errors import RuntimeStoreError
 
 

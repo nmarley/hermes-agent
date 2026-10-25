@@ -1,7 +1,7 @@
 """Read-only native picker history; enumeration never adopts a transcript."""
-from hermes_state_local_migration import validate_legacy_row
-from hermes_state_mutation_binding import authorize_history
-from hermes_state_runtime import RuntimeStoreError
+from hermes_store.repair.local_migration import validate_legacy_row
+from hermes_store.mutations.binding import authorize_history
+from hermes_store.runtime.transactions import RuntimeStoreError
 
 from gateway.session_route_recovery import _messaging_platform, mountable
 
@@ -13,7 +13,7 @@ def _excluded_sources():
     """Main's picker listed every source but the internal ones; the API transport has its own restore.
     Plugin platforms are ``Platform`` pseudo-members enum iteration never yields, so the query
     excludes rather than enumerates, and each messaging row is judged by the cold mount's own check."""
-    from hermes_state_sessions import INTERNAL_LISTING_SOURCES
+    from hermes_store.sessions.sessions import INTERNAL_LISTING_SOURCES
     return [*INTERNAL_LISTING_SOURCES, 'api_server']
 
 

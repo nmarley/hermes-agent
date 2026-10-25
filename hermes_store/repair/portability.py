@@ -24,7 +24,7 @@ from hermes_store.keys import POLICY_PREFIX
 from hermes_store.schema import SCHEMA_SQL
 from hermes_store.common.previews import _shape_preview, _sql_preview_raw
 from hermes_store.common.sessions import _sql_session_last_active
-from hermes_state_messages import _parse_tool_calls, _tool_calls_count
+from hermes_store.sessions.messages import _parse_tool_calls, _tool_calls_count
 import itertools
 
 # Pre-split logger identity so log filtering/capture is unchanged.

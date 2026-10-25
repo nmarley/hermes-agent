@@ -1,6 +1,6 @@
 """In-place row-rewrite persistence for the proactive prune (#124102).
 
-Split out of :mod:`hermes_state_messages` (FILE_LINES ratchet): the prune's own commit primitive and
+Split out of :mod:`hermes_store.sessions.messages` (FILE_LINES ratchet): the prune's own commit primitive and
 its lease-less staleness probe. Both are ``SessionMessagesMixin`` methods; this sibling defines a
 ``SessionPruneRewriteMixin`` the facade binds into the same MRO slot, so every existing
 ``session_db.rewrite_pruned_rows(...)`` / ``rewritten_held_row_ids(...)`` call site and test patch
@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from hermes_state_messages import _INSERT_MESSAGE_SQL, _parse_tool_calls
+from hermes_store.sessions.messages import _INSERT_MESSAGE_SQL, _parse_tool_calls
 from hermes_store.common.compression import _DB_PERSISTED_MARKER as _DB_PERSISTED_MARKER_KEY
 from hermes_store.common.sql import _id_chunks, _placeholders
 from hermes_store.sessions.message_metadata import DB_ROW_SNAPSHOT, message_uid_or_none

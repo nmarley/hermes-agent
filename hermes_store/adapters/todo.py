@@ -1,5 +1,5 @@
 """The newest Todo result a resume restores: an indexed, bounded search of the resume display scope.
-Split out of ``hermes_state_messages`` and bound onto SessionDB through ``SessionMessagesMixin``; built
+Split out of ``hermes_store.sessions.messages`` and bound onto SessionDB through ``SessionMessagesMixin``; built
 on its _resume_lineage_ids/_read_ctx primitives."""
 
 from __future__ import annotations

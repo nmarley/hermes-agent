@@ -204,7 +204,7 @@ def publish_usage(turn, agent, *, record: bool = False) -> None:
 
 async def stats(connection, ref, params):
     """``session.stats {session_id}``: the same dict ``session.usage`` carries."""
-    from hermes_state_runtime import RuntimeStoreError
+    from hermes_store.runtime.transactions import RuntimeStoreError
     if set(params) - {"session_id", "profile"}:
         raise RuntimeStoreError("invalid_params")
     await connection.authority.resolve(connection.actor, ref)

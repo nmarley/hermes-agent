@@ -5,7 +5,7 @@ import pytest
 
 from hermes_state import SessionDB
 from hermes_store.schema import SCHEMA_VERSION
-import hermes_state_runtime as rt
+import hermes_store.runtime.transactions as rt
 
 
 def test_schema_reconciles_existing_sessions_without_losing_history(tmp_path):

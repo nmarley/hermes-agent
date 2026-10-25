@@ -513,7 +513,7 @@ def _close_leaked_session_dbs():
     were leaked by an earlier test in the same process) and the simpler
     close-everything sweep is what actually bounds the process.
 
-    Instances opened through ``hermes_state_registry.acquire()`` are skipped:
+    Instances opened through ``hermes_store.schema.registry.acquire()`` are skipped:
     on those ``close()`` releases a refcount rather than closing, so a sweep
     would silently retire a shared generation that a wider-scoped fixture
     still holds. The registry owns that lifecycle (``close_all()``).

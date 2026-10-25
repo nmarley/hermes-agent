@@ -7,7 +7,7 @@ capability, local-source, admission and busy rules), answered with the owner's c
 """
 import logging
 
-from hermes_state_runtime import RuntimeStoreError
+from hermes_store.runtime.transactions import RuntimeStoreError
 
 logger = logging.getLogger(__name__)
 

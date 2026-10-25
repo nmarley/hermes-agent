@@ -101,11 +101,11 @@ def _write_output(output, text, summary) -> None:
 
 def _cmd_repair(args):
     from hermes_state import DEFAULT_DB_PATH as db_path, SessionDB
-    from hermes_state_repair import _db_opens_cleanly, repair_state_db_schema
+    from hermes_store.repair.repair import _db_opens_cleanly, repair_state_db_schema
     if not db_path.exists():
         print(f"No session database at {db_path} (nothing to repair).")
         return
-    from hermes_state_reconcile import repair_declarative_schema, schema_drift_reason
+    from hermes_store.repair.reconcile import repair_declarative_schema, schema_drift_reason
     # A missing canonical sessions table is not additive upgrade drift: creating
     # an empty one could hide lost history. Preserve corruption/recovery routing.
     reason = _db_opens_cleanly(db_path)
@@ -285,7 +285,7 @@ def _surface_reader(db):
 
 
 def _cmd_list(db, args):
-    from hermes_state_sessions import workspace_key as _ws_key
+    from hermes_store.sessions.sessions import workspace_key as _ws_key
     # LIMIT lives in the query, so probe one row past the cap: it is the only way to know the
     # page was cut without a second COUNT query (``--limit 0`` is ``LIMIT 0``: no rows, no probe).
     limit = args.limit
@@ -638,7 +638,7 @@ def _cmd_delete(db, args):
             return
     elif _pinned_note:
         print(f"Warning: deleting a pinned session '{resolved_session_id}'.")
-    from hermes_state_runtime import RuntimeStoreError
+    from hermes_store.runtime.transactions import RuntimeStoreError
     try:
         if not db.delete_session(resolved_session_id, sessions_dir=_sessions_dir(), exclude_active_write_guards=True):
             return _not_found(args.session_id)
@@ -1323,7 +1323,7 @@ def cmd_sessions(args, sessions_parser=None):
             return
         if (action in _HELD_STORE_ACTIONS and not getattr(args, "dry_run", False) and not getattr(args, "force", False)
                 and getattr(args, "owner_endpoint", None) is None):
-            from hermes_state_holders import held_store_refusal
+            from hermes_store.schema.holders import held_store_refusal
             # Same path the SessionDB above opened, so the scan never depends on the db object.
             refusal = held_store_refusal(path, command=action)
             if refusal:
@@ -1332,7 +1332,7 @@ def cmd_sessions(args, sessions_parser=None):
         try:
             return handler(db, args)
         except sqlite3.OperationalError as e:
-            from hermes_state_repair import _schema_not_built
+            from hermes_store.repair.repair import _schema_not_built
 
             if not observational or not _schema_not_built(e):
                 raise

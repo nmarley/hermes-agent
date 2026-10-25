@@ -381,7 +381,7 @@ class CLISessionMixin:
             return []
         try:
             from hermes_cli.session_listing import query_session_listing
-            from hermes_state_sessions import INTERNAL_LISTING_SOURCES
+            from hermes_store.sessions.sessions import INTERNAL_LISTING_SOURCES
 
             return query_session_listing(
                 self._session_db, source="cli", current_session_id=self.session_id,

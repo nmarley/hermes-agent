@@ -139,7 +139,7 @@ def _resolution_failure_reply(exc: Exception, platform: Platform) -> tuple[str, 
     """``(chat text, failure_reason, retryable)`` for a model/credential resolution failure before the turn."""
     from agent.error_classifier import FailoverReason
     from hermes_cli.auth import AuthError, is_rate_limited_auth_error
-    from hermes_state_runtime import RuntimeStoreError
+    from hermes_store.runtime.transactions import RuntimeStoreError
     auth_permanent = FailoverReason.auth_permanent.value
     if isinstance(exc, RuntimeStoreError):
         # Session-policy refusals carry a stable reason code (e.g. a CLI launch key revoked by
@@ -1175,7 +1175,7 @@ class TurnRunner(GatewayTurnProgressMixin, GatewaySessionAgentMixin):
         from gateway.session_policy import bind_turn_workspace, policy_for_source, policy_scope, workspace_unavailable_result
         from gateway.session_api_turn import api_policy_scope
         from gateway.session_authorities import active_authority
-        from hermes_state_runtime import RuntimeStoreError
+        from hermes_store.runtime.transactions import RuntimeStoreError
         policy = policy_for_source(self._runner, self._ctx.source)
         with ExitStack() as scope:
             try:

@@ -18,7 +18,7 @@ from pathlib import Path
 
 from gateway.session_busy_controls import authorize
 from gateway.session_tui_reads import context_breakdown
-from hermes_state_runtime import RuntimeStoreError
+from hermes_store.runtime.transactions import RuntimeStoreError
 
 
 def handlers(connection):
@@ -329,7 +329,7 @@ async def _rewind_last_turn(connection, ref):
     if target is None:
         return 0
     from gateway.session_mutations import mutate_session
-    from hermes_state_mutation_guards import MUTATION_GUARD_REFUSALS
+    from hermes_store.mutations.guards import MUTATION_GUARD_REFUSALS
     handle = authority._handle(ref)
     try:
         result = await mutate_session(authority, connection.actor, ref, {

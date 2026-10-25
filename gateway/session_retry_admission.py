@@ -16,7 +16,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
-from hermes_state_runtime import RuntimeStoreError
+from hermes_store.runtime.transactions import RuntimeStoreError
 
 _bound: ContextVar[Optional[RetryRewrite]] = ContextVar('retry_rewrite', default=None)
 

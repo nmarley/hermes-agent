@@ -4,18 +4,18 @@ import sys
 
 
 def test_runtime_storage_modules_import_without_loading_gateway():
-    probe = ("import sys, hermes_state, hermes_state_runtime, hermes_state_local, hermes_state_local_lineage, "
-             "hermes_state_mutation_binding, hermes_state_mutation_branch, hermes_state_mutation_chat_pick, "
-             "hermes_state_mutation_compress, hermes_state_mutation_guards, hermes_state_mutation_prepared, "
-             "hermes_state_mutation_reset, hermes_state_mutation_retirement, hermes_state_mutation_transcript, "
-             "hermes_state_mutations, hermes_state_compression, hermes_state_rewind, "
-             "hermes_state_prune_rewrite, hermes_state_worker_compression, hermes_state_search, "
-             "hermes_state_fts, hermes_state_repair, hermes_state_reconcile, hermes_state_coverage, "
-             "hermes_state_profile_repair, hermes_state_maintenance, hermes_state_portability, "
-             "hermes_state_local_lineage, hermes_state_local_migration, hermes_state_runtime, "
-             "hermes_state_runtime_workers, hermes_state_worker_context, hermes_state_worker_lifecycle, "
-             "hermes_state_readpool, hermes_state_lockowners, hermes_state_media, hermes_state_terminal, "
-             "hermes_state_todo, hermes_state_gateway; "
+    probe = ("import sys, hermes_state, hermes_store.runtime.transactions, hermes_store.sessions.local, hermes_store.repair.local_lineage, "
+             "hermes_store.mutations.binding, hermes_store.mutations.branch, hermes_store.mutations.chat_pick, "
+             "hermes_store.mutations.compress, hermes_store.mutations.guards, hermes_store.mutations.prepared, "
+             "hermes_store.mutations.reset, hermes_store.mutations.retirement, hermes_store.mutations.transcript, "
+             "hermes_store.mutations.actions, hermes_store.compression.session, hermes_store.compression.rewind, "
+             "hermes_store.compression.prune_rewrite, hermes_store.compression.worker_compression, hermes_store.search.messages, "
+             "hermes_store.search.index, hermes_store.repair.repair, hermes_store.repair.reconcile, hermes_store.repair.coverage, "
+             "hermes_store.repair.profile_repair, hermes_store.repair.maintenance, hermes_store.repair.portability, "
+             "hermes_store.repair.local_lineage, hermes_store.repair.local_migration, hermes_store.runtime.transactions, "
+             "hermes_store.runtime.workers, hermes_store.runtime.worker_context, hermes_store.runtime.worker_lifecycle, "
+             "hermes_store.runtime.readpool, hermes_store.runtime.lockowners, hermes_store.media.retirement, hermes_store.adapters.terminal, "
+             "hermes_store.adapters.todo, hermes_store.adapters.gateway; "
              "print(sorted(m for m in sys.modules if m == 'gateway' or m.startswith('gateway.')))")
     out = subprocess.run([sys.executable, '-c', probe], capture_output=True, text=True, check=True)
     assert out.stdout.strip() == '[]', out.stdout

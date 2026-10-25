@@ -17,7 +17,7 @@ from gateway.session_authority import LiveSession, initialize_session_authority
 from gateway.session_contract import SessionRef, Submission
 from gateway.session_controls import AuthorityConnection
 from hermes_store.keys import CRON_PRINCIPAL_ID
-from hermes_state_runtime import admit_session_input, claim_session_input, list_session_admissions
+from hermes_store.runtime.transactions import admit_session_input, claim_session_input, list_session_admissions
 from tests.waiting import async_wait_until
 
 

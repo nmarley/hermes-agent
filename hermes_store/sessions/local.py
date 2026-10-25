@@ -2,7 +2,7 @@
 import json
 import time
 
-from hermes_state_runtime import RuntimeStoreError, _epoch, _json
+from hermes_store.runtime.transactions import RuntimeStoreError, _epoch, _json
 
 from hermes_store.keys import POLICY_PREFIX
 API_BINDING_PREFIX = 'gateway.api.binding.v1.'
@@ -40,7 +40,7 @@ def commit_local_session(db, *, epoch, receipt):
             if not same:
                 raise RuntimeStoreError('invalid_params')
             return saved
-        from hermes_state_mutation_retirement import RETIRED_PREFIX
+        from hermes_store.mutations.retirement import RETIRED_PREFIX
         if conn.execute('SELECT 1 FROM state_meta WHERE key=?', (RETIRED_PREFIX + sid,)).fetchone():
             # Deleted: its receipt was retired with the transcript; a create/cron retry must not
             # resurrect the row (and re-fire its prompt) under the same deterministic id.
@@ -51,7 +51,7 @@ def commit_local_session(db, *, epoch, receipt):
         if conn.execute("SELECT 1 FROM gateway_routing WHERE scope='' AND session_key=?", (route,)).fetchone():
             raise RuntimeStoreError('admission_conflict')
         if 'legacy_session_id' in receipt:
-            from hermes_state_local_migration import bind_legacy_target
+            from hermes_store.repair.local_migration import bind_legacy_target
             bind_legacy_target(db, conn, receipt)
         policy, entry = receipt['policy'], receipt['entry']
         from datetime import datetime
@@ -62,8 +62,8 @@ def commit_local_session(db, *, epoch, receipt):
         # The agent's own accounting passes its surface (turn_usage._agent_session_source)
         # and is not that writer. gui's in-process agent is desktop; a managed worker
         # creates with the policy label gui.
-        from gateway.session_policy import created_surface
-        created = created_surface(policy['source'])
+        from hermes_store.api import runtime_hooks
+        created = runtime_hooks().created_surface(policy['source'])
         conn.execute('''INSERT INTO sessions(id,source,created_source,user_id,session_key,chat_id,chat_type,
             model,cwd,profile_name,origin_json,started_at) VALUES(?,?,?,?,?,?,'dm',?,?,?,?,?)
             ON CONFLICT(id) DO NOTHING''',
@@ -120,8 +120,9 @@ def same_create_retry(saved_policy, retry_json, client_request):
     ``client_env`` (``client_request``: the retry's own, never stored) judged by the rules frozen with
     *saved_policy*. Used by a retry that finds the session committed, at commit, and by one overlapping
     the attempt that holds the session's key slot."""
-    from agent.session_client_env import retry_matches
-    return same_create_request(saved_policy['request_json'], retry_json) and retry_matches(saved_policy, client_request)
+    from hermes_store.api import storage_hooks
+    return same_create_request(saved_policy['request_json'], retry_json) and storage_hooks().retry_matches(
+        saved_policy, client_request)
 
 
 def _row_cwd(policy):
@@ -211,7 +212,7 @@ def local_lineage_index(conn):
     transcript to a child, so every segment is one conversation. ``superseded`` holds the listable
     roots of earlier reset segments (filtered in SQL, before paging); ``heads`` maps the latest
     reset segment to ``(owner, lineage)`` for the row that represents the conversation. A delete
-    of that row removes the whole lineage (``hermes_state_mutation_guards.delete_targets``)."""
+    of that row removes the whole lineage (``hermes_store.mutations.guards.delete_targets``)."""
     superseded, heads = set(), {}
     rows = conn.execute("SELECT value FROM state_meta WHERE key GLOB ? AND json_valid(value) "
                         "AND json_array_length(value, '$.lineage') > 1", (POLICY_PREFIX + '*',)).fetchall()

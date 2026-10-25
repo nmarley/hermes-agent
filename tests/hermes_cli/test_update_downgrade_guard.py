@@ -12,7 +12,7 @@ from unittest.mock import Mock
 
 import pytest
 
-import hermes_state_runtime as rt
+import hermes_store.runtime.transactions as rt
 from hermes_cli import update_downgrade_guard as guard
 from hermes_state import SessionDB
 

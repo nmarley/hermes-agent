@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-import hermes_state_runtime as rt
+import hermes_store.runtime.transactions as rt
 from gateway.session_results import retain_result
 from hermes_state import SessionDB
 
@@ -17,8 +17,8 @@ def _keys(db, prefix):
 
 
 def test_a_deleted_compressed_root_leaves_its_branch_and_no_reusable_id(tmp_path):
-    from hermes_state_mutation_retirement import RETIRED_PREFIX
-    from hermes_state_terminal import ADMISSION_PREFIX, IDENTITY_PREFIX, RESULT_PREFIX
+    from hermes_store.mutations.retirement import RETIRED_PREFIX
+    from hermes_store.adapters.terminal import ADMISSION_PREFIX, IDENTITY_PREFIX, RESULT_PREFIX
     with SessionDB(tmp_path / 'state.db') as db:
         epoch = rt.begin_runtime_epoch(db, instance_id='owner')
         db.create_session('root', source='cli')

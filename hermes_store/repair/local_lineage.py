@@ -7,7 +7,7 @@ import json
 import time
 
 from hermes_store.keys import POLICY_PREFIX
-from hermes_state_runtime import RuntimeStoreError, _epoch, _json
+from hermes_store.runtime.transactions import RuntimeStoreError, _epoch, _json
 import itertools
 
 

@@ -1,6 +1,6 @@
 """state.db repair, backup and writability preflight (split from hermes_state).
 
-Patchable helpers are looked up as module globals at call time, so tests patch ``hermes_state_repair.<name>``.
+Patchable helpers are looked up as module globals at call time, so tests patch ``hermes_store.repair.repair.<name>``.
 """
 
 from __future__ import annotations
@@ -21,9 +21,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from hermes_constants import get_hermes_home, profile_cli_selector
-import hermes_state_holders as _state_holders
-from hermes_state_holders import read_only_db_uri
-import hermes_state_wal
+import hermes_store.schema.holders as _state_holders
+from hermes_store.schema.holders import read_only_db_uri
+import hermes_store.schema.wal
 from hermes_store.repair._hooks import hooks
 from hermes_store.locks import (
     _acquire_db_flock, _clear_lock_holder_record, _describe_lock_holder, _read_lock_holder_record,
@@ -614,8 +614,8 @@ def _reapply_durability_barriers(conn: sqlite3.Connection) -> bool:
     Call before ``VACUUM``/``REINDEX`` once the schema parses: a connection opened
     on a malformed schema could not take them at open time. Never raises."""
     try:
-        hermes_state_wal._apply_macos_checkpoint_barrier(conn)
-        hermes_state_wal._enforce_macos_synchronous_full(conn)
+        hermes_store.schema.wal._apply_macos_checkpoint_barrier(conn)
+        hermes_store.schema.wal._enforce_macos_synchronous_full(conn)
         return True
     except Exception:  # schema still unparseable, or anything else — pragmas cannot be set yet
         return False
@@ -629,7 +629,7 @@ def apply_durability_barriers(conn: sqlite3.Connection) -> bool:
     with contextlib.suppress(Exception):
         h = hooks()
         if (raw_synchronous := h.cfg_get(h.load_config_readonly(), "database", "synchronous", default=None)) is not None:
-            hermes_state_wal._apply_synchronous_pragma(conn, raw_synchronous, db_label="state.db (guest)")
+            hermes_store.schema.wal._apply_synchronous_pragma(conn, raw_synchronous, db_label="state.db (guest)")
     return ok
 
 
@@ -843,7 +843,7 @@ def _db_opens_cleanly(db_path: Path) -> Optional[str]:
 def _live_writer_holds_db(db_path: Path) -> bool:
     """True when another process (or a connection outside this call) still holds ``db_path``.
 
-    The foreign-holder scan (``hermes_state_holders``) is the authority: any other process with the DB or a
+    The foreign-holder scan (``hermes_store.schema.holders``) is the authority: any other process with the DB or a
     WAL sidecar open, a deleted WAL generation, or an unknown/uninspectable holder fails CLOSED. The SQLite
     probe (``locking_mode=EXCLUSIVE`` + ``BEGIN IMMEDIATE``) is only an additional positive signal — it cannot
     see a ``journal_mode=DELETE`` reader and cannot run on a malformed file, which is why the scan comes first."""
@@ -937,7 +937,7 @@ def _probe_journal_mode_for_repair(db_path: Path) -> Optional[str]:
     fall back to ``database.journal_mode``."""
     try:
         with _repair_conn(db_path) as conn:
-            return hermes_state_wal._on_disk_journal_mode(conn)
+            return hermes_store.schema.wal._on_disk_journal_mode(conn)
     except (sqlite3.Error, OSError):
         return None
 
@@ -964,9 +964,9 @@ def _restore_journal_mode_after_repair(db_path: Path, before_mode: Optional[str]
     try:
         if conn is None:
             with _repair_conn(db_path) as owned:
-                after = hermes_state_wal.apply_wal_with_fallback(owned, db_label=db_path.name)
+                after = hermes_store.schema.wal.apply_wal_with_fallback(owned, db_label=db_path.name)
         else:
-            after = hermes_state_wal.apply_wal_with_fallback(conn, db_label=db_path.name)
+            after = hermes_store.schema.wal.apply_wal_with_fallback(conn, db_label=db_path.name)
         if before_mode and after != before_mode:
             logger.warning("state.db repair changed journal_mode %r -> %r (pre-surgery probe %r; restore resolved "
                            "through apply_wal_with_fallback per database.journal_mode and the WAL-reset gate)",

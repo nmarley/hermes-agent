@@ -48,7 +48,7 @@ _STATE_PY = _REPO_ROOT / "hermes_store" / "api.py"
 _ALL_STATE_SOURCES: list[tuple[Path, str]] = [
     (_STATE_PY, "SessionDB"),
     (_REPO_ROOT / "hermes_store" / "search" / "messages.py", "SessionSearchMixin"),
-    (_REPO_ROOT / "hermes_state_schema.py", "SessionSchemaMixin"),
+    (_REPO_ROOT / "hermes_store/schema/schema.py", "SessionSchemaMixin"),
     (_REPO_ROOT / "hermes_store" / "repair" / "portability.py", "SessionPortabilityMixin"),
 ]
 

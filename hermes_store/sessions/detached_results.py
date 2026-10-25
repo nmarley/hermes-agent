@@ -1,5 +1,5 @@
 """Results that arrive between turns, recorded once as user rows: a detached API delegation's delivery and
-an unviewed local completion's note (#134889 LC-7). Split out of ``hermes_state_messages`` and bound onto
+an unviewed local completion's note (#134889 LC-7). Split out of ``hermes_store.sessions.messages`` and bound onto
 SessionDB through ``SessionMessagesMixin``; built on its _message_row_params/_execute_write primitives."""
 
 from __future__ import annotations

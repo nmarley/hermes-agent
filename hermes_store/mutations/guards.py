@@ -2,10 +2,10 @@
 from hermes_store.common.messages import _ENDED_ROW_SQL, _ended_by_compression
 from hermes_store.errors import SessionCompressionInProgressError, SessionTurnLeaseLostError
 from hermes_store.compression.session import _CHAIN_CAP
-from hermes_state_local import POLICY_PREFIX, local_lineage_owner
+from hermes_store.sessions.local import POLICY_PREFIX, local_lineage_owner
 from hermes_store.repair.local_lineage import validate_local_lineage
-from hermes_state_runtime import RuntimeStoreError
-from hermes_state_sessions import _collect_delegate_child_ids
+from hermes_store.runtime.transactions import RuntimeStoreError
+from hermes_store.sessions.sessions import _collect_delegate_child_ids
 
 # What ``require_idle``'s transcript-guard check raises when a live turn lease or a
 # compression lock protects a target: the same retryable "busy" verdict as a running

@@ -118,7 +118,7 @@ async def discard_lost_turns(authority, session_id) -> str:
     the TUI queue and ``hermes sessions discard`` use. Never replays the input; the saved
     followers run once it commits."""
     from gateway.session_contract import SessionRef
-    from hermes_state_runtime import RuntimeStoreError, list_session_admissions
+    from hermes_store.runtime.transactions import RuntimeStoreError, list_session_admissions
     rows = await asyncio.to_thread(list_session_admissions, authority.db, session_id=session_id)
     lost = [row for row in rows if row['status'] == 'unknown']
     if not lost:
@@ -512,8 +512,8 @@ class GatewaySessionCommandsMixin:
         transcript changed since the read refuses both."""
         from gateway import session_retry_admission as retry_admission
         from gateway.session_ingress_context import carry_callback
-        from hermes_state_rewind import RewindTargetUnavailableError
-        from hermes_state_runtime import RuntimeStoreError
+        from hermes_store.compression.rewind import RewindTargetUnavailableError
+        from hermes_store.runtime.transactions import RuntimeStoreError
         session_id = session_entry.session_id
         if composite:
             # The carrier-aware rewind, planned on the same snapshot: archive the carrier, keep its scaffold.
@@ -532,7 +532,7 @@ class GatewaySessionCommandsMixin:
             resend_text = plan.live_text
 
             def write(conn):
-                from hermes_state_mutation_transcript import rewind_in_transaction
+                from hermes_store.mutations.transcript import rewind_in_transaction
                 rewind_in_transaction(db, conn, session_id, plan.target_row_id, preserve_compaction_handoff=True,
                                       expected_active_ids=plan.expected_active_ids,
                                       expected_target_content=plan.expected_target_content)
@@ -592,8 +592,8 @@ class GatewaySessionCommandsMixin:
         authority = active_authority(self)
         if authority is None:
             return None
-        import hermes_state_runtime
-        from hermes_state_runtime import RuntimeStoreError
+        import hermes_store.runtime.transactions
+        from hermes_store.runtime.transactions import RuntimeStoreError
         try:
             authority._require_admission_open()
         except RuntimeStoreError:
@@ -601,9 +601,9 @@ class GatewaySessionCommandsMixin:
         entry = self.session_store.lookup_by_session_key(self._session_key_for_source(source))
         if entry is None:
             return None
-        rows = hermes_state_runtime.list_session_admissions(
+        rows = hermes_store.runtime.transactions.list_session_admissions(
             authority.db, session_id=authority.logical_owner(entry.session_id))
-        if sum(row["status"] == "queued" for row in rows) >= hermes_state_runtime.ADMISSION_QUEUE_MAX:
+        if sum(row["status"] == "queued" for row in rows) >= hermes_store.runtime.transactions.ADMISSION_QUEUE_MAX:
             from gateway.session_ingress import QUEUE_FULL_REPLY
             return QUEUE_FULL_REPLY
         return None

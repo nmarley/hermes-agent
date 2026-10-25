@@ -94,8 +94,8 @@ async def test_retry_into_a_draining_authority_keeps_the_exchange(served):
 async def test_retry_into_a_full_fifo_keeps_the_exchange(served, monkeypatch):
     runner, root = served
     source, sid, sent = await _exchange(runner, root)
-    import hermes_state_runtime
-    monkeypatch.setattr(hermes_state_runtime, 'ADMISSION_QUEUE_MAX', 0)
+    import hermes_store.runtime.transactions
+    monkeypatch.setattr(hermes_store.runtime.transactions, 'ADMISSION_QUEUE_MAX', 0)
 
     reply = await _retry(runner, root, source)
 
@@ -124,8 +124,8 @@ async def _admitting_exchange(runner, root, rows=None):
 
 
 def _queued_texts(authority, sid):
-    import hermes_state_runtime
-    rows = hermes_state_runtime.list_session_admissions(authority.db, session_id=authority.logical_owner(sid))
+    import hermes_store.runtime.transactions
+    rows = hermes_store.runtime.transactions.list_session_admissions(authority.db, session_id=authority.logical_owner(sid))
     return [row['payload']['text'] for row in rows if row['status'] == 'queued']
 
 

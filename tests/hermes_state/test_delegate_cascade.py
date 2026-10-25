@@ -12,8 +12,8 @@ import json
 import sqlite3
 
 import hermes_state  # installs the store hooks used by session deletion
-from hermes_state_schema import reconcile_state_schema
-from hermes_state_sessions import _collect_delegate_child_ids, _delete_delegate_children
+from hermes_store.schema.schema import reconcile_state_schema
+from hermes_store.sessions.sessions import _collect_delegate_child_ids, _delete_delegate_children
 
 
 def _make_conn():

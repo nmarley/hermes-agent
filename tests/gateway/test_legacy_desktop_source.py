@@ -12,9 +12,9 @@ import pytest
 
 from gateway.session_contract import Principal
 from hermes_state import SessionDB
-from hermes_state_local_migration import validate_legacy_row
-from hermes_state_mutation_binding import authorize_history, same_history_owner
-from hermes_state_runtime import RuntimeStoreError
+from hermes_store.repair.local_migration import validate_legacy_row
+from hermes_store.mutations.binding import authorize_history, same_history_owner
+from hermes_store.runtime.transactions import RuntimeStoreError
 
 
 def _login(user, issuer=''):

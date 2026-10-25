@@ -3,7 +3,7 @@ import asyncio
 import logging
 import sqlite3
 
-from hermes_state_runtime import RuntimeStoreError, _admission, _epoch, settle_steer_transfers
+from hermes_store.runtime.transactions import RuntimeStoreError, _admission, _epoch, settle_steer_transfers
 
 logger = logging.getLogger(__name__)
 

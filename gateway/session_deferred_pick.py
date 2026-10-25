@@ -7,8 +7,8 @@ drain at the next claim boundary, when nothing is executing. The running turn ke
 import json
 import logging
 
-from hermes_state_mutation_prepared import DEFERRED_PICK_PREFIX as _PREFIX
-from hermes_state_runtime import RuntimeStoreError
+from hermes_store.mutations.prepared import DEFERRED_PICK_PREFIX as _PREFIX
+from hermes_store.runtime.transactions import RuntimeStoreError
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +19,8 @@ def defer_pick(authority, actor, ref, params):
     Blocking SQLite: callers run it off the event loop. Acceptance writes the request's durable
     mutation receipt in the same transaction, so an exact retry returns this result instead of
     overwriting a newer pick, and the stored pick carries a stable application id."""
-    from hermes_state_mutations import validate_action
-    from hermes_state_runtime import _epoch, _json, mutation_receipt_key, replay_mutation_receipt
+    from hermes_store.mutations.actions import validate_action
+    from hermes_store.runtime.transactions import _epoch, _json, mutation_receipt_key, replay_mutation_receipt
     validate_action('model', params['payload'])
     key, digest = mutation_receipt_key(actor.subject, ref.session_id, params['request_id'], operation='model',
                                        payload=params['payload'], expected_revision=params.get('expected_revision'),
@@ -65,7 +65,7 @@ async def apply_deferred_pick(authority, ref, live):
     claiming, so no turn is running. A pick that no longer resolves is dropped and announced."""
     import asyncio
     from gateway.session_mutations import write_mutation
-    from hermes_state_mutation_retirement import has_mutation_receipt
+    from hermes_store.mutations.retirement import has_mutation_receipt
     key = _PREFIX + ref.session_id
 
     def read():
@@ -93,7 +93,7 @@ async def apply_deferred_pick(authority, ref, live):
     params = {'session_id': ref.session_id, 'request_id': application_id,
               'expected_revision': row['runtime_revision'], 'expected_generation': row['runtime_generation'],
               'operation': 'model', 'payload': pick['payload']}
-    from hermes_state_mutation_guards import MUTATION_GUARD_REFUSALS
+    from hermes_store.mutations.guards import MUTATION_GUARD_REFUSALS
     try:
         result = await write_mutation(authority, ref, params, None, principal_id=pick['principal_id'])
     except MUTATION_GUARD_REFUSALS:
@@ -112,7 +112,7 @@ async def apply_deferred_pick(authority, ref, live):
         # A guarded target (cost / data policy / large context): nothing was written. The pick stays
         # pending, marked as asked, and the owner's confirmation exchange goes to every viewer; the
         # confirmed resend (``payload.confirm``) commits it through session.mutate.
-        from hermes_state_runtime import _json
+        from hermes_store.runtime.transactions import _json
         await asyncio.to_thread(authority.db._execute_write, lambda conn: conn.execute(
             'UPDATE state_meta SET value=? WHERE key=? AND value=?',
             (_json({**pick, 'awaiting_confirm': result['confirm']}), key, stored[0])))

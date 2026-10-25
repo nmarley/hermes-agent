@@ -22,12 +22,12 @@ import time
 import pytest
 
 import hermes_state
-import hermes_state_holders
-import hermes_state_schema
+import hermes_store.schema.holders
+import hermes_store.schema.schema
 from hermes_state import SessionDB
 from hermes_store.search import FTS_REBUILD_DEFERRAL_KEY, FTS_STALE_KEY, LEGACY_FTS_SQL, LEGACY_FTS_TRIGRAM_SQL, _FTS_TRIGGERS
 from hermes_store.schema import SCHEMA_SQL
-from hermes_state_dbfile import _concrete_state_db_holder_pids, _is_inactive_orphan_desktop_holder
+from hermes_store.schema.dbfile import _concrete_state_db_holder_pids, _is_inactive_orphan_desktop_holder
 
 
 @pytest.fixture
@@ -157,7 +157,7 @@ class TestRuntimeFtsRebuild:
         ),
     )
     def test_uninspectable_non_hermes_process_is_not_a_holder(self, argv):
-        assert not hermes_state_holders._looks_like_hermes(argv)
+        assert not hermes_store.schema.holders._looks_like_hermes(argv)
 
     @pytest.mark.parametrize(
         "argv",
@@ -181,7 +181,7 @@ class TestRuntimeFtsRebuild:
         ),
     )
     def test_uninspectable_hermes_process_remains_a_holder(self, argv):
-        assert hermes_state_holders._looks_like_hermes(argv)
+        assert hermes_store.schema.holders._looks_like_hermes(argv)
 
     @pytest.mark.platforms("linux")
     def test_foreign_holder_detection_proc_readlink_deleted_wal(
@@ -210,18 +210,18 @@ class TestRuntimeFtsRebuild:
         other.touch()
         os.symlink(str(other), str(proc_root / "333" / "fd" / "3"))
 
-        monkeypatch.setattr(hermes_state_holders.os, "getpid", lambda: 111)
+        monkeypatch.setattr(hermes_store.schema.holders.os, "getpid", lambda: 111)
         real_listdir = os.listdir
         def _listdir(path):
             if isinstance(path, str):
                 path = path.replace("/proc", str(proc_root))
             return real_listdir(path)
-        monkeypatch.setattr(hermes_state_holders.os, "listdir", _listdir)
+        monkeypatch.setattr(hermes_store.schema.holders.os, "listdir", _listdir)
         real_readlink = os.readlink
         def _readlink(path):
             path = path.replace("/proc", str(proc_root))
             return real_readlink(path)
-        monkeypatch.setattr(hermes_state_holders.os, "readlink", _readlink)
+        monkeypatch.setattr(hermes_store.schema.holders.os, "readlink", _readlink)
         real_stat = os.stat
         def _stat(path, *args, **kwargs):
             path_s = str(path).replace("/proc", str(proc_root))
@@ -233,9 +233,9 @@ class TestRuntimeFtsRebuild:
                 fields[1] += 1000
                 return os.stat_result(fields)
             return real_stat(path_s, *args, **kwargs)
-        monkeypatch.setattr(hermes_state_holders.os, "stat", _stat)
+        monkeypatch.setattr(hermes_store.schema.holders.os, "stat", _stat)
 
-        holders = hermes_state_holders.foreign_state_db_holders(db_path)
+        holders = hermes_store.schema.holders.foreign_state_db_holders(db_path)
         assert holders == [(222, db_path_wal + " (deleted)")]
 
     @pytest.mark.platforms("linux")
@@ -257,7 +257,7 @@ class TestRuntimeFtsRebuild:
             b"python3\x00-m\x00hermes_cli.main\x00chat\x00"
         )
 
-        monkeypatch.setattr(hermes_state_holders.os, "getpid", lambda: 111)
+        monkeypatch.setattr(hermes_store.schema.holders.os, "getpid", lambda: 111)
         real_listdir = os.listdir
         def _listdir(path):
             if isinstance(path, str):
@@ -265,7 +265,7 @@ class TestRuntimeFtsRebuild:
                     raise PermissionError(path)
                 path = path.replace("/proc", str(proc_root))
             return real_listdir(path)
-        monkeypatch.setattr(hermes_state_holders.os, "listdir", _listdir)
+        monkeypatch.setattr(hermes_store.schema.holders.os, "listdir", _listdir)
         # _read_proc_argv opens /proc/<pid>/cmdline directly; redirect
         # it to our fake proc tree.
         def _fake_argv(pid):
@@ -278,9 +278,9 @@ class TestRuntimeFtsRebuild:
                 return raw.decode("utf-8", "replace").rstrip("\x00").split("\x00")
             except OSError:
                 return None
-        monkeypatch.setattr(hermes_state_holders, "_read_proc_argv", _fake_argv)
+        monkeypatch.setattr(hermes_store.schema.holders, "_read_proc_argv", _fake_argv)
 
-        holders = hermes_state_holders.foreign_state_db_holders(db_path)
+        holders = hermes_store.schema.holders.foreign_state_db_holders(db_path)
         # Should include PID 222 with the cmdline info
         assert len(holders) == 1
         assert holders[0][0] == 222
@@ -721,7 +721,7 @@ class TestRuntimeFtsRebuild:
             "_reap_inactive_orphan_desktop_holders",
             lambda self, holders, *, min_age_seconds: reaped.extend(holders) or [4242],
         )
-        monkeypatch.setattr(hermes_state_schema.time, "time", lambda: 120.0)
+        monkeypatch.setattr(hermes_store.schema.schema.time, "time", lambda: 120.0)
 
         reopened = SessionDB(db_path=db_path)
         try:
@@ -759,20 +759,20 @@ class TestRuntimeFtsRebuild:
             SessionDB, "_reap_inactive_orphan_desktop_holders", lambda self, holders, *, min_age_seconds: [],
         )
         monkeypatch.setattr(
-            hermes_state_schema, "_read_proc_argv", lambda pid: ["python", "-m", "hermes_cli.main", "serve"], raising=False,
+            hermes_store.schema.schema, "_read_proc_argv", lambda pid: ["python", "-m", "hermes_cli.main", "serve"], raising=False,
         )
         clock = [1000.0]
-        monkeypatch.setattr(hermes_state_schema.time, "time", lambda: clock[0])
+        monkeypatch.setattr(hermes_store.schema.schema.time, "time", lambda: clock[0])
 
         from hermes_cli.doctor_state import _render_state_db_stats
-        from hermes_state_dbfile import collect_state_db_stats
+        from hermes_store.schema.dbfile import collect_state_db_stats
 
         def doctor_blob():
             return " ".join(" ".join(row) for row in _render_state_db_stats(collect_state_db_stats(db_path))).lower()
 
         # Read via getattr so the red-on-base run reaches the behavioural assertion, not a NameError.
-        futile_attempts = getattr(hermes_state_schema, "_FTS_HOLDER_FUTILE_ATTEMPTS", 10)
-        futile_seconds = getattr(hermes_state_schema, "_FTS_HOLDER_FUTILE_SECONDS", 1800.0)
+        futile_attempts = getattr(hermes_store.schema.schema, "_FTS_HOLDER_FUTILE_ATTEMPTS", 10)
+        futile_seconds = getattr(hermes_store.schema.schema, "_FTS_HOLDER_FUTILE_SECONDS", 1800.0)
         reopened = SessionDB(db_path=db_path)
         try:
             cursor = reopened._conn.cursor()
@@ -826,8 +826,8 @@ class TestRuntimeFtsRebuild:
         try:
             assert reopened._fts_stale is True
             # Backoff pinned at the cap by the same holder; the holder still there -> no retry.
-            reopened._fts_stale_retry_after = time.monotonic() + hermes_state_schema._FTS_STALE_RETRY_MAX_SECONDS
-            reopened._fts_stale_retry_interval = hermes_state_schema._FTS_STALE_RETRY_MAX_SECONDS
+            reopened._fts_stale_retry_after = time.monotonic() + hermes_store.schema.schema._FTS_STALE_RETRY_MAX_SECONDS
+            reopened._fts_stale_retry_interval = hermes_store.schema.schema._FTS_STALE_RETRY_MAX_SECONDS
             assert reopened.retry_deferred_fts_recovery() is False
             assert reopened._fts_stale is True
             # Holder leaves: the very next tick retries and rebuilds instead of waiting out the cap.

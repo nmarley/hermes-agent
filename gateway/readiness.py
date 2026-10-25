@@ -21,7 +21,7 @@ def _check(status: str, detail: str | None = None, **extra: Any) -> dict[str, An
 
 
 def _probe_state_db(home: Path) -> dict[str, Any]:
-    """Read-only schema probe plus the process-wide corruption latch (``hermes_state_health``).
+    """Read-only schema probe plus the process-wide corruption latch (``hermes_store.health``).
 
     The schema read only catches an unreadable header or schema; damage deeper in the file
     surfaces when a reader or writer touches it, and those publish into the latch. Reporting

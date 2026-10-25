@@ -11,9 +11,9 @@ from hermes_store.common.constants import AUTO_VACUUM_MIN_FREELIST_RATIO
 from hermes_store.common.sql import _id_chunks, _placeholders, escape_like as _escape_like
 from hermes_store.common.sessions import _non_continuation_child_sql, _sql_session_last_active
 from hermes_store.common.lifecycle import emit_session_deleted
-from hermes_state_holders import foreign_state_db_holders, in_process_state_db_holders
+from hermes_store.schema.holders import foreign_state_db_holders, in_process_state_db_holders
 from hermes_store.media.retirement import collect_retired_media
-from hermes_state_sessions import _cwd_prefix_clause
+from hermes_store.sessions.sessions import _cwd_prefix_clause
 from hermes_store.mutations.retirement import prune_retired_tombstones, retire_prunable
 from hermes_store.repair._hooks import hooks
 from hermes_store.repair.repair import _release_auto_maintenance_lock, _try_acquire_auto_maintenance_lock

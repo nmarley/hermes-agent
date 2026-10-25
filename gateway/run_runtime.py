@@ -254,7 +254,7 @@ def stop_authority_turns(authority, *, in_process=False, reason=None):
     ``reason`` (a gateway restart/shutdown) is recorded on each worker it signals, so the turn settles
     with that cause; a worker already stopped (the user's Stop came first) keeps none. A worker
     still being spawned gets the same Stop and cause through latches (``_stop_spawning_managed``)."""
-    from hermes_state_runtime import RuntimeStoreError
+    from hermes_store.runtime.transactions import RuntimeStoreError
     signalled = 0
     workers = getattr(authority, '_managed_workers', {})
     for worker in list(workers.values()):
@@ -364,7 +364,7 @@ async def _retire_profile_authority(authority, timeout=None):
     authority.retired = True
     # No drain is left to answer an observer (a session_busy pause keeps API/webhook/Bot ones
     # waiting): release them all. Their rows stay queued for the next owner, so nothing is resent.
-    from hermes_state_runtime import RuntimeStoreError
+    from hermes_store.runtime.transactions import RuntimeStoreError
     authority.native_waiters.clear()
     for waiter in authority.waiters.values():
         if not waiter.done():

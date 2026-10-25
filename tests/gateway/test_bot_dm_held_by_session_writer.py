@@ -10,7 +10,7 @@ from types import SimpleNamespace
 import pytest
 import pytest_asyncio
 
-from hermes_state_runtime import RuntimeStoreError, list_session_admissions
+from hermes_store.runtime.transactions import RuntimeStoreError, list_session_admissions
 
 CHAT = 'old-bot-chat'
 

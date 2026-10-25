@@ -8,7 +8,7 @@ import pytest
 
 from gateway.session_worker_child import reserve_child_execution
 from hermes_state import SessionDB
-import hermes_state_runtime as rt
+import hermes_store.runtime.transactions as rt
 
 
 def _reserve(db, epoch, sequence, *, limits=(2, 1), refused=None, execution_id='worker'):

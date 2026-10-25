@@ -12,7 +12,7 @@ from types import SimpleNamespace
 
 import pytest
 
-import hermes_state_runtime as rt
+import hermes_store.runtime.transactions as rt
 from hermes_cli import main, source_releases, update_cmd
 from hermes_cli.subcommands.update import build_update_parser
 from hermes_cli.update_channel import set_install_channel

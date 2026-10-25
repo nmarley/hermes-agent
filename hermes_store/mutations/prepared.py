@@ -1,9 +1,9 @@
 """Optimistic preparation snapshots revalidated inside the receipt transaction."""
 import json
-from hermes_state_local import POLICY_PREFIX, local_conversation_ids
+from hermes_store.sessions.local import POLICY_PREFIX, local_conversation_ids
 from hermes_store.repair.local_lineage import validate_local_lineage
 from hermes_store.mutations.guards import require_target_advanceable
-from hermes_state_runtime import RuntimeStoreError, _epoch, _json
+from hermes_store.runtime.transactions import RuntimeStoreError, _epoch, _json
 
 # A model pick made while a turn ran, committed at the next turn boundary (gateway/session_deferred_pick.py).
 DEFERRED_PICK_PREFIX = 'gateway.deferred_pick.v1.'

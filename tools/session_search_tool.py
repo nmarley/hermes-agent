@@ -606,7 +606,7 @@ def session_search(query: str = "", role_filter: str | None = None, limit: int =
     new parameters are appended after ``detail``."""
     from hermes_constants import get_hermes_home
     from hermes_state import SessionDB, format_session_db_unavailable
-    from hermes_state_registry import release_or_close
+    from hermes_store.schema.registry import release_or_close
     owned_dbs: list[Any] = []
     # A raw `@session:<profile>/<id>` link as session_id: ids never contain "/", so
     # split on it and adopt the embedded profile only when none was passed.

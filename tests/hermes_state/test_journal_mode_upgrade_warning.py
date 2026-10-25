@@ -20,14 +20,15 @@ value, the resulting header, and the never-live-downgrade rule are all pinned
 unchanged, and the brand-new-database case must stay silent or the warning
 would fire on every fresh install.
 """
-
 from __future__ import annotations
 
 import sqlite3
 
 import pytest
 
-import hermes_state_wal
+import hermes_state  # installs store hooks for direct store imports
+
+import hermes_store.schema.wal
 import hermes_yaml as yaml
 
 
@@ -44,7 +45,7 @@ def _configure_mode(monkeypatch: pytest.MonkeyPatch, tmp_path, mode: object) -> 
 
 def _disable_vulnerable_gate(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "hermes_state_wal.is_sqlite_wal_reset_vulnerable",
+        "hermes_store.schema.wal.is_sqlite_wal_reset_vulnerable",
         lambda **kwargs: False,
     )
 
@@ -65,9 +66,9 @@ def _make_delete_db_with_content(path) -> None:
 def _reset_dedup():
     """Order-independence: the warning is deduped per process per db_label."""
 
-    hermes_state_wal._journal_upgrade_warned_paths.clear()
+    hermes_store.schema.wal._journal_upgrade_warned_paths.clear()
     yield
-    hermes_state_wal._journal_upgrade_warned_paths.clear()
+    hermes_store.schema.wal._journal_upgrade_warned_paths.clear()
 
 
 
@@ -77,7 +78,7 @@ class TestTheWarningFires:
     def test_an_existing_delete_database_warns_when_flipped(
         self, monkeypatch, tmp_path, caplog
     ):
-        from hermes_state_wal import apply_wal_with_fallback
+        from hermes_store.schema.wal import apply_wal_with_fallback
 
         _configure_mode(monkeypatch, tmp_path, "wal")
         _disable_vulnerable_gate(monkeypatch)
@@ -103,7 +104,7 @@ class TestTheWarningFires:
         (managed_uv repairs it on update, citing ~2600x slower appends), so
         this must warn about the change without preventing it.
         """
-        from hermes_state_wal import apply_wal_with_fallback
+        from hermes_store.schema.wal import apply_wal_with_fallback
 
         _configure_mode(monkeypatch, tmp_path, "wal")
         _disable_vulnerable_gate(monkeypatch)
@@ -121,7 +122,7 @@ class TestTheWarningFires:
         self, monkeypatch, tmp_path, caplog
     ):
         """kanban opens a connection per operation; undeduped this is a flood."""
-        from hermes_state_wal import apply_wal_with_fallback
+        from hermes_store.schema.wal import apply_wal_with_fallback
 
         _configure_mode(monkeypatch, tmp_path, "wal")
         _disable_vulnerable_gate(monkeypatch)
@@ -143,7 +144,7 @@ class TestTheWarningFires:
         self, monkeypatch, tmp_path, caplog
     ):
         """#89293 saw four databases flip. Dedup is per label, not global."""
-        from hermes_state_wal import apply_wal_with_fallback
+        from hermes_store.schema.wal import apply_wal_with_fallback
 
         _configure_mode(monkeypatch, tmp_path, "wal")
         _disable_vulnerable_gate(monkeypatch)
@@ -174,7 +175,7 @@ class TestTheWarningStaysQuiet:
         every opener applies WAL before creating any schema -- so without
         this guard the warning fires on every first run of every install.
         """
-        from hermes_state_wal import apply_wal_with_fallback
+        from hermes_store.schema.wal import apply_wal_with_fallback
 
         _configure_mode(monkeypatch, tmp_path, "wal")
         _disable_vulnerable_gate(monkeypatch)
@@ -190,7 +191,7 @@ class TestTheWarningStaysQuiet:
 
     def test_an_existing_wal_database_is_silent(self, monkeypatch, tmp_path, caplog):
         """No flip happens: the probe returns early. Nothing to report."""
-        from hermes_state_wal import apply_wal_with_fallback
+        from hermes_store.schema.wal import apply_wal_with_fallback
 
         _configure_mode(monkeypatch, tmp_path, "wal")
         _disable_vulnerable_gate(monkeypatch)
@@ -209,7 +210,7 @@ class TestTheWarningStaysQuiet:
 
     def test_configured_delete_is_silent(self, monkeypatch, tmp_path, caplog):
         """The operator used the durable lever. There is nothing to tell them."""
-        from hermes_state_wal import apply_wal_with_fallback
+        from hermes_store.schema.wal import apply_wal_with_fallback
 
         _configure_mode(monkeypatch, tmp_path, "delete")
         _disable_vulnerable_gate(monkeypatch)
@@ -237,11 +238,11 @@ class TestTheWarningStaysQuiet:
         the SQLite upgrade -- warning here would blame the guard that was
         doing its job.
         """
-        from hermes_state_wal import apply_wal_with_fallback
+        from hermes_store.schema.wal import apply_wal_with_fallback
 
         _configure_mode(monkeypatch, tmp_path, "wal")
         monkeypatch.setattr(
-            "hermes_state_wal.is_sqlite_wal_reset_vulnerable",
+            "hermes_store.schema.wal.is_sqlite_wal_reset_vulnerable",
             lambda **kwargs: True,
         )
         path = tmp_path / "vulnerable.db"
@@ -265,7 +266,7 @@ class TestTheExistingContractIsUnchanged:
     """Behaviour preservation for the rules this change sits next to."""
 
     def test_on_disk_wal_is_still_never_live_downgraded(self, monkeypatch, tmp_path):
-        from hermes_state_wal import apply_wal_with_fallback
+        from hermes_store.schema.wal import apply_wal_with_fallback
 
         _configure_mode(monkeypatch, tmp_path, "delete")
         path = tmp_path / "existing-wal.db"
@@ -273,7 +274,7 @@ class TestTheExistingContractIsUnchanged:
         try:
             assert conn.execute("PRAGMA journal_mode=WAL").fetchone()[0].lower() == "wal"
             monkeypatch.setattr(
-                "hermes_state_wal.is_sqlite_wal_reset_vulnerable",
+                "hermes_store.schema.wal.is_sqlite_wal_reset_vulnerable",
                 lambda **kwargs: True,
             )
             assert apply_wal_with_fallback(conn, db_label="existing-wal.db") == "wal"
@@ -284,7 +285,7 @@ class TestTheExistingContractIsUnchanged:
     def test_default_config_still_yields_wal_on_a_fresh_database(
         self, monkeypatch, tmp_path
     ):
-        from hermes_state_wal import apply_wal_with_fallback
+        from hermes_store.schema.wal import apply_wal_with_fallback
 
         _configure_mode(monkeypatch, tmp_path, "wal")
         _disable_vulnerable_gate(monkeypatch)
