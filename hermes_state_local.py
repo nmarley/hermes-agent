@@ -4,7 +4,7 @@ import time
 
 from hermes_state_runtime import RuntimeStoreError, _epoch, _json
 
-POLICY_PREFIX = 'gateway.local_policy.v1:'
+from hermes_store.keys import POLICY_PREFIX
 API_BINDING_PREFIX = 'gateway.api.binding.v1.'
 API_DECLARED_PREFIX = 'gateway.api.conversation.v1.'
 

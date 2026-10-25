@@ -6,7 +6,7 @@ not re-key idempotency digests, queued inputs, subscribers or uncertain claims.
 import json
 import time
 
-from hermes_state_local import POLICY_PREFIX
+from hermes_store.keys import POLICY_PREFIX
 from hermes_state_runtime import RuntimeStoreError, _epoch, _json
 import itertools
 

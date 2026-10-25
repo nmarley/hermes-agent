@@ -7,7 +7,8 @@ Worker receipt reads additionally require the original private adoption proof.
 import hmac
 import json
 
-from hermes_state_runtime import RuntimeStoreError, _epoch, _json, _row, _secret_digest, _text, admission_fingerprint
+from hermes_store.runtime.errors import RuntimeStoreError
+from hermes_store.runtime.primitives import _epoch, _json, _row, _secret_digest, _text, admission_fingerprint
 
 RESULT_PREFIX = 'gateway.admission.result.v1.'
 ADMISSION_PREFIX = 'gateway.terminal_admission.v1.'

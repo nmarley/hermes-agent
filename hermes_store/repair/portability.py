@@ -20,7 +20,7 @@ from hermes_store.keys import (
     CRON_PRINCIPAL_ID, CRON_REQUEST_PREFIX, cron_request_range, cron_run_from_request, legacy_cron_run_job,
     prefix_range,
 )
-from hermes_state_local import POLICY_PREFIX
+from hermes_store.keys import POLICY_PREFIX
 from hermes_store.schema import SCHEMA_SQL
 from hermes_store.common.previews import _shape_preview, _sql_preview_raw
 from hermes_store.common.sessions import _sql_session_last_active

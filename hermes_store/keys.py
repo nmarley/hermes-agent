@@ -59,6 +59,9 @@ def legacy_cron_run_job(session_id):
     return match.group(1) if match else None
 
 
+POLICY_PREFIX = 'gateway.local_policy.v1:'
+
+
 def admission_fingerprint(*, canonical_target: str, payload: dict) -> str:
     """Canonical payload identity after authorization and immutable media capture."""
     encoded = json.dumps(

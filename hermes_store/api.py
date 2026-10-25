@@ -53,7 +53,7 @@ from hermes_store.guard import (
     _STATE_DB_GUARD_BYPASS_ENV, _in_test_context, _is_production_state_db, _real_platform_state_root,
     _register_test_instance, _set_last_init_error, get_last_init_error,
 )
-from hermes_state_readpool import _READ_POOL_MAX, _proc_fd_targets, _read_budget_for
+from hermes_store.runtime.readpool import _READ_POOL_MAX, _proc_fd_targets, _read_budget_for
 import hermes_state_registry as _state_registry
 from hermes_state_sessions import SessionSessionsMixin
 from hermes_store.search.index import SessionFtsSetupMixin, load_fts5_cjk_extension
@@ -63,7 +63,7 @@ from hermes_store.repair.profile_repair import SessionProfileRepairMixin
 from hermes_state_schema import SessionSchemaMixin
 import hermes_state_holders as _state_holders
 from hermes_store import lockguard as _lockguard
-from hermes_state_lockowners import log_write_lock_holders
+from hermes_store.runtime.lockowners import log_write_lock_holders
 from hermes_state_dbfile import (
     _connect_tracked_db, _fd_is_truly_unlinked, _prepare_connection_retirement,
     _read_sqlite_application_id, _stat_sqlite_sidecar_identity,
@@ -293,6 +293,28 @@ def repair_hooks() -> RepairHooks:
     if _repair_hooks_provider is None:
         raise RuntimeError("repair hooks are not installed; import hermes_state first")
     return _repair_hooks_provider()
+
+
+class RuntimeHooks(Protocol):
+    """SQLite tracking and surface labels the runtime cluster cannot import."""
+
+    def connect_tracked(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def created_surface(self, value: Any) -> Optional[str]: ...
+
+
+_runtime_hooks_provider: Optional[Callable[[], RuntimeHooks]] = None
+
+
+def set_runtime_hooks_provider(provider: Optional[Callable[[], RuntimeHooks]]) -> None:
+    global _runtime_hooks_provider
+    _runtime_hooks_provider = provider
+
+
+def runtime_hooks() -> RuntimeHooks:
+    if _runtime_hooks_provider is None:
+        raise RuntimeError("runtime hooks are not installed; import hermes_state first")
+    return _runtime_hooks_provider()
 
 
 # Import-time snapshot lets _default_db_path() detect a re-pointed DEFAULT_DB_PATH

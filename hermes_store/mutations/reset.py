@@ -3,7 +3,7 @@ import json
 import uuid
 import time
 
-from hermes_state_local import POLICY_PREFIX
+from hermes_store.keys import POLICY_PREFIX
 from hermes_store.repair.local_lineage import advance_local_target, validate_local_lineage
 from hermes_store.mutations.guards import require_target_advanceable
 from hermes_state_runtime import RuntimeStoreError
