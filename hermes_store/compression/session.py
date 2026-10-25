@@ -15,7 +15,7 @@ from hermes_store.common.sessions import _BOUNDARY_END_REASONS, _RESET_CHILD_SQL
 from hermes_store.common.messages import _COMPRESSION_LOCK_ROW_SQL as _LOCK_ROW_SQL, _ENDED_ROW_SQL, _ended_by_compression
 from hermes_store.common.sql import _sql_json_extract
 from hermes_store.sessions.model_config import parse_model_config as _parse_model_config
-from hermes_state_local_lineage import advance_local_target
+from hermes_store.repair.local_lineage import advance_local_target
 
 # Log-record parity with the origin module (caplog tests pin "hermes_state").
 logger = logging.getLogger("hermes_state")

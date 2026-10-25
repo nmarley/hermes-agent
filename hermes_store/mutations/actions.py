@@ -2,7 +2,7 @@
 import time
 from hermes_constants import parse_reasoning_effort
 from hermes_store.compression.session import _CHAIN_CAP
-from hermes_state_local_lineage import local_physical_target
+from hermes_store.repair.local_lineage import local_physical_target
 from hermes_state_runtime import RuntimeStoreError
 from hermes_state_sessions import _expand_compression_lineage_ids
 

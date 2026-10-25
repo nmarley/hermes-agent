@@ -74,8 +74,18 @@ def local_identity(profile_id, principal_id, request_id):
     return 'local-' + hashlib.sha256(identity.encode()).hexdigest()
 
 
+def session_key_namespace(profile) -> str:
+    """``agent:<ns>`` prefix for a session key: default/None profile -> ``agent:main``
+    (byte-identical to every historical key), named profile -> ``agent:<name>`` so two
+    profiles serving the same chat never collide. A profile literally named ``main`` is
+    marked ``main~``: ``~`` is outside the profile-id alphabet."""
+    if not profile or profile == "default":
+        return "agent:main"
+    return "agent:main~" if profile == "main" else f"agent:{profile}"
+
+
 def profile_from_session_key_namespace(namespace: str) -> str:
-    """Inverse of ``gateway.session._session_key_namespace`` for the ``<ns>`` slot of a key:
+    """Inverse of :func:`session_key_namespace` for the ``<ns>`` slot of a key:
     ``"default"`` for ``main``, ``"main"`` for the marked ``main~``, else the slot is the profile id."""
     if namespace == "main":
         return "default"

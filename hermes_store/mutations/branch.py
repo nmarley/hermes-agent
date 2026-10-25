@@ -3,7 +3,7 @@ import json
 import uuid
 
 from hermes_state_local import POLICY_PREFIX
-from hermes_state_local_lineage import validate_local_lineage
+from hermes_store.repair.local_lineage import validate_local_lineage
 from hermes_store.mutations.guards import require_idle
 from hermes_state_runtime import RuntimeStoreError, _json
 from hermes_store.sessions.titles import lineage_title_on_conn

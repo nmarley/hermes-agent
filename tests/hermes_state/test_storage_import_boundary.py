@@ -10,7 +10,9 @@ def test_runtime_storage_modules_import_without_loading_gateway():
              "hermes_state_mutation_reset, hermes_state_mutation_retirement, hermes_state_mutation_transcript, "
              "hermes_state_mutations, hermes_state_compression, hermes_state_rewind, "
              "hermes_state_prune_rewrite, hermes_state_worker_compression, hermes_state_search, "
-             "hermes_state_fts; "
+             "hermes_state_fts, hermes_state_repair, hermes_state_reconcile, hermes_state_coverage, "
+             "hermes_state_profile_repair, hermes_state_maintenance, hermes_state_portability, "
+             "hermes_state_local_lineage, hermes_state_local_migration; "
              "print(sorted(m for m in sys.modules if m == 'gateway' or m.startswith('gateway.')))")
     out = subprocess.run([sys.executable, '-c', probe], capture_output=True, text=True, check=True)
     assert out.stdout.strip() == '[]', out.stdout

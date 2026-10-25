@@ -1,7 +1,7 @@
 """Optimistic preparation snapshots revalidated inside the receipt transaction."""
 import json
 from hermes_state_local import POLICY_PREFIX, local_conversation_ids
-from hermes_state_local_lineage import validate_local_lineage
+from hermes_store.repair.local_lineage import validate_local_lineage
 from hermes_store.mutations.guards import require_target_advanceable
 from hermes_state_runtime import RuntimeStoreError, _epoch, _json
 

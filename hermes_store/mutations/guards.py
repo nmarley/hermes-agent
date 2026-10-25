@@ -3,7 +3,7 @@ from hermes_store.common.messages import _ENDED_ROW_SQL, _ended_by_compression
 from hermes_store.errors import SessionCompressionInProgressError, SessionTurnLeaseLostError
 from hermes_store.compression.session import _CHAIN_CAP
 from hermes_state_local import POLICY_PREFIX, local_lineage_owner
-from hermes_state_local_lineage import validate_local_lineage
+from hermes_store.repair.local_lineage import validate_local_lineage
 from hermes_state_runtime import RuntimeStoreError
 from hermes_state_sessions import _collect_delegate_child_ids
 

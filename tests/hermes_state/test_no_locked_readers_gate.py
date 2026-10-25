@@ -49,7 +49,7 @@ _ALL_STATE_SOURCES: list[tuple[Path, str]] = [
     (_STATE_PY, "SessionDB"),
     (_REPO_ROOT / "hermes_store" / "search" / "messages.py", "SessionSearchMixin"),
     (_REPO_ROOT / "hermes_state_schema.py", "SessionSchemaMixin"),
-    (_REPO_ROOT / "hermes_state_portability.py", "SessionPortabilityMixin"),
+    (_REPO_ROOT / "hermes_store" / "repair" / "portability.py", "SessionPortabilityMixin"),
 ]
 
 _WRITE_RE = re.compile(

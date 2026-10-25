@@ -57,9 +57,9 @@ from hermes_state_readpool import _READ_POOL_MAX, _proc_fd_targets, _read_budget
 import hermes_state_registry as _state_registry
 from hermes_state_sessions import SessionSessionsMixin
 from hermes_store.search.index import SessionFtsSetupMixin, load_fts5_cjk_extension
-from hermes_state_portability import SessionPortabilityMixin
+from hermes_store.repair.portability import SessionPortabilityMixin
 from hermes_store.adapters.telegram import SessionTelegramTopicsMixin
-from hermes_state_profile_repair import SessionProfileRepairMixin
+from hermes_store.repair.profile_repair import SessionProfileRepairMixin
 from hermes_state_schema import SessionSchemaMixin
 import hermes_state_holders as _state_holders
 from hermes_store import lockguard as _lockguard
@@ -74,15 +74,15 @@ from hermes_state_dbfile import (
 from hermes_state_messages import SessionMessagesMixin
 from hermes_store.compression.prune_rewrite import SessionPruneRewriteMixin
 from hermes_store.sessions.api_content import SessionApiContentMixin
-from hermes_state_coverage import SessionCoverageMixin
+from hermes_store.repair.coverage import SessionCoverageMixin
 from hermes_store.compression.rewind import SessionRewindMixin
 from hermes_state_wal import (
     _WAL_INCOMPAT_MARKERS, _on_disk_journal_mode, apply_database_pragmas, apply_wal_with_fallback,
 )
-from hermes_state_repair import _claim_repair_attempt, preflight_db_writability, repair_state_db_schema
+from hermes_store.repair.repair import _claim_repair_attempt, preflight_db_writability, repair_state_db_schema
 from hermes_store.sessions.titles import SessionTitlesMixin
 from hermes_state_usage import SessionUsageMixin
-from hermes_state_maintenance import SessionMaintenanceMixin
+from hermes_store.repair.maintenance import SessionMaintenanceMixin
 from hermes_state_gateway import SessionGatewayMixin
 from hermes_store.compression.session import SessionCompressionMixin
 from hermes_store.search.messages import SessionSearchMixin
@@ -247,6 +247,52 @@ def compression_hooks() -> CompressionHooks:
     if _compression_hooks_provider is None:
         raise RuntimeError("compression hooks are not installed; import hermes_state first")
     return _compression_hooks_provider()
+
+
+class RepairHooks(Protocol):
+    """SQLite probing, gateway ownership, and startup progress the repair cluster cannot import."""
+
+    def offline_file_access(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def has_live_connection(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def connect_tracked(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def live_connection_error(self) -> type[BaseException]: ...
+
+    def cfg_get(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def load_config_readonly(self) -> Any: ...
+
+    def profile_label_for_home(self, home: Any) -> Optional[str]: ...
+
+    def read_gateway_lock_record(self, lock_path: Any = None) -> Optional[dict]: ...
+
+    def canonical_home(self, home: Any) -> Any: ...
+
+    def exclusive_maintenance(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def ownership_conflict(self) -> type[BaseException]: ...
+
+    def live_runtime_owner(self, *args: Any, **kwargs: Any) -> Any: ...
+
+    def strip_leading_message_timestamps(self, content: str, tz: Any = None) -> Any: ...
+
+    def report_startup_progress(self, *args: Any, **kwargs: Any) -> Any: ...
+
+
+_repair_hooks_provider: Optional[Callable[[], RepairHooks]] = None
+
+
+def set_repair_hooks_provider(provider: Optional[Callable[[], RepairHooks]]) -> None:
+    global _repair_hooks_provider
+    _repair_hooks_provider = provider
+
+
+def repair_hooks() -> RepairHooks:
+    if _repair_hooks_provider is None:
+        raise RuntimeError("repair hooks are not installed; import hermes_state first")
+    return _repair_hooks_provider()
 
 
 # Import-time snapshot lets _default_db_path() detect a re-pointed DEFAULT_DB_PATH

@@ -21,7 +21,7 @@ from gateway.session_recovery import SessionRecoveryMixin
 from gateway.session_lifecycle import SessionLifecycleMixin, _iso, _new_session_id, _now, _parse_iso
 from gateway.session_transcript import SessionTranscriptMixin
 # Inverse of _session_key_namespace, defined storage-side (hermes_state must not import gateway).
-from hermes_store.keys import profile_from_session_key_namespace
+from hermes_store.keys import profile_from_session_key_namespace, session_key_namespace as _session_key_namespace
 
 logger = logging.getLogger(__name__)
 
@@ -660,18 +660,6 @@ def is_shared_multi_user_session(
     if source.chat_type == "dm":
         return False
     return not (thread_sessions_per_user if source.thread_id else group_sessions_per_user)
-
-
-def _session_key_namespace(profile: Optional[str]) -> str:
-    """``agent:<ns>`` prefix for a session key: default/None profile → ``agent:main``
-    (BYTE-IDENTICAL to every historical key); named profile → ``agent:<name>`` so two
-    profiles serving the same chat never collide. A profile literally named ``main`` would
-    otherwise produce the default's namespace and share every session (routing index, agent
-    cache, store) with it, so it is marked ``main~``: ``~`` is outside the profile-id alphabet,
-    so the marked form can never be another profile's id."""
-    if not profile or profile == "default":
-        return "agent:main"
-    return "agent:main~" if profile == "main" else f"agent:{profile}"
 
 
 def _canonical_participant(source: SessionSource) -> Optional[str]:
