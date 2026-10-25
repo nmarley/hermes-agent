@@ -25,7 +25,7 @@ from hermes_store.common.sessions import _RESET_END_REASONS, _RESET_END_REASONS_
 from hermes_store.common.sql import _json_or, _placeholders, _sql_json_extract
 from hermes_store.sessions.detached_results import SessionDetachedResultsMixin
 from hermes_store.sessions.message_sql import _INSERT_MESSAGE_SQL, _MESSAGE_WRITE_COLUMNS
-from hermes_state_todo import SessionTodoResultMixin
+from hermes_store.adapters.todo import SessionTodoResultMixin
 from hermes_store.sessions.identity import (
     _absorbed_uids_json, _restore_identity_columns, _stable_tool_key, _tool_call_uid_map, _tool_call_uid_or_none, _tool_call_uids_json, _uid_list)
 

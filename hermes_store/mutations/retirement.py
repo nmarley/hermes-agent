@@ -4,12 +4,9 @@ import time
 from hermes_state_local import POLICY_PREFIX, retire_local_receipts
 from hermes_store.media.retirement import retire_media, retire_spillover
 from hermes_state_runtime import RuntimeStoreError, admission_fingerprint, mutation_receipt_key, _json, _text
-import hermes_state_terminal as _terminal
+import hermes_store.adapters.terminal as _terminal
 
-# This store's own retired session (its profile is the store's). Written as ``own`` since the
-# shared routing index also carries other profiles' fences; a marker without ``own`` predates
-# that and still fences every route in the index.
-RETIRED_PREFIX = 'gateway.retired_session.v1.'
+from hermes_store.keys import RETIRED_PREFIX
 # A multiplexed secondary's retired session, in the routing index every served profile shares
 # (the launch home's state.db): ``<prefix><namespace>:<id>``, keyed by the ``agent:<namespace>:``
 # slot of that profile's routing keys. Only routing saves read it, so the launch profile's own

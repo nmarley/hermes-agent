@@ -83,7 +83,7 @@ from hermes_store.repair.repair import _claim_repair_attempt, preflight_db_writa
 from hermes_store.sessions.titles import SessionTitlesMixin
 from hermes_state_usage import SessionUsageMixin
 from hermes_store.repair.maintenance import SessionMaintenanceMixin
-from hermes_state_gateway import SessionGatewayMixin
+from hermes_store.adapters.gateway import SessionGatewayMixin
 from hermes_store.compression.session import SessionCompressionMixin
 from hermes_store.search.messages import SessionSearchMixin
 
@@ -345,6 +345,30 @@ def media_hooks() -> MediaHooks:
     if _media_hooks_provider is None:
         raise RuntimeError("media hooks are not installed; import hermes_state first")
     return _media_hooks_provider()
+
+
+class AdapterHooks(Protocol):
+    """Surface helpers for terminal, todo, and gateway adapter state."""
+
+    def reanchor_current_turn_user_idx(self, messages: list, user_message: Any) -> int: ...
+
+    def max_todo_result_chars(self) -> int: ...
+
+    def is_ephemeral_port_zero_backend(self, argv: list) -> bool: ...
+
+
+_adapter_hooks_provider: Optional[Callable[[], AdapterHooks]] = None
+
+
+def set_adapter_hooks_provider(provider: Optional[Callable[[], AdapterHooks]]) -> None:
+    global _adapter_hooks_provider
+    _adapter_hooks_provider = provider
+
+
+def adapter_hooks() -> AdapterHooks:
+    if _adapter_hooks_provider is None:
+        raise RuntimeError("adapter hooks are not installed; import hermes_state first")
+    return _adapter_hooks_provider()
 
 
 # Import-time snapshot lets _default_db_path() detect a re-pointed DEFAULT_DB_PATH

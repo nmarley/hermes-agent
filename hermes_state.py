@@ -65,6 +65,11 @@ def _load_media_hooks():
     return media_hooks
 
 
+def _load_adapter_hooks():
+    from hermes_cli.adapter_hooks import adapter_hooks
+    return adapter_hooks
+
+
 _api.set_config_loader(_load_config_readonly)
 _api.set_session_delete_hook(_dispatch_session_delete)
 _api.set_mutation_hooks_provider(_load_mutation_hooks)
@@ -72,6 +77,7 @@ _api.set_compression_hooks_provider(_load_compression_hooks)
 _api.set_repair_hooks_provider(_load_repair_hooks)
 _api.set_runtime_hooks_provider(_load_runtime_hooks)
 _api.set_media_hooks_provider(_load_media_hooks)
+_api.set_adapter_hooks_provider(_load_adapter_hooks)
 _install_agent_turn_hooks()
 
 sys.modules[__name__] = _api

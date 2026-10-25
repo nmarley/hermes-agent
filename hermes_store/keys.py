@@ -60,6 +60,7 @@ def legacy_cron_run_job(session_id):
 
 
 POLICY_PREFIX = 'gateway.local_policy.v1:'
+RETIRED_PREFIX = 'gateway.retired_session.v1:'
 
 
 def admission_fingerprint(*, canonical_target: str, payload: dict) -> str:
