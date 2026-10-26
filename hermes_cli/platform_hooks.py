@@ -9,6 +9,7 @@ import hermes_cli._subprocess_compat as subprocess_compat
 import hermes_cli.config as hermes_config
 from hermes_cli import config_effective
 from hermes_cli import process_identity
+import hermes_startup_watchdog as startup_watchdog
 import pm
 import pm.environments as pm_environments
 from agent import redact
@@ -65,6 +66,9 @@ class CliPlatformHooks:
 
     def process_start_time(self, pid: int) -> Any:
         return gateway_status.get_process_start_time(pid)
+
+    def report_startup_progress(self, *args: Any, **kwargs: Any) -> Any:
+        return startup_watchdog.report_startup_progress(*args, **kwargs)
 
 
 platform_hooks = CliPlatformHooks()

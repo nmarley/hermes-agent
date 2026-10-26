@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from hermes_constants import get_hermes_home, profile_cli_selector
+from hermes_platform.constants import get_hermes_home, profile_cli_selector
 import hermes_store.schema.holders as _state_holders
 from hermes_store.schema.holders import read_only_db_uri
 import hermes_store.schema.wal

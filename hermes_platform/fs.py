@@ -36,6 +36,8 @@ import sys
 from collections.abc import Iterator
 from pathlib import Path
 
+from hermes_platform.constants import get_hermes_home
+
 log = logging.getLogger(__name__)
 
 _TOKEN_QUERY = 0x0008
@@ -242,8 +244,6 @@ def _components_below_home(path: Path) -> list[Path]:
     empty when *path* is not under the home. The home itself (and above) is the user's own choice
     and may legitimately be a link; an entry INSIDE it is what same-user code can swap."""
     try:
-        # health: allow LATE_IMPORT -- constants imports this module lazily too
-        from hermes_constants import get_hermes_home
         home = Path(os.path.abspath(get_hermes_home()))
         rel = Path(os.path.abspath(path)).relative_to(home)
     except (ImportError, ValueError, OSError):

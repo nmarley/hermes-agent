@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from hermes_platform.constants import profile_cli_selector
 from hermes_store.errors import STORAGE_RECOVERY_DOCS_URL, classify_persistence_error, is_disk_full_error
 
 
@@ -99,8 +100,6 @@ def describe_storage_failure(exc_or_str) -> StorageFailure:
     cause = classify_persistence_error(exc_or_str)
     key = "disk_full" if cause == "disk" and is_disk_full_error(exc_or_str) else cause
     code, gloss, action = _STORAGE_FAILURES.get(key, _STORAGE_FAILURES["unknown"])
-    # health: allow LATE_IMPORT -- profile selector lives in hermes_constants while paths are retired
-    from hermes_constants import profile_cli_selector
 
     return StorageFailure(
         cause=cause, code=code, gloss=gloss, action=action.replace("{profile_arg}", profile_cli_selector())

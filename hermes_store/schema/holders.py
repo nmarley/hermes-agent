@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence, Set, Tuple
 
-import hermes_constants
+from hermes_platform import constants as hermes_constants
 from hermes_store.errors import is_sqlite_lock_error
 
 try:  # Hard dependency, but tolerate scaffold-phase imports before pip install.

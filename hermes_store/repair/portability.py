@@ -13,7 +13,7 @@ from datetime import datetime, timezone, UTC
 from typing import Any, Dict, List, Optional
 
 from hermes_store.common.skills import AUTO_LOAD_SCAFFOLD_SQL_LIKE, SKILL_SCAFFOLD_SQL_LIKE
-from utils import safe_json_loads
+from hermes_platform.utils import safe_json_loads
 from hermes_store.common.time import coerce_epoch
 from hermes_store.ids import new_session_id
 from hermes_store.keys import (

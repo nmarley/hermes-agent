@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 from hermes_store.sessions.model_config import parse_model_config as _parse_model_config
-import hermes_constants
+from hermes_platform import constants as hermes_constants
 from hermes_store.sessions.activity import (
     ActivityProvenance, bound_activity_description, normalize_activity_provenance,
 )

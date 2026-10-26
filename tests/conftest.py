@@ -431,6 +431,10 @@ def _hermetic_environment(tmp_path, tmp_path_factory, monkeypatch):
     monkeypatch.delenv("GMI_API_KEY", raising=False)
     monkeypatch.delenv("GMI_BASE_URL", raising=False)
 
+    # Install the store and platform hook providers once the isolated home is
+    # active. Direct package imports (store, platform) rely on these hooks.
+    import hermes_state
+
 
 # Backward-compat alias — old tests reference this fixture name. Keep it
 # as a no-op wrapper so imports don't break.

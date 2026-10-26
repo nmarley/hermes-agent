@@ -1,6 +1,6 @@
 """Closed action handlers inside the runtime mutation receipt transaction."""
 import time
-from hermes_constants import parse_reasoning_effort
+from hermes_platform.constants import parse_reasoning_effort
 from hermes_store.compression.session import _CHAIN_CAP
 from hermes_store.repair.local_lineage import local_physical_target
 from hermes_store.runtime.transactions import RuntimeStoreError

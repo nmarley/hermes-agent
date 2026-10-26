@@ -38,6 +38,8 @@ class PlatformHooks(Protocol):
 
     def process_start_time(self, pid: int) -> Any: ...
 
+    def report_startup_progress(self, *args: Any, **kwargs: Any) -> Any: ...
+
 
 _provider: Optional[Callable[[], PlatformHooks]] = None
 
@@ -48,9 +50,6 @@ def set_platform_hooks_provider(provider: Optional[Callable[[], PlatformHooks]])
 
 
 def platform_hooks() -> PlatformHooks:
-    global _provider
     if _provider is None:
-        import hermes_state  # health: allow LATE_IMPORT -- self-bootstrap for direct platform imports
-    if _provider is None:
-        raise RuntimeError("platform hooks are not installed")
+        raise RuntimeError("platform hooks are not installed; import hermes_state first")
     return _provider()

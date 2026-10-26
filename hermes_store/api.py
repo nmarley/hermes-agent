@@ -26,7 +26,7 @@ from contextlib import contextmanager, suppress
 from pathlib import Path
 from hermes_platform.fs import make_user_dir
 
-from hermes_constants import get_hermes_home, mkdir_under_hermes_home, profile_cli_selector
+from hermes_platform.constants import get_hermes_home, mkdir_under_hermes_home, profile_cli_selector
 from typing import Any, Callable, Dict, Iterator, List, Optional, Protocol, Tuple, TypeVar, cast
 
 from hermes_store.common.config import load_config_snapshot, set_config_loader
@@ -184,15 +184,6 @@ _BARE_BILLING_PROVIDERS = frozenset({"auto", "custom"})
 T = TypeVar("T")
 
 
-def _ensure_hook_providers() -> None:
-    """Install surface hooks through the root facade when a store API is used directly."""
-    if (_mutation_hooks_provider is None or _compression_hooks_provider is None
-            or _repair_hooks_provider is None or _runtime_hooks_provider is None
-            or _media_hooks_provider is None or _adapter_hooks_provider is None
-            or _storage_hooks_provider is None):
-        import hermes_state  # health: allow LATE_IMPORT -- self-bootstrap for direct store imports
-
-
 class MutationHooks(Protocol):
     """Surface types and display projections the store cannot import directly."""
 
@@ -215,7 +206,6 @@ def set_mutation_hooks_provider(provider: Optional[Callable[[], MutationHooks]])
 
 
 def mutation_hooks() -> MutationHooks:
-    _ensure_hook_providers()
     if _mutation_hooks_provider is None:
         raise RuntimeError("mutation hooks are not installed; import hermes_state first")
     return _mutation_hooks_provider()
@@ -254,7 +244,6 @@ def set_compression_hooks_provider(provider: Optional[Callable[[], CompressionHo
 
 
 def compression_hooks() -> CompressionHooks:
-    _ensure_hook_providers()
     if _compression_hooks_provider is None:
         raise RuntimeError("compression hooks are not installed; import hermes_state first")
     return _compression_hooks_provider()
@@ -301,7 +290,6 @@ def set_repair_hooks_provider(provider: Optional[Callable[[], RepairHooks]]) -> 
 
 
 def repair_hooks() -> RepairHooks:
-    _ensure_hook_providers()
     if _repair_hooks_provider is None:
         raise RuntimeError("repair hooks are not installed; import hermes_state first")
     return _repair_hooks_provider()
@@ -324,7 +312,6 @@ def set_runtime_hooks_provider(provider: Optional[Callable[[], RuntimeHooks]]) -
 
 
 def runtime_hooks() -> RuntimeHooks:
-    _ensure_hook_providers()
     if _runtime_hooks_provider is None:
         raise RuntimeError("runtime hooks are not installed; import hermes_state first")
     return _runtime_hooks_provider()
@@ -355,7 +342,6 @@ def set_media_hooks_provider(provider: Optional[Callable[[], MediaHooks]]) -> No
 
 
 def media_hooks() -> MediaHooks:
-    _ensure_hook_providers()
     if _media_hooks_provider is None:
         raise RuntimeError("media hooks are not installed; import hermes_state first")
     return _media_hooks_provider()
@@ -380,7 +366,6 @@ def set_adapter_hooks_provider(provider: Optional[Callable[[], AdapterHooks]]) -
 
 
 def adapter_hooks() -> AdapterHooks:
-    _ensure_hook_providers()
     if _adapter_hooks_provider is None:
         raise RuntimeError("adapter hooks are not installed; import hermes_state first")
     return _adapter_hooks_provider()
@@ -423,7 +408,6 @@ def set_storage_hooks_provider(provider: Optional[Callable[[], StorageHooks]]) -
 
 
 def storage_hooks() -> StorageHooks:
-    _ensure_hook_providers()
     if _storage_hooks_provider is None:
         raise RuntimeError("storage hooks are not installed; import hermes_state first")
     return _storage_hooks_provider()

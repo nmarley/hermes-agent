@@ -2,6 +2,11 @@
 
 Applies on top of the root `AGENTS.md`.
 
+Core modules: `constants.py` (home/profile paths), `logging.py` (handlers and routing),
+`time.py` (clock/timezone), `yaml.py` (YAML policy), `scratch.py`/`scratch_stuck.py`
+(retention and reaping), `utils.py` (generic filesystem helpers), `fs.py` (secure directory
+policy), `hooks.py` (surface callbacks), plus `host/` and `resolver/`.
+
 **Machine facts and resource lookup go through `hermes_platform`.** `hermes_platform.host` is the
 one answer for OS family, native architecture (`IsWow64Process2` → `platform.machine()`; never
 `PROCESSOR_ARCHITECTURE` alone, it reads AMD64 under x64-on-ARM64 emulation), CPU identity, and

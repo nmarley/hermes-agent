@@ -3,7 +3,7 @@
 import os
 from typing import Any
 
-from hermes_constants import get_hermes_home_override
+from hermes_platform.constants import get_hermes_home_override
 from hermes_store.common.config import load_config_snapshot
 
 

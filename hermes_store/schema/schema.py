@@ -17,11 +17,10 @@ import uuid
 from typing import Dict, List, Optional, Sequence
 
 
-from hermes_constants import get_hermes_home
-from hermes_startup_watchdog import report_startup_progress
-from utils import safe_json_loads
+from hermes_platform.constants import get_hermes_home
+from hermes_platform.utils import safe_json_loads
 from hermes_store.schema import DEFERRED_INDEX_SQL, SCHEMA_SQL, SCHEMA_VERSION
-import hermes_constants
+from hermes_platform import constants as hermes_constants
 from hermes_store.search import FTS_CJK_STALE_KEY, FTS_REBUILD_DEFERRAL_KEY, FTS_STALE_KEY, FTS_SQL, FTS_STORAGE_VERSION, FTS_TOOL_CONTENT_PREFIX_CHARS, FTS_TRIGRAM_SQL, LEGACY_FTS_SQL, LEGACY_FTS_TRIGRAM_SQL, _FTS_CJK_TRIGGERS, _FTS_TRIGGERS, fts_rebuild_admission
 from hermes_store.common.sessions import _ephemeral_child_sql
 from hermes_store.common.sql import _sql_json_extract
@@ -30,6 +29,7 @@ from hermes_store.search.index import (_drop_orphan_fts_shadow_tables, base_inde
 from hermes_store.schema.holders import _read_proc_argv
 from hermes_store.search.messages import _delete_meta, _meta_row
 from hermes_store.errors import is_sqlite_lock_error
+from hermes_platform.hooks import platform_hooks
 from hermes_store.sessions.titles import next_title_in_lineage
 
 # Pre-split logger identity so log filtering/capture is unchanged.
@@ -949,7 +949,7 @@ class SessionSchemaMixin:
         # _MAX_LEASE_S=900. Honest worst case: a genuinely wedged DB init delays supervisor respawn by up to
         # the lease duration. Per-chunk renewal would shrink that, but adds complexity to the migration
         # loops for a rare failure mode.
-        report_startup_progress(600.0, phase="state_db_init_schema")
+        platform_hooks().report_startup_progress(600.0, phase="state_db_init_schema")
         cursor = self._conn.cursor()
         cursor.executescript(SCHEMA_SQL)
 
@@ -1049,7 +1049,7 @@ class SessionSchemaMixin:
         """Version-gated chain for DATA migrations only (row backfills); column additions never
         belong here. Advances schema_version at the end unless FTS5 is unavailable."""
         # Renew the lease: the chain can rewrite whole tables on large DBs.
-        report_startup_progress(600.0, phase="state_db_data_migrations")
+        platform_hooks().report_startup_progress(600.0, phase="state_db_data_migrations")
         # (v10 trigram backfill and v11 inline FTS re-index were superseded by v23 and removed.)
         # v11 (SUPERSEDED by v23): re-index FTS5 tables to cover tool_name + tool_calls in inline mode
         # (#16751). v23 drops and rebuilds both FTS tables in external-content form, so running the v11
