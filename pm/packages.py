@@ -61,6 +61,19 @@ _NODE_PLAT = {
     "darwin-arm64": "darwin-arm64",
 }
 
+# Bun spells arm64 as aarch64 and ships a separate Android build for Termux.
+_BUN_PLAT = {
+    "win32-x64": "windows-x64",
+    "win32-arm64": "windows-aarch64",
+    "linux-x64": "linux-x64",
+    "linux-arm64": "linux-aarch64",
+    "linux-x64-musl": "linux-x64-musl",
+    "linux-arm64-musl": "linux-aarch64-musl",
+    "linux-arm64-bionic": "linux-aarch64-android",
+    "darwin-x64": "darwin-x64",
+    "darwin-arm64": "darwin-aarch64",
+}
+
 
 class BinaryPackage(Package):
     """A downloaded archive exposing one binary. Covers most tools."""
@@ -676,6 +689,35 @@ class Npm(BinaryPackage):
     def latest_versions(self, target: str, locked=None) -> list[str]:
         latest = npm_dist_tags("npm").get("latest")
         return [latest] if latest else []
+
+
+@register
+class Bun(BinaryPackage):
+    """Bun's GitHub release zips, optional because only source builds of the
+    dashboard need it; Docker and release bundles use their own Bun stage.
+
+    Bun names arm64 as aarch64 and publishes an Android build for bionic.
+    GitHub serves each asset's sha256 digest, so pinning never streams the
+    archive."""
+
+    name = "bun"
+    optional = True
+    binary_rel = {"win32": "bun.exe", "posix": "bun"}
+
+    def fetch_url(self, version: str, target: str) -> str:
+        plat = _BUN_PLAT[target]
+        return (
+            f"https://github.com/oven-sh/bun/releases/download/bun-v{version}/"
+            f"bun-{plat}.zip"
+        )
+
+    def known_sha256(self, version: str, url: str) -> Optional[str]:
+        return _github_release_digests("oven-sh/bun", f"bun-v{version}").get(
+            url.rsplit("/", 1)[-1]
+        )
+
+    def latest_versions(self, target: str, locked=None) -> list[str]:
+        return github_release_tags("oven-sh/bun", strip_prefix="bun-v")
 
 
 # The pinned git artifact is a self-extracting 7z: only hosts where PE images
