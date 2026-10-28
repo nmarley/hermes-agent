@@ -68,6 +68,12 @@
   --theme-font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo,
     Consolas, monospace;
   --theme-font-display: var(--theme-font-sans);
+  /* The DS hardcodes Mondwest and Rules inside its own components (Label,
+     Card, Dialog, Tabs, Segmented, Badge, Typography). Point those vars at
+     the theme sans so they follow the appearance font picker. */
+  --font-mondwest: var(--theme-font-sans);
+  --font-rules-expanded: var(--theme-font-sans);
+  --font-rules-compressed: var(--theme-font-sans);
   --theme-base-size: 15px;
   --theme-line-height: 1.55;
   --theme-letter-spacing: 0;
