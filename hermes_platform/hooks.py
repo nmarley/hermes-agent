@@ -51,5 +51,10 @@ def set_platform_hooks_provider(provider: Optional[Callable[[], PlatformHooks]])
 
 def platform_hooks() -> PlatformHooks:
     if _provider is None:
-        raise RuntimeError("platform hooks are not installed; import hermes_state first")
+        # Entry points call platform functions (notably setup_logging) before the
+        # root composition shim is imported. Import the shim here so the provider
+        # exists on first use; the root-package edge is a migration allowance.
+        import hermes_state  # health: allow LATE_IMPORT -- platform bootstrap runs before the composition shim
+    if _provider is None:
+        raise RuntimeError("platform hooks are not installed")
     return _provider()
