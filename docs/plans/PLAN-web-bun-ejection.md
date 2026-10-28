@@ -10,6 +10,14 @@ installation, package scripts, and the production build. PM provisions Bun so
 This is a design and sequencing document, not a progress tracker. Progress
 lives in git history and the working conversation, never in this file.
 
+## Scope note
+
+The first implementation phase covers the Bun dependency root, source installs,
+CI, local tooling, and the doctor audit. Docker and Nix are not updated here,
+and the production build still runs on Node. Those channels are expected to
+fail until a follow-up updates them or the release model moves to a prebuilt
+web artifact.
+
 ## Why
 
 - Bun is the preferred JavaScript and TypeScript runtime for this project.
@@ -27,8 +35,8 @@ lives in git history and the working conversation, never in this file.
   package manager and script runner, not a replacement bundler or test runner.
 - One lockfile per manager. `web/bun.lock` is the only lock for web. The root
   `package-lock.json` no longer contains web. No dual lockfiles.
-- `@hermes/shared` moves from `file:../apps/shared` to `link:../apps/shared`,
-  which Bun installs as a single symlink to live source.
+- `@hermes/shared` stays a `file:../apps/shared` dependency because Bun's
+  `link:` path fails here. Vite, TypeScript, and Vitest alias it to live source.
 - Bun executes the production build only after install, update, CI, Docker, and
   Nix parity is green.
 - PM Bun stays optional. Source checkouts install it on demand; Docker and

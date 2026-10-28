@@ -88,7 +88,7 @@ def test_root_audit_row_is_not_mislabeled_as_agent_browser(monkeypatch, tmp_path
     completed = subprocess.CompletedProcess([], 0, stdout=_audit_json(), stderr="")
     monkeypatch.setattr(doctor_tools.subprocess, "run", lambda *a, **kw: completed)
 
-    doctor_tools._check_npm_audit(False)
+    doctor_tools._check_node_audit(False)
 
     out = capsys.readouterr().out
     assert "agent-browser" not in out.lower()
