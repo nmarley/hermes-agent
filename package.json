@@ -23,8 +23,7 @@
     "audit:fix:web": "npm audit fix --workspace web",
     "audit:fix:tui": "npm audit fix --workspace ui-tui",
     "check": "npm run --ws check",
-    "fix": "npm run --ws fix",
-    "prepare": "node -e \"const {existsSync}=require('fs');const {spawnSync}=require('child_process');if(existsSync('.git'))spawnSync('lefthook',['install'],{stdio:'inherit',shell:true})\""
+    "fix": "npm run --ws fix"
   },
   "repository": {
     "type": "git",
@@ -42,7 +41,6 @@
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-unused-imports": "4.4.1",
     "globals": "17.7.0",
-    "lefthook": "2.1.14",
     "typescript": "6.0.3",
     "typescript-eslint": "8.64.0"
   },
@@ -81,8 +79,7 @@
     "electron-winstaller@5.4.0": true,
     "fsevents@2.3.2": true,
     "fsevents@2.3.3": true,
-    "get-windows@9.3.0": true,
-    "lefthook@2.1.14": true
+    "get-windows@9.3.0": true
   },
   "dependencies": {
     "js-yaml": "4.3.2",
