@@ -1,24 +1,21 @@
-#!/usr/bin/env -S bash -c 'exec "$BASH" "$(dirname "$0")/run-in-hermes-env" python3 "$0" "$@"'
-"""Drive the Hermes TUI under HERMES_DEV_PERF and summarize the pipeline.
+"""Drive the Hermes TUI under HERMES_DEV_PERF and summarize the frame pipeline.
 
-Usage:
-  scripts/profile-tui.py [--session SID] [--hold KEY] [--seconds N] [--rate HZ]
+Invoked through the perf harness so every suite shares one report shape:
+
+    scripts/run-in-hermes-env python3 scripts/perf/run.py tui-frames --runs 3
 
 Defaults: picks the session with the most messages, holds PageUp for 8s at
-~30 Hz (matching xterm key-repeat), summarizes ~/.hermes/perf.log on exit.
+~30 Hz (matching xterm key-repeat), and summarizes the perf log on exit.
 
-The --tui build must exist (run `npm run build` in ui-tui first). This script
-launches `node dist/entry.js` directly with HERMES_TUI_RESUME set so it
-bypasses the hermes_cli wrapper — we want repeatable timing, not the CLI's
-session-picker flow.
+The TUI build must exist. Pass --build to run.py, or run `npm run build` in
+ui-tui first. This module launches `node dist/entry.js` directly with
+HERMES_TUI_RESUME set so it bypasses the hermes_cli wrapper. Repeatable timing
+matters more than the CLI's session-picker flow.
 
 Environment overrides:
   HERMES_PERF_LOG     (default ~/.hermes/perf.log)
   HERMES_PERF_NODE    (default node from $PATH)
-  HERMES_TUI_DIR      (default: <repo>/ui-tui relative to this script)
-
-Exit code is 0 if the harness ran and parsed results, 2 if the TUI crashed
-or produced no perf data (suggests HERMES_DEV_PERF wiring is broken).
+  HERMES_TUI_DIR      (default: <repo>/ui-tui)
 """
 
 from __future__ import annotations
@@ -26,18 +23,21 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import pty  # windows-footgun: ok — dev profiling script, POSIX pty by design
+import re
 import select
 import signal
 import sqlite3
+import subprocess
 import sys
-import tempfile
 import time
 from pathlib import Path
 from typing import Any
 
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_PROJECT_ROOT))
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
+
+from scripts.perf import metrics as perf
 try:
     from hermes_constants import get_hermes_home
 except ImportError:
@@ -46,8 +46,7 @@ except ImportError:
         return Path(val) if val else Path.home() / ".hermes"
 
 DEFAULT_TUI_DIR = Path(
-    os.environ.get("HERMES_TUI_DIR")
-    or str(Path(__file__).resolve().parent.parent / "ui-tui")
+    os.environ.get("HERMES_TUI_DIR") or str(_PROJECT_ROOT / "ui-tui")
 )
 DEFAULT_LOG = Path(os.environ.get("HERMES_PERF_LOG", str(get_hermes_home() / "perf.log")))
 DEFAULT_STATE_DB = get_hermes_home() / "state.db"
@@ -57,7 +56,7 @@ DEFAULT_STATE_DB = get_hermes_home() / "state.db"
 KEYS = {
     "page_up": b"\x1b[5~",
     "page_down": b"\x1b[6~",
-    "wheel_up": b"\x1b[M`!!",      # mouse wheel up (SGR-less) — best-effort
+    "wheel_up": b"\x1b[M`!!",      # mouse wheel up (SGR-less) - best-effort
     "shift_up": b"\x1b[1;2A",
     "shift_down": b"\x1b[1;2B",
 }
@@ -137,12 +136,7 @@ def summarize(log: Path, since_ts_ms: int) -> dict[str, Any]:
     }
 
 
-def pct(values: list[float], p: float) -> float:
-    if not values:
-        return 0.0
-    s = sorted(values)
-    idx = min(len(s) - 1, int(len(s) * p))
-    return s[idx]
+pct = perf.percentile
 
 
 def format_report(data: dict[str, Any]) -> str:
@@ -152,7 +146,7 @@ def format_report(data: dict[str, Any]) -> str:
 
     out.append("═══ React Profiler ═══")
     if not react:
-        out.append("  (no react events — HERMES_DEV_PERF wired? threshold too high?)")
+        out.append("  (no react events - HERMES_DEV_PERF wired? threshold too high?)")
     else:
         by_id: dict[str, list[float]] = {}
         for r in react:
@@ -167,7 +161,7 @@ def format_report(data: dict[str, Any]) -> str:
     out.append("")
     out.append("═══ Ink pipeline ═══")
     if not frames:
-        out.append("  (no frame events — onFrame wiring broken?)")
+        out.append("  (no frame events - onFrame wiring broken?)")
     else:
         dur = [f["durationMs"] for f in frames]
         phases_present = any(f.get("phases") for f in frames)
@@ -223,7 +217,7 @@ def format_report(data: dict[str, Any]) -> str:
                 if vals:
                     out.append(f"    {name:<11} p50={pct(vals,0.5):.0f}  p99={pct(vals,0.99):.0f}  max={max(vals)}")
 
-            # Patch counts — proxy for "how much changed each frame"
+            # Patch counts - proxy for "how much changed each frame"
             patches = [f["phases"]["patches"] for f in frames if f.get("phases")]
             if patches:
                 out.append(
@@ -241,7 +235,7 @@ def format_report(data: dict[str, Any]) -> str:
                     f"  (ratio: {sum(optimized)/max(1,sum(patches)):.2f})"
                 )
 
-            # Write bytes + drain telemetry — the outer-terminal bottleneck gauge.
+            # Write bytes + drain telemetry - the outer-terminal bottleneck gauge.
             bytes_written = [
                 f["phases"].get("writeBytes", 0)
                 for f in frames if f.get("phases")
@@ -267,7 +261,7 @@ def format_report(data: dict[str, Any]) -> str:
             if backpressure:
                 out.append(
                     f"  backpressure: {backpressure}/{len(frames)} frames "
-                    f"({100*backpressure/len(frames):.0f}%)   (Node stdout buffer full — terminal slow)"
+                    f"({100*backpressure/len(frames):.0f}%)   (Node stdout buffer full - terminal slow)"
                 )
 
         # Flickers
@@ -285,134 +279,134 @@ def format_report(data: dict[str, Any]) -> str:
     return "\n".join(out)
 
 
-def key_metrics(data: dict[str, Any]) -> dict[str, float]:
-    """Flatten the report into a dict of scalar metrics for A/B diffing."""
-    metrics: dict[str, float] = {}
+def _slug(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "_", value.strip().lower()).strip("_")
+    return slug or "unknown"
+
+
+def metrics_from_data(data: dict[str, Any]) -> dict[str, perf.Metric]:
+    """Turn raw perf-log rows into the shared metric shape."""
     frames = data.get("frame") or []
     react = data.get("react") or []
+    if not frames and not react:
+        return {}
+    out: dict[str, perf.Metric] = {}
 
-    if frames:
-        durs = [f["durationMs"] for f in frames]
-        metrics["frames"] = len(frames)
-        metrics["dur_p50"] = pct(durs, 0.50)
-        metrics["dur_p95"] = pct(durs, 0.95)
-        metrics["dur_p99"] = pct(durs, 0.99)
-        metrics["dur_max"] = max(durs)
-
-        ts = sorted(f["ts"] for f in frames)
-        if len(ts) >= 2:
-            elapsed = (ts[-1] - ts[0]) / 1000.0
-            metrics["fps_throughput"] = len(frames) / elapsed if elapsed > 0 else 0.0
-            # Interframe gaps distribution — complementary view to throughput:
-            gaps = [ts[i] - ts[i - 1] for i in range(1, len(ts))]
-            if gaps:
-                metrics["gap_p50_ms"] = pct(gaps, 0.50)
-                metrics["gap_p99_ms"] = pct(gaps, 0.99)
-                metrics["gaps_under_16ms"] = sum(1 for g in gaps if g < 16)
-                metrics["gaps_over_200ms"] = sum(1 for g in gaps if g >= 200)
-
-        for phase in ("renderer", "yoga", "diff", "write"):
-            vals = [f["phases"][phase] for f in frames if f.get("phases")]
-            if vals:
-                metrics[f"{phase}_p99"] = pct(vals, 0.99)
-                metrics[f"{phase}_max"] = max(vals)
-
-        patches = [f["phases"]["patches"] for f in frames if f.get("phases")]
-        if patches:
-            metrics["patches_total"] = sum(patches)
-            metrics["patches_p99"] = pct(patches, 0.99)
-
-        optimized = [
-            f["phases"].get("optimizedPatches", 0) for f in frames if f.get("phases")
-        ]
-        if any(optimized):
-            metrics["optimized_total"] = sum(optimized)
-
-        bytes_list = [
-            f["phases"].get("writeBytes", 0) for f in frames if f.get("phases")
-        ]
-        if any(bytes_list):
-            metrics["writeBytes_total"] = sum(bytes_list)
-
-        drains = [
-            f["phases"].get("prevFrameDrainMs", 0)
-            for f in frames if f.get("phases")
-        ]
-        drain_nonzero = [d for d in drains if d > 0]
-        if drain_nonzero:
-            metrics["drain_p99"] = pct(drain_nonzero, 0.99)
-            metrics["drain_max"] = max(drain_nonzero)
-
-        bp = sum(1 for f in frames if f.get("phases", {}).get("backpressure"))
-        metrics["backpressure_frames"] = bp
-
-    if react:
-        for pid in {e["id"] for e in react}:
-            ms = [e["actualMs"] for e in react if e["id"] == pid]
-            metrics[f"react_{pid}_p99"] = pct(ms, 0.99)
-            metrics[f"react_{pid}_max"] = max(ms)
-
-    return metrics
-
-
-def format_diff(before: dict[str, float], after: dict[str, float]) -> str:
-    """Render a side-by-side A/B comparison table."""
-    keys = sorted(set(before) | set(after))
-    lines = [f"{'metric':<28} {'before':>12} {'after':>12} {'delta':>12}  {'%':>6}"]
-    lines.append("─" * 76)
-    for k in keys:
-        b = before.get(k, 0.0)
-        a = after.get(k, 0.0)
-        d = a - b
-        pct_change = ((a / b) - 1) * 100 if b not in {0} else float("inf") if a else 0
-
-        # Flag improvements vs regressions. For _p99 / _max / _total / gaps_over /
-        # patches / writeBytes / backpressure, LOWER is better.  For fps / gaps_under,
-        # HIGHER is better.
-        lower_is_better = any(
-            token in k
-            for token in (
-                "p50",
-                "p95",
-                "p99",
-                "_max",
-                "_total",
-                "gaps_over",
-                "backpressure",
-                "drain",
-            )
-        )
-        higher_is_better = "fps_" in k or "gaps_under" in k
-        mark = ""
-        if d and not (lower_is_better or higher_is_better):
-            mark = ""
-        elif d < 0 and lower_is_better:
-            mark = "↓"
-        elif d > 0 and higher_is_better:
-            mark = "↑"
-        elif d > 0 and lower_is_better:
-            mark = "↑"  # regression
-        elif d < 0 and higher_is_better:
-            mark = "↓"  # regression
-
-        pct_str = "—" if pct_change == float("inf") else f"{pct_change:+6.1f}%"
-        lines.append(
-            f"{k:<28} {b:>12.2f} {a:>12.2f} {d:>+12.2f}  {pct_str} {mark}"
+    def add(name: str, values: list[float], unit: str, *, direction: str = "lower",
+            comparison: str = "p95", note: str = "") -> None:
+        out[name] = perf.Metric(
+            name=name,
+            unit=unit,
+            samples=tuple(float(value) for value in values),
+            direction=direction,
+            comparison=comparison,
+            note=note,
         )
 
-    return "\n".join(lines)
+    def phases(key: str) -> list[float]:
+        return [
+            float(frame["phases"][key])
+            for frame in frames
+            if frame.get("phases") and key in frame["phases"]
+        ]
+
+    add("tui.frame.duration_ms", [float(f["durationMs"]) for f in frames if "durationMs" in f],
+        "ms", note="full frame, renderer through terminal write")
+    for key, name in (
+        ("renderer", "tui.frame.renderer_ms"),
+        ("yoga", "tui.frame.yoga_ms"),
+        ("diff", "tui.frame.diff_ms"),
+        ("optimize", "tui.frame.optimize_ms"),
+        ("write", "tui.frame.write_ms"),
+        ("commit", "tui.frame.commit_ms"),
+    ):
+        add(name, phases(key), "ms")
+    add("tui.frame.patches", phases("patches"), "count")
+    add("tui.frame.optimized_patches", phases("optimizedPatches"), "count")
+    add("tui.frame.write_bytes", phases("writeBytes"), "bytes")
+    add("tui.frame.drain_ms", phases("prevFrameDrainMs"), "ms", note="previous frame's terminal flush")
+    add("tui.yoga.visited", phases("yogaVisited"), "count")
+    add("tui.yoga.measured", phases("yogaMeasured"), "count")
+    add("tui.yoga.cache_hits", phases("yogaCacheHits"), "count")
+    add("tui.yoga.live", phases("yogaLive"), "count", comparison="max",
+        note="live Yoga nodes; growth is a leak")
+
+    stamps = sorted(float(frame["ts"]) for frame in frames if "ts" in frame)
+    if len(stamps) >= 2:
+        gaps = [stamps[i] - stamps[i - 1] for i in range(1, len(stamps))]
+        add("tui.frame.gap_ms", gaps, "ms", note="idle gap between frames")
+        elapsed_s = (stamps[-1] - stamps[0]) / 1000.0
+        add("tui.fps", [len(stamps) / elapsed_s if elapsed_s > 0 else 0.0], "fps",
+            direction="higher", comparison="p50")
+
+    add("tui.frames", [float(len(frames))], "count", note="frames in the sample window")
+    add("tui.flickers", [float(sum(1 for frame in frames if frame.get("flickers")))], "count")
+    add(
+        "tui.backpressure_frames",
+        [float(sum(1 for frame in frames if frame.get("phases", {}).get("backpressure")))],
+        "count",
+    )
+
+    by_pane: dict[str, list[float]] = {}
+    for row in react:
+        by_pane.setdefault(_slug(str(row.get("id", "unknown"))), []).append(
+            float(row.get("actualMs", 0.0))
+        )
+    for pane, values in by_pane.items():
+        add(f"tui.react.{pane}_ms", values, "ms", note="React commit")
+
+    return out
 
 
-def run_once(args: argparse.Namespace) -> dict[str, Any]:
-    tui_dir = Path(args.tui_dir).resolve()
+def build(tui_dir: Path) -> bool:
+    """Build the TUI bundle; return False after printing the captured failure."""
+    try:
+        result = subprocess.run(
+            ["npm", "run", "build"],
+            cwd=tui_dir,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=600,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        print("TUI build timed out after 600s", file=sys.stderr)
+        return False
+    if result.returncode == 0:
+        return True
+    print("TUI build failed:", file=sys.stderr)
+    print(result.stdout[-2000:], file=sys.stderr)
+    print(result.stderr[-2000:], file=sys.stderr)
+    return False
+
+
+def ensure_built(tui_dir: Path, *, build_first: bool) -> None:
+    if build_first and not build(tui_dir):
+        raise SystemExit("TUI build failed")
     entry = tui_dir / "dist" / "entry.js"
     if not entry.exists():
-        sys.exit(f"{entry} missing — run `npm run build` in {tui_dir} first")
+        raise SystemExit(
+            f"{entry} is missing; pass --build or run `npm run build` in {tui_dir} first"
+        )
+
+
+def run_once(args: argparse.Namespace) -> tuple[dict[str, perf.Metric], str]:
+    """Run one scripted TUI session and return metrics plus the detailed report."""
+    import pty  # windows-footgun: ok - the TUI suite is POSIX-only by design
+
+    tui_dir = Path(args.tui_dir).resolve()
+    entry = tui_dir / "dist" / "entry.js"
 
     sid = args.session or pick_longest_session(DEFAULT_STATE_DB)
-    print(f"• session: {sid}")
-    print(f"• hold: {args.hold} x {args.rate}Hz for {args.seconds}s after {args.warmup}s warmup")
-    print(f"• terminal: {args.cols}x{args.rows}")
+    print(f"session: {sid}", file=sys.stderr)
+    print(
+        f"hold: {args.hold} x {args.rate}Hz for {args.seconds}s "
+        f"after {args.warmup}s warmup",
+        file=sys.stderr,
+    )
+    print(f"terminal: {args.cols}x{args.rows}", file=sys.stderr)
 
     log = Path(args.log)
     if not args.keep_log and log.exists():
@@ -443,13 +437,13 @@ def run_once(args: argparse.Namespace) -> dict[str, Any]:
         winsize = struct.pack("HHHH", args.rows, args.cols, 0, 0)
         fcntl.ioctl(fd, termios.TIOCSWINSZ, winsize)
 
-        print(f"• pid: {pid}  fd: {fd}")
-        print(f"• warmup {args.warmup}s (drain startup output)…")
+        print(f"pid: {pid}  fd: {fd}", file=sys.stderr)
+        print(f"warmup {args.warmup}s (drain startup output)", file=sys.stderr)
         drain(fd, args.warmup)
 
-        print(f"• holding {args.hold}…")
+        print(f"holding {args.hold}", file=sys.stderr)
         sent = hold_key(fd, KEYS[args.hold], args.seconds, args.rate)
-        print(f"  sent {sent} keystrokes")
+        print(f"sent {sent} keystrokes", file=sys.stderr)
 
         drain(fd, 0.5)
     finally:
@@ -461,7 +455,7 @@ def run_once(args: argparse.Namespace) -> dict[str, Any]:
                     break
                 time.sleep(0.1)
             else:
-                os.kill(pid, signal.SIGKILL)  # windows-footgun: ok — POSIX-only script (imports pty at top)
+                os.kill(pid, signal.SIGKILL)  # windows-footgun: ok - POSIX-only script (imports pty at top)
                 os.waitpid(pid, 0)
         except (ProcessLookupError, ChildProcessError):
             pass
@@ -471,70 +465,32 @@ def run_once(args: argparse.Namespace) -> dict[str, Any]:
             pass
 
     time.sleep(0.2)
-    return summarize(log, since_ms)
+    data = summarize(log, since_ms)
+    return metrics_from_data(data), format_report(data)
 
 
-def main() -> int:
-    p = argparse.ArgumentParser()
-    p.add_argument("--session", help="session id to resume (default: longest in db)")
-    p.add_argument("--hold", default="page_up", choices=sorted(KEYS.keys()), help="key to hold")
-    p.add_argument("--seconds", type=float, default=8.0, help="how long to hold the key")
-    p.add_argument("--rate", type=int, default=30, help="keystrokes per second")
-    p.add_argument("--warmup", type=float, default=3.0, help="seconds to wait after launch before input")
-    p.add_argument("--threshold-ms", type=float, default=0.0, help="HERMES_DEV_PERF_MS (0 = capture all)")
-    p.add_argument("--cols", type=int, default=120)
-    p.add_argument("--rows", type=int, default=40)
-    p.add_argument("--keep-log", action="store_true", help="don't wipe perf.log before run")
-    p.add_argument("--tui-dir", default=str(DEFAULT_TUI_DIR))
-    p.add_argument("--log", default=str(DEFAULT_LOG))
-    p.add_argument("--save", metavar="LABEL",
-                   help="save the final metrics as <tempdir>/perf-<LABEL>.json for later --compare")
-    p.add_argument("--compare", metavar="LABEL",
-                   help="diff against <tempdir>/perf-<LABEL>.json after running")
-    p.add_argument("--loop", action="store_true",
-                   help="watch for source changes, rebuild, rerun, and diff vs previous run")
-    p.add_argument("--extra-flag", dest="extra_flags", action="append", default=[],
-                   help="pass through to node dist/entry.js (repeatable)")
-    args = p.parse_args()
-
-    if args.loop:
-        return loop_mode(args)
-
-    # Single-shot path.
-    data = run_once(args)
-    print()
-    print(format_report(data))
-
-    metrics = key_metrics(data)
-
-    if args.save:
-        path = Path(tempfile.gettempdir()) / f"perf-{args.save}.json"
-        path.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
-        print(f"\n• saved: {path}")
-
-    if args.compare:
-        path = Path(tempfile.gettempdir()) / f"perf-{args.compare}.json"
-        if not path.exists():
-            print(f"\n⚠ no baseline at {path} — run with --save {args.compare} first")
-        else:
-            before = json.loads(path.read_text(encoding="utf-8-sig"))
-            print(f"\n═══ A/B diff vs {path} ═══")
-            print(format_diff(before, metrics))
-
-    if not data["react"] and not data["frame"]:
-        return 2
-    return 0
+def add_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--session", help="session id to resume (default: longest in db)")
+    parser.add_argument("--hold", default="page_up", choices=sorted(KEYS), help="key to hold")
+    parser.add_argument("--seconds", type=float, default=8.0, help="how long to hold the key")
+    parser.add_argument("--rate", type=int, default=30, help="keystrokes per second")
+    parser.add_argument("--warmup", type=float, default=3.0,
+                        help="seconds to wait after launch before input")
+    parser.add_argument("--threshold-ms", type=float, default=0.0,
+                        help="HERMES_DEV_PERF_MS (0 captures every frame)")
+    parser.add_argument("--cols", type=int, default=120)
+    parser.add_argument("--rows", type=int, default=40)
+    parser.add_argument("--keep-log", action="store_true", help="keep the previous perf log")
+    parser.add_argument("--tui-dir", default=str(DEFAULT_TUI_DIR))
+    parser.add_argument("--log", default=str(DEFAULT_LOG))
+    parser.add_argument("--loop", action="store_true",
+                        help="watch sources, rebuild, rerun, and diff against the previous run")
+    parser.add_argument("--extra-flag", dest="extra_flags", action="append", default=[],
+                        help="pass through to node dist/entry.js (repeatable)")
 
 
-def loop_mode(args: argparse.Namespace) -> int:
-    """Watch source files, rebuild, rerun, print A/B diff against previous run.
-
-    Keeps a rolling 'previous run' baseline in memory so each iteration
-    reports delta vs the last one — visibility into whether the last
-    edit moved the needle.  Press Ctrl+C to stop.
-    """
-    import subprocess
-
+def loop(args: argparse.Namespace) -> int:
+    """Watch sources, rebuild, rerun, and diff against the previous run."""
     tui_dir = Path(args.tui_dir).resolve()
     src_root = tui_dir / "src"
     pkg_root = tui_dir / "packages" / "hermes-ink" / "src"
@@ -552,55 +508,42 @@ def loop_mode(args: argparse.Namespace) -> int:
                         pass
         return mtimes
 
-    previous_metrics: dict[str, float] | None = None
+    previous: perf.Report | None = None
     previous_mtimes = collect_mtimes()
     iteration = 0
 
-    print(f"• loop mode — watching {src_root} + {pkg_root} for *.ts(x) changes")
-    print("• edit any TS file, the harness rebuilds + reruns automatically")
-    print("• Ctrl+C to stop\n")
+    print(f"loop mode: watching {src_root} + {pkg_root} for *.ts(x) changes", file=sys.stderr)
+    print("edit any TS file, the harness rebuilds and reruns automatically", file=sys.stderr)
+    print("Ctrl+C to stop\n", file=sys.stderr)
 
     try:
         while True:
             iteration += 1
-            print(f"\n{'═' * 76}")
-            print(f"Iteration {iteration}  @ {time.strftime('%H:%M:%S')}")
-            print("═" * 76)
-
+            print(f"\niteration {iteration} at {time.strftime('%H:%M:%S')}", file=sys.stderr)
             if iteration > 1:
-                print("• rebuilding…")
-                result = subprocess.run(
-                    ["npm", "run", "build"],
-                    cwd=tui_dir,
-                    capture_output=True,
-                    text=True, encoding='utf-8', errors='replace',
-                    check=False,
-                )
-                if result.returncode != 0:
-                    print("✗ build failed:")
-                    print(result.stdout[-2000:])
-                    print(result.stderr[-2000:])
-                    print("\n• waiting for source changes to retry…")
+                print("rebuilding...", file=sys.stderr)
+                if not build(tui_dir):
+                    print("waiting for source changes to retry...", file=sys.stderr)
                     previous_mtimes = wait_for_change(previous_mtimes, collect_mtimes)
                     continue
-                print("✓ build ok")
+                print("build ok", file=sys.stderr)
 
-            data = run_once(args)
-            metrics = key_metrics(data)
-
-            print()
-            print(format_report(data))
-
-            if previous_metrics is not None:
-                print(f"\n═══ A/B diff vs iteration {iteration - 1} ═══")
-                print(format_diff(previous_metrics, metrics))
-
-            previous_metrics = metrics
-
-            print("\n• waiting for source changes…")
+            started = time.monotonic()
+            metrics, detail = run_once(args)
+            report = perf.Report(
+                suite="tui-frames",
+                metrics=metrics,
+                runs=1,
+                duration_s=time.monotonic() - started,
+            )
+            print(detail, file=sys.stderr)
+            if previous is not None:
+                print(perf.format_diff(previous, report), file=sys.stderr)
+            previous = report
+            print("\nwaiting for source changes...", file=sys.stderr)
             previous_mtimes = wait_for_change(previous_mtimes, collect_mtimes)
     except KeyboardInterrupt:
-        print("\n• loop stopped")
+        print("\nloop stopped", file=sys.stderr)
         return 0
 
 
@@ -618,10 +561,6 @@ def wait_for_change(prev: dict[str, float], collect) -> dict[str, float]:
             print(f"  ↻ {len(changed)} file(s) changed:")
             for path in changed[:5]:
                 print(f"    {path}")
-            # Debounce — editor save bursts can take ~500ms to settle
+            # Debounce - editor save bursts can take ~500ms to settle
             time.sleep(0.5)
             return collect()
-
-
-if __name__ == "__main__":
-    sys.exit(main())

@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "tolerance_pct": 10.0,
+  "updated_at": null,
+  "suites": {
+    "tui-frames": {
+      "tui.frame.duration_ms": {
+        "unit": "ms",
+        "direction": "lower",
+        "gate": "warn",
+        "comparison": "p95",
+        "budget": 16.0,
+        "current": null
+      },
+      "tui.frame.gap_ms": {
+        "unit": "ms",
+        "direction": "lower",
+        "gate": "warn",
+        "comparison": "p95",
+        "budget": 16.0,
+        "current": null
+      },
+      "tui.fps": {
+        "unit": "fps",
+        "direction": "higher",
+        "gate": "info",
+        "comparison": "p50",
+        "budget": null,
+        "current": null
+      },
+      "tui.yoga.live": {
+        "unit": "count",
+        "direction": "lower",
+        "gate": "info",
+        "comparison": "max",
+        "budget": null,
+        "current": null
+      }
+    },
+    "tool-surface": {
+      "tool.count": {
+        "unit": "count",
+        "direction": "lower",
+        "gate": "blocking",
+        "comparison": "p95",
+        "budget": 51,
+        "current": null
+      },
+      "tool.schema_bytes": {
+        "unit": "bytes",
+        "direction": "lower",
+        "gate": "blocking",
+        "comparison": "p95",
+        "budget": null,
+        "current": null
+      }
+    },
+    "startup": {
+      "startup.first_paint_ms": {
+        "unit": "ms",
+        "direction": "lower",
+        "gate": "warn",
+        "comparison": "p95",
+        "budget": 400.0,
+        "current": null
+      },
+      "startup.gateway_ready_ms": {
+        "unit": "ms",
+        "direction": "lower",
+        "gate": "warn",
+        "comparison": "p95",
+        "budget": 1500.0,
+        "current": null
+      },
+      "startup.session_ready_ms": {
+        "unit": "ms",
+        "direction": "lower",
+        "gate": "warn",
+        "comparison": "p95",
+        "budget": 2500.0,
+        "current": null
+      },
+      "startup.cli_import_ms": {
+        "unit": "ms",
+        "direction": "lower",
+        "gate": "warn",
+        "comparison": "p95",
+        "budget": null,
+        "current": null
+      }
+    },
+    "input": {
+      "input.echo_ms": {
+        "unit": "ms",
+        "direction": "lower",
+        "gate": "warn",
+        "comparison": "p95",
+        "budget": 33.0,
+        "current": null
+      },
+      "input.enter_to_visible_ms": {
+        "unit": "ms",
+        "direction": "lower",
+        "gate": "warn",
+        "comparison": "p95",
+        "budget": 100.0,
+        "current": null
+      },
+      "input.picker_open_ms": {
+        "unit": "ms",
+        "direction": "lower",
+        "gate": "warn",
+        "comparison": "p95",
+        "budget": 500.0,
+        "current": null
+      }
+    },
+    "idle": {
+      "idle.frames": {
+        "unit": "count",
+        "direction": "lower",
+        "gate": "blocking",
+        "comparison": "p95",
+        "budget": 0,
+        "current": null
+      },
+      "idle.cpu_pct": {
+        "unit": "%",
+        "direction": "lower",
+        "gate": "warn",
+        "comparison": "p95",
+        "budget": 1.0,
+        "current": null
+      }
+    },
+    "turn": {
+      "turn.submit_to_wire_ms": {
+        "unit": "ms",
+        "direction": "lower",
+        "gate": "warn",
+        "comparison": "p95",
+        "budget": 150.0,
+        "current": null
+      },
+      "turn.first_chunk_ms": {
+        "unit": "ms",
+        "direction": "lower",
+        "gate": "warn",
+        "comparison": "p95",
+        "budget": 50.0,
+        "current": null
+      },
+      "turn.chunk_to_paint_ms": {
+        "unit": "ms",
+        "direction": "lower",
+        "gate": "warn",
+        "comparison": "p95",
+        "budget": 50.0,
+        "current": null
+      },
+      "turn.prompt_bytes": {
+        "unit": "bytes",
+        "direction": "lower",
+        "gate": "info",
+        "comparison": "p95",
+        "budget": null,
+        "current": null
+      },
+      "turn.schema_bytes": {
+        "unit": "bytes",
+        "direction": "lower",
+        "gate": "info",
+        "comparison": "p95",
+        "budget": null,
+        "current": null
+      }
+    }
+  }
+}
