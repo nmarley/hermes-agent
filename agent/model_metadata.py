@@ -20,6 +20,7 @@ import hermes_yaml as yaml
 from agent import model_metadata_http
 from agent.model_metadata_cache import _write_context_cache, locked_context_cache
 from agent.model_metadata_llamacpp import llamacpp_context
+from agent.model_metadata_pricing import _extract_pricing, _iter_nested_dicts
 
 from utils import atomic_json_write, base_url_host_matches, base_url_hostname
 
@@ -442,6 +443,7 @@ def _is_custom_endpoint(base_url: str) -> bool:
 # hosts; models.inference.ai.azure.com (GitHub Models free tier, ~8K per-request cap)
 # is mapped so a targeted hint fires instead of the custom-endpoint path.
 _URL_TO_PROVIDER: dict[str, str] = {
+    "api.venice.ai": "venice",
     "api.openai.com": "openai", "chatgpt.com": "openai", "api.anthropic.com": "anthropic",
     "api.z.ai": "zai", "open.bigmodel.cn": "zai",
     "api.moonshot.ai": "kimi-coding", "api.moonshot.cn": "kimi-coding-cn", "api.kimi.com": "kimi-coding",
@@ -774,19 +776,6 @@ def detect_local_server_type(base_url: str, api_key: str = "") -> Optional[str]:
     return result
 
 
-# Cache the negative verdict in memory only (never on disk — a failure is often transient: server starting,
-# key being fixed) so the very next turn does not re-run the whole waterfall against an endpoint that just
-# answered nothing (#89863).
-def _iter_nested_dicts(value: Any):
-    if isinstance(value, dict):
-        yield value
-        for nested in value.values():
-            yield from _iter_nested_dicts(nested)
-    elif isinstance(value, list):
-        for item in value:
-            yield from _iter_nested_dicts(item)
-
-
 def _coerce_reasonable_int(value: Any, minimum: int = 1024, maximum: int = 10_000_000) -> Optional[int]:
     if isinstance(value, bool):
         return None
@@ -824,66 +813,6 @@ def _context_length_from_model_payload(payload: dict[str, Any]) -> Optional[int]
         return ctx
     raw = payload.get("max_tokens")
     return int(raw) if isinstance(raw, (int, float)) and int(raw) > 0 else None
-
-
-# Generic ``/models`` pricing: an explicit ``unit`` beside the rates wins; without one, a token rate
-# at or above $0.001/token ($1,000/MTok — no real model charges that) can only be a per-million quote.
-_PRICING_UNIT_DIVISORS = {
-    "per_token": 1, "per_1k_tokens": 1_000, "per_thousand_tokens": 1_000,
-    "per_1m_tokens": 1_000_000, "per_million_tokens": 1_000_000,
-}
-_PER_MILLION_QUOTE_MIN = 0.001
-_TOKEN_RATE_FIELDS = ("prompt", "completion", "cache_read", "cache_write")
-
-
-def _normalize_token_rates(pricing: dict[str, Any], unit: Any) -> dict[str, Any]:
-    """Rescale the generic path's token rates to per-token strings (the contract usage_pricing
-    multiplies by 1e6), the way the Novita/DeepInfra branches already do for their known units."""
-    rates: dict[str, float] = {}
-    for key in _TOKEN_RATE_FIELDS:
-        try:
-            rates[key] = float(pricing[key])
-        except (KeyError, TypeError, ValueError):
-            continue
-    divisor = _PRICING_UNIT_DIVISORS.get(str(unit or "").strip().lower())
-    if divisor is None:
-        divisor = 1_000_000 if any(v >= _PER_MILLION_QUOTE_MIN for v in rates.values()) else 1
-    if divisor != 1:
-        pricing.update({key: str(value / divisor) for key, value in rates.items()})
-    return pricing
-
-
-def _extract_pricing(payload: dict[str, Any]) -> dict[str, Any]:
-    def _per_token(source: dict[str, Any], fields: dict[str, str], scale) -> dict[str, Any]:
-        # Provider $/MTok (or Novita's 1/10_000-$ per M) -> per-token strings, the same path usage_pricing uses for OpenRouter.
-        return {target: str(scale(float(source[key]))) for target, key in fields.items() if source.get(key) is not None}
-    novita_fields = {"prompt": "input_token_price_per_m", "completion": "output_token_price_per_m"}
-    if any(payload.get(k) is not None for k in novita_fields.values()):
-        return _per_token(payload, novita_fields, lambda v: v / 10_000 / 1_000_000)
-    # DeepInfra ships pricing under ``metadata.pricing`` in $/MTok.
-    metadata = payload.get("metadata")
-    deepinfra_pricing = metadata.get("pricing") if isinstance(metadata, dict) else None
-    deepinfra_fields = {"prompt": "input_tokens", "completion": "output_tokens", "cache_read": "cache_read_tokens"}
-    if isinstance(deepinfra_pricing, dict) and any(k in deepinfra_pricing for k in deepinfra_fields.values()):
-        return _per_token(deepinfra_pricing, deepinfra_fields, lambda v: v / 1_000_000)
-    alias_map = {
-        "prompt": ("prompt", "input", "input_cost_per_token", "prompt_token_cost"),
-        "completion": ("completion", "output", "output_cost_per_token", "completion_token_cost"),
-        "request": ("request", "request_cost"),
-        "cache_read": ("cache_read", "cached_prompt", "input_cache_read", "cache_read_cost_per_token"),
-        "cache_write": ("cache_write", "cache_creation", "input_cache_write", "cache_write_cost_per_token"),
-    }
-    for mapping in _iter_nested_dicts(payload):
-        normalized = {str(key).lower(): value for key, value in mapping.items()}
-        pricing: dict[str, Any] = {}
-        for target, aliases in alias_map.items():
-            for alias in aliases:
-                if alias in normalized and normalized[alias] not in {None, ""}:
-                    pricing[target] = normalized[alias]
-                    break
-        if pricing:
-            return _normalize_token_rates(pricing, normalized.get("unit"))
-    return {}
 
 
 def _add_model_aliases(cache: dict[str, dict[str, Any]], model_id: str, entry: dict[str, Any]) -> None:
@@ -942,7 +871,14 @@ def fetch_model_metadata(force_refresh: bool = False) -> dict[str, dict[str, Any
 
 def _endpoint_model_entry(model: dict[str, Any], model_id: str, context_length: Optional[int]) -> dict[str, Any]:
     """Cache entry for one ``/models`` item; optional keys are set only when known."""
-    optional = (("context_length", context_length), ("max_completion_tokens", _extract_first_int(model, _MAX_COMPLETION_KEYS)), ("pricing", _extract_pricing(model) or None))
+    spec = model.get("model_spec") if isinstance(model.get("model_spec"), dict) else {}
+    context_length = (
+        context_length
+        or _extract_first_int(model, _CONTEXT_LENGTH_KEYS)
+        or _positive_int(spec.get("availableContextTokens"))
+    )
+    max_completion = _extract_first_int(model, _MAX_COMPLETION_KEYS) or _positive_int(spec.get("maxCompletionTokens"))
+    optional = (("context_length", context_length), ("max_completion_tokens", max_completion), ("pricing", _extract_pricing(model) or None))
     return {"name": model.get("name", model_id), **{k: v for k, v in optional if v is not None}}
 
 

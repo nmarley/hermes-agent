@@ -22,6 +22,7 @@ _NOUS_DEFAULT_BASE_URL = "https://inference-api.nousresearch.com/v1"
 # endpoint serving the same model id may bill differently, and subscription
 # routes (openai-codex, xai-oauth) keep their own policy.
 _MODELS_DEV_DIRECT_HOSTS = {
+    "venice": "venice.ai",
     "openai": "openai.com", "xai": "x.ai", "anthropic": "anthropic.com", "google": "googleapis.com",
     "deepseek": "deepseek.com", "xiaomi": "xiaomimimo.com",
 }

@@ -27,6 +27,11 @@ class HermesOverlay:
 
 HERMES_OVERLAYS: dict[str, HermesOverlay] = {
     "moa": HermesOverlay(auth_type="virtual", base_url_override="moa://local"),
+    "venice": HermesOverlay(
+        extra_env_vars=("VENICE_API_KEY",),
+        base_url_override="https://api.venice.ai/api/v1",
+        base_url_env_var="VENICE_BASE_URL",
+    ),
     "openrouter": HermesOverlay(is_aggregator=True, base_url_env_var="OPENROUTER_BASE_URL"),
     "nous": HermesOverlay(auth_type="oauth_device_code", base_url_override="https://inference-api.nousresearch.com/v1"),
     "openai-codex": HermesOverlay(transport="codex_responses", auth_type="oauth_external",
@@ -117,6 +122,7 @@ class ProviderDef:
 # -- Aliases: human-friendly / legacy names grouped by canonical (models.dev where possible) id;
 # ``ALIASES`` is the inverted lookup table. ---------------------------------------------------
 _ALIAS_GROUPS: dict[str, tuple[str, ...]] = {
+    "venice": ("venice-ai", "veniceai"),
     "openrouter": ("openai",), "zai": ("glm", "z-ai", "z.ai", "zhipu"), "xai": ("x-ai", "x.ai", "grok"),
     "xai-oauth": ("grok-oauth", "xai-oauth", "x-ai-oauth", "xai-grok-oauth"),
     "nvidia": ("nim", "nvidia-nim", "build-nvidia", "nemotron"),
@@ -146,7 +152,8 @@ ALIASES: dict[str, str] = {alias: canon for canon, aliases in _ALIAS_GROUPS.item
 # -- Display labels for providers not in the models.dev catalog ---------------
 
 _LABEL_OVERRIDES: dict[str, str] = {
-    "moa": "Mixture of Agents", "nous": "Nous Portal", "openai-codex": "ChatGPT or Codex Subscription",
+    "venice": "Venice AI", "moa": "Mixture of Agents", "nous": "Nous Portal",
+    "openai-codex": "ChatGPT or Codex Subscription",
     "copilot-acp": "GitHub Copilot ACP", "stepfun": "StepFun Step Plan", "xiaomi": "Xiaomi MiMo", "gmi": "GMI Cloud",
     "upstage": "Upstage Solar", "actual": "Actual Computer", "tencent-tokenhub": "Tencent TokenHub",
     "nebius-token-factory": "Nebius Token Factory", "tencent-tokenplan": "Tencent TokenPlan", "lmstudio": "LM Studio",

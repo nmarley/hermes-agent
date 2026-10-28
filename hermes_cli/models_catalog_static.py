@@ -172,6 +172,12 @@ _XAI_MODELS = _xai_curated_models()
 
 # Curated per-provider lists. ``-cn`` twins share the international catalog on a domestic endpoint.
 _PROVIDER_MODELS: dict[str, list[str]] = {
+    "venice": [
+        "deepseek-v4-1-flash-1017", "z-ai-glm-5-3", "z-ai-glm-5-3-flash",
+        "deepseek-v4-pro-0813", "kimi-k3", "qwen-3-8-27b",
+        "abliteration-abliterated-model-large-v2", "abliteration-abliterated-model-large-flash",
+        "deepseek-v4-1-flash-1017-uncensored",
+    ],
     "moa": ["default"],
     "nous": [mid for mid, _ in OPENROUTER_MODELS if mid not in _OPENROUTER_ONLY and not mid.endswith(":free")],
     # Used by /model counts and provider_model_ids fallback when /v1/models is unavailable.
@@ -500,6 +506,7 @@ def group_providers(slugs):
 
 
 _PROVIDER_ALIASES = dict((
+    ("venice-ai", "venice"), ("veniceai", "venice"),
     ("glm", "zai"), ("z-ai", "zai"), ("z.ai", "zai"), ("zhipu", "zai"), ("github", "copilot"),
     ("github-copilot", "copilot"), ("github-models", "copilot"), ("github-model", "copilot"),
     ("github-copilot-acp", "copilot-acp"), ("copilot-acp-agent", "copilot-acp"), ("google", "gemini"),
