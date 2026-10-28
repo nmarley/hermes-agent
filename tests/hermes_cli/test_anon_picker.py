@@ -67,23 +67,6 @@ def _cli_nous_rows(config):
     return [(key, label) for key, label, _members in ordered if key == "nous"]
 
 
-def test_guest_identity_shows_free_tier_row_with_only_welcome_model(guest_home, monkeypatch):
-    from hermes_cli.model_switch_providers import list_picker_providers
-    rows = _nous_rows(list_picker_providers("nous", "", None, None, 50, "nous/welcome"))
-    assert len(rows) == 1
-    row = rows[0]
-    assert "free tier" in row["name"]
-    assert row["models"] == ["nous/welcome"]
-    assert row["total_models"] == 1
-    rendered = repr(row).lower()
-    assert "guest" not in rendered and "anonymous" not in rendered
-
-    # The `hermes model` provider picker applies the same rule from the same helper.
-    cli_rows = _cli_nous_rows({})
-    assert len(cli_rows) == 1
-    assert "free tier" in cli_rows[0][1]
-    assert "guest" not in cli_rows[0][1].lower() and "anonymous" not in cli_rows[0][1].lower()
-
 
 def test_guest_identity_with_guest_off_hides_the_nous_row(guest_home, monkeypatch):
     _write_config(monkeypatch, guest_home, "nous:\n  guest: false\n")

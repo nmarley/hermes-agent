@@ -373,11 +373,10 @@ def test_picker_hints_api_key_warning_format():
         payload = build_models_payload(
             ctx, include_unconfigured=True, picker_hints=True,
         )
-    # anthropic uses api_key + ANTHROPIC_API_KEY.
-    anthropic = next(
-        r for r in payload["providers"] if r["slug"] == "anthropic"
+    venice = next(
+        r for r in payload["providers"] if r["slug"] == "venice"
     )
-    assert "ANTHROPIC_API_KEY" in anthropic["warning"]
+    assert "VENICE_API_KEY" in venice["warning"]
 
 
 # ─── canonical_order ───────────────────────────────────────────────────

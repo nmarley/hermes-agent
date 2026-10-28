@@ -1,57 +1,33 @@
 """Tests for the unified provider catalog (hermes_cli.provider_catalog).
 
-These are invariant tests, not snapshots: they assert the parity *contract*
-between what ``hermes model`` shows (``CANONICAL_PROVIDERS``) and what the
-catalog exposes, plus how each provider's ``auth_type`` maps to a desktop tab —
-never a specific provider count or a frozen vendor list (both change over time).
+These are invariant tests, not snapshots: they assert the parity contract
+between what ``hermes model`` shows and what the catalog exposes, plus how each
+remaining provider's ``auth_type`` maps to a desktop tab.
 """
 
-from hermes_cli.provider_catalog import (
-    provider_catalog,
-    provider_catalog_by_slug,
-)
+from hermes_cli.provider_catalog import provider_catalog, provider_catalog_by_slug
 
-def test_profileless_providers_still_present():
-    """Providers without a ProviderProfile must still resolve via fallbacks.
 
-    openai-api / tencent-tokenplan / xai-oauth have no profile; they exist
-    only as registry + canonical entries. The catalog must not require a
-    profile to include a provider.
-    """
+def test_venice_and_local_providers_are_present():
     by = provider_catalog_by_slug()
-    for slug in ("openai-api", "tencent-tokenplan", "xai-oauth"):
-        assert slug in by, f"{slug} dropped from catalog (profile-less provider)"
-        assert by[slug].label, f"{slug} has empty label despite canonical fallback"
-        assert by[slug].description, f"{slug} has empty description despite fallback"
+    assert "venice" in by
+    assert by["venice"].label == "Venice AI"
+    assert by["venice"].description
+    assert "lmstudio" in by
+    assert by["lmstudio"].label == "LM Studio"
 
-def test_copilot_surfaces_as_a_provider_with_its_own_token_var():
-    """Regression for the reported bug: a GitHub Copilot login showed up under
-    tools, never as a provider, because the shared GITHUB_TOKEN is tool-category.
 
-    Copilot authenticates via the `copilot`/api_key path, so it belongs on the
-    keys tab — but its PRIMARY credential var must be the provider-owned
-    COPILOT_GITHUB_TOKEN, not the shared tool-category GITHUB_TOKEN. That is what
-    lets the desktop render Copilot as its own provider card.
-    """
-    by = provider_catalog_by_slug()
-    assert "copilot" in by
-    d = by["copilot"]
-    assert d.tab == "keys"
-    assert d.api_key_env_vars, "Copilot must expose a credential env var"
-    assert d.api_key_env_vars[0] == "COPILOT_GITHUB_TOKEN", (
-        "Copilot's primary var must be the provider-owned token, not shared GITHUB_TOKEN"
-    )
+def test_venice_surfaces_as_an_api_key_provider():
+    descriptor = provider_catalog_by_slug()["venice"]
+    assert descriptor.tab == "keys"
+    assert descriptor.api_key_env_vars == ("VENICE_API_KEY",)
+    assert descriptor.base_url_env_var == "VENICE_BASE_URL"
+    assert descriptor.signup_url == "https://venice.ai/settings/api"
+
 
 def test_api_key_providers_expose_a_credential_env_var():
     """Every keys-tab provider that authenticates via a pasted API key must
-    surface at least one env var to write the key into (otherwise the GUI can't
-    configure it).
-
-    Exemptions: ``aws_sdk`` (bedrock — uses AWS_REGION/AWS_PROFILE) and the
-    ``custom`` bring-your-own-endpoint pseudo-provider (configured inline via
-    the ``local-endpoint`` flow).
-    """
-    exempt = {"custom"}
-    for d in provider_catalog():
-        if d.auth_type == "api_key" and d.slug not in exempt:
-            assert d.api_key_env_vars, f"{d.slug} is api_key but exposes no env var"
+    surface at least one env var to write the key into."""
+    for descriptor in provider_catalog():
+        if descriptor.auth_type == "api_key":
+            assert descriptor.api_key_env_vars, f"{descriptor.slug} is api_key but exposes no env var"

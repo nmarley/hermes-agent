@@ -28,15 +28,12 @@ def _register(monkeypatch, profile):
     monkeypatch.setitem(auth.PROVIDER_REGISTRY, profile.name, pconfig)
 
 
-@pytest.mark.parametrize("auth_type", ["external_process", "oauth_external", "oauth_device_code", "api_key"])
-def test_plugin_profiles_are_admitted_by_slug_not_auth_type(auth_type):
+def test_vendor_plugin_profiles_are_not_admitted():
     from providers.base import ProviderProfile
-    from hermes_cli.models_catalog_static import CANONICAL_PROVIDERS, _plugin_provider_enters_picker
+    from hermes_cli.models_catalog_static import _plugin_provider_enters_picker
 
-    assert _plugin_provider_enters_picker(ProviderProfile(name="acme-plugin", auth_type=auth_type)) is True
-    # A plugin re-declaring a built-in slug is deduped, never doubled (bedrock is aws_sdk in-tree).
-    assert _plugin_provider_enters_picker(ProviderProfile(name="bedrock", auth_type="aws_sdk")) is False
-    assert [p.slug for p in CANONICAL_PROVIDERS].count("bedrock") == 1
+    for auth_type in ("external_process", "oauth_external", "oauth_device_code", "api_key"):
+        assert _plugin_provider_enters_picker(ProviderProfile(name="acme-plugin", auth_type=auth_type)) is False
 
 
 def test_external_process_plugin_authenticated_flag_tracks_binary_and_catalog_uses_fallback(

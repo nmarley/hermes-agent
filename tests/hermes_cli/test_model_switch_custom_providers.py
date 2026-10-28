@@ -1855,29 +1855,29 @@ def test_excluded_providers_hides_builtin_row(monkeypatch):
     otherwise surface when its credentials are present."""
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", dict)
     monkeypatch.setattr(providers_mod, "HERMES_OVERLAYS", {})
-    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-test")
+    monkeypatch.setenv("VENICE_API_KEY", "venice-test")
 
     baseline = list_authenticated_providers(
-        current_provider="openrouter",
-        current_base_url="https://openrouter.ai/api/v1",
+        current_provider="venice",
+        current_base_url="https://api.venice.ai/api/v1",
         user_providers={},
         custom_providers=[],
         max_models=50,
     )
-    assert any(p["slug"] == "openrouter" for p in baseline), (
-        "sanity: openrouter row must appear when OPENROUTER_API_KEY is set"
+    assert any(p["slug"] == "venice" for p in baseline), (
+        "sanity: venice row must appear when VENICE_API_KEY is set"
     )
 
     filtered = list_authenticated_providers(
-        current_provider="openrouter",
-        current_base_url="https://openrouter.ai/api/v1",
+        current_provider="venice",
+        current_base_url="https://api.venice.ai/api/v1",
         user_providers={},
         custom_providers=[],
         max_models=50,
-        excluded_providers=["openrouter"],
+        excluded_providers=["venice"],
     )
-    assert not any(p["slug"] == "openrouter" for p in filtered), (
-        "excluded_providers=['openrouter'] must hide the openrouter row"
+    assert not any(p["slug"] == "venice" for p in filtered), (
+        "excluded_providers=['venice'] must hide the venice row"
     )
 
 

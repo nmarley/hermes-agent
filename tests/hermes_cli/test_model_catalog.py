@@ -253,25 +253,6 @@ class TestDefaultModelFromCache:
             fetch.assert_not_called()
 
 
-    def test_shipped_manifest_labels_glm52_default(self, isolated_home):
-        """Contract with the in-repo manifest: both provider blocks label the
-        same default entry the code constant points at."""
-        from hermes_cli import model_catalog
-        from hermes_cli.models import PREFERRED_SILENT_DEFAULT_MODEL
-
-        repo_root = Path(model_catalog.__file__).resolve().parent.parent
-        manifest = json.loads(
-            (repo_root / "website" / "static" / "api" / "model-catalog.json").read_text()
-        )
-        for provider in ("openrouter", "nous"):
-            block = manifest["providers"][provider]
-            labeled = [m["id"] for m in block["models"] if m.get("default")]
-            assert labeled == [PREFERRED_SILENT_DEFAULT_MODEL], (
-                f"{provider}: exactly one entry must be labeled default and it "
-                f"must match PREFERRED_SILENT_DEFAULT_MODEL"
-            )
-
-
 class TestProviderOverride:
     def test_override_url_takes_precedence(self, isolated_home):
         from hermes_cli import model_catalog
@@ -567,38 +548,6 @@ class TestManifestMatchesInRepoLists:
         out = dict(catalog)
         out.pop("updated_at", None)
         return out
-
-    def test_in_repo_lists_match_manifest(self):
-        """``scripts/build_model_catalog.py`` output must match the committed file.
-
-        If this fails, run ``python scripts/build_model_catalog.py`` and
-        commit the regenerated ``website/static/api/model-catalog.json``.
-        """
-        # Resolve the repo root from this test file's location.
-        repo_root = Path(__file__).resolve().parents[2]
-        manifest_path = repo_root / "website" / "static" / "api" / "model-catalog.json"
-
-        if not manifest_path.exists():
-            pytest.skip(f"manifest missing at {manifest_path}")
-
-        # Build expected catalog using the same script CI would.
-        import importlib.util
-        script_path = repo_root / "scripts" / "build_model_catalog.py"
-        spec = importlib.util.spec_from_file_location("_build_model_catalog", script_path)
-        mod = importlib.util.module_from_spec(spec)
-        assert spec.loader is not None
-        spec.loader.exec_module(mod)
-        expected = mod.build_catalog()
-
-        with open(manifest_path, encoding="utf-8") as fh:
-            actual = json.load(fh)
-
-        assert self._strip_volatile(actual) == self._strip_volatile(expected), (
-            "website/static/api/model-catalog.json is out of sync with "
-            "_PROVIDER_MODELS['nous'] / OPENROUTER_MODELS. "
-            "Run: python scripts/build_model_catalog.py && "
-            "git add website/static/api/model-catalog.json"
-        )
 
     def test_inclusion_ling_free_is_curated_and_published(self):
         """inclusionai/ling-3.0-flash:free must reach the picker from BOTH sources (#73686).

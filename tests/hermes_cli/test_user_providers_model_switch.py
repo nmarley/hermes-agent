@@ -610,24 +610,24 @@ def test_current_custom_model_is_surfaced_in_builtin_provider_row(monkeypatch):
     """
     monkeypatch.setattr("agent.models_dev.fetch_models_dev", dict)
     monkeypatch.setattr("hermes_cli.providers.HERMES_OVERLAYS", {})
-    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-test")
+    monkeypatch.setenv("VENICE_API_KEY", "venice-test")
     # Pin a small curated catalog so the assertion is deterministic.
     monkeypatch.setattr(
         "hermes_cli.models.cached_provider_model_ids",
-        lambda slug, **kw: ["anthropic/claude-opus-4.8", "openai/gpt-5.5"]
-        if slug == "openrouter"
+        lambda slug, **kw: ["deepseek-v4-1-flash-1017", "z-ai-glm-5-3"]
+        if slug == "venice"
         else [],
     )
 
     custom = "some-vendor/totally-custom-model-v9"
     providers = list_authenticated_providers(
-        current_provider="openrouter",
+        current_provider="venice",
         current_model=custom,
         user_providers={},
         custom_providers=[],
     )
 
-    row = next(p for p in providers if p["slug"] == "openrouter")
+    row = next(p for p in providers if p["slug"] == "venice")
     assert custom in row["models"], row["models"]
     assert row["models"][0] == custom  # injected at the front
     assert row["total_models"] == 3

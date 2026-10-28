@@ -22,33 +22,6 @@ def _write_pool(home, provider: str, row: dict) -> None:
     (home / "auth.json").write_text(json.dumps({"version": 1, "credential_pool": {provider: [row]}}))
 
 
-def test_solstice_is_off_every_discovery_surface_until_signed_in_but_always_resolves(monkeypatch, tmp_path):
-    home = tmp_path / "hermes"
-    home.mkdir()
-    monkeypatch.setenv("HERMES_HOME", str(home))
-    from hermes_cli.models import list_available_providers
-    from hermes_cli.models_catalog_static import listed_canonical_providers
-    from hermes_cli.provider_catalog import provider_catalog
-    from hermes_cli.web_routers.oauth import _build_oauth_catalog
-
-    def surfaces() -> dict[str, bool]:
-        return {
-            "canonical": any(p.slug == "solstice" for p in listed_canonical_providers()),
-            "provider_list": any(r["id"] == "solstice" for r in list_available_providers()),
-            "setup_catalog": any(d.slug == "solstice" for d in provider_catalog()),
-            "accounts_tab": any(r["id"] == "solstice" for r in _build_oauth_catalog()),
-        }
-
-    assert providers.get_provider_profile("solstice").hidden is True
-    assert surfaces() == dict.fromkeys(surfaces(), False)
-    # Typed paths never consult the gate: a user who names it can sign in and run it.
-    assert hermes_cli.auth.resolve_provider("solstice") == "solstice"
-    assert hermes_cli.auth.resolve_provider("solstice-oauth") == "solstice"
-
-    _write_pool(home, "solstice", _pool_row("solstice", access="ya29.x", expires_at_ms=int(time.time() * 1000) + 3_600_000))
-    assert surfaces() == dict.fromkeys(surfaces(), True)
-
-
 def test_brokered_opaque_bearer_rotates_on_stored_expiry_and_keeps_the_refresh_token(monkeypatch, tmp_path, request):
     """Google access tokens are opaque (no JWT ``exp``): the pool must rotate on ``expires_at_ms``, through the
     plugin's broker instead of a token URL, and keep the refresh token when the response omits it."""

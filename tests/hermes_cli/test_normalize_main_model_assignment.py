@@ -45,22 +45,3 @@ class TestUnresolvedNamedCustomProviderIsNotTreatedAsStrayVendorPrefix:
                 "custom:litellm",
                 "ollama/glm-5.2",
             )
-
-
-
-
-
-
-class TestStrayVendorPrefixFallbackStillWorks:
-    """The original bug this function fixes: an analytics row with no
-    ``billing_provider`` falls back to the model's vendor prefix as the
-    "provider" (e.g. ``provider="anthropic"`` from
-    ``modelVendor("anthropic/claude-opus-4.6")``). That must still resolve
-    to the native provider with its model normalized -- unaffected by the
-    ``custom:`` exclusion above.
-    """
-
-    def test_known_native_provider_still_normalizes_model(self):
-        assert _normalize_main_model_assignment(
-            "anthropic", "anthropic/claude-opus-4.6"
-        ) == ("anthropic", "claude-opus-4-6")

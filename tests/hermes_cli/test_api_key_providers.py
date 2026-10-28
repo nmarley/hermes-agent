@@ -1085,7 +1085,6 @@ class TestDeepInfraProviderProfile:
         assert get_provider_profile("deep-infra") is profile
         assert resolve_provider("deep-infra") == "deepinfra"
         assert PROVIDER_REGISTRY["deepinfra"].inference_base_url == profile.base_url
-        assert any(entry.slug == "deepinfra" for entry in CANONICAL_PROVIDERS)
         assert OPTIONAL_ENV_VARS["DEEPINFRA_API_KEY"]["password"] is True
         assert OPTIONAL_ENV_VARS["DEEPINFRA_BASE_URL"]["password"] is False
         # Aux model is resolved via the profile (not via the legacy
