@@ -6,6 +6,7 @@ import { resolve } from 'node:path'
 import { promisify } from 'node:util'
 
 import { pythonHelperPath } from './lib/pythonHelpers.js'
+import { traceStartup } from './lib/startupTrace.js'
 
 const resolvePython = () => {
   // Trust HERMES_PYTHON only. The launcher guarantees it: hermes_cli/main.py
@@ -34,6 +35,8 @@ export interface LocalGatewayGrant { url: string; protocols: string[]; profile_i
 export const isTerminalBootstrapFailure = (message: string) => /^gateway unavailable: /m.test(message)
 
 export const bootstrapLocalGateway = async (start: boolean, recover = false): Promise<LocalGatewayGrant> => {
+  traceStartup?.('gateway_spawn')
+
   const root = process.env.HERMES_PYTHON_SRC_ROOT ?? resolve(import.meta.dirname, '../../')
 
   const { stdout } = await promisify(execFile)(resolvePython(),

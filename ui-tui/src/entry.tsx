@@ -14,6 +14,7 @@ import { formatBytes, type HeapDumpResult, performHeapDump } from './lib/memory.
 import { type MemorySnapshot, startMemoryMonitor } from './lib/memoryMonitor.js'
 import { openExternalUrl } from './lib/openExternalUrl.js'
 import { recordParentLifecycle } from './lib/parentLog.js'
+import { traceStartup } from './lib/startupTrace.js'
 import { clearNativeTuiFrame, resetTerminalModes } from './lib/terminalModes.js'
 
 if (!process.stdin.isTTY) {
@@ -170,6 +171,7 @@ const [ink, { App }, { logFrameEvent }, { trackFrame }] = await Promise.all([
 const onFrame =
   logFrameEvent || trackFrame
     ? (event: FrameEvent) => {
+        traceStartup?.('first_frame')
         logFrameEvent?.(event)
         trackFrame?.(event.durationMs)
       }

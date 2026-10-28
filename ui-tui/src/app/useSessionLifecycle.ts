@@ -23,6 +23,7 @@ import type {
 import { t } from '../i18n/runtime.js'
 import { migratePendingInputs } from '../lib/pendingInputs.js'
 import { asRpcResult } from '../lib/rpc.js'
+import { traceStartup } from '../lib/startupTrace.js'
 import type { Msg, PanelSection, SessionInfo } from '../types.js'
 
 import { applyConnectionRequest, clearConnectionOperation } from './connectionOperationStore.js'
@@ -469,6 +470,7 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
           storedSid,
           usage: usageFrom(info)
         })
+        traceStartup?.('session_ready')
 
         if (info) {
           setHistoryItems([introMsg(info)])
@@ -605,6 +607,7 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
             storedSid,
             usage: usageFrom(info)
           })
+          traceStartup?.('session_ready')
           // resetSession dropped the previous session's controls; the snapshot's
           // still-pending approval/clarify prompts are the only way they come back.
           gw.hydrateSharedPrompts?.(r)
@@ -724,6 +727,7 @@ export function useSessionLifecycle(opts: UseSessionLifecycleOptions) {
                 storedSid,
                 usage: usageFrom(info)
               })
+              traceStartup?.('session_ready')
               gw.hydrateSharedPrompts?.(r)
               hydrateLiveSessionInflight(r.inflight)
               gw.settleAttach?.(hold, r)

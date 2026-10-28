@@ -1,179 +1,213 @@
 {
   "schema_version": 1,
-  "tolerance_pct": 10.0,
-  "updated_at": null,
   "suites": {
-    "tui-frames": {
-      "tui.frame.duration_ms": {
-        "unit": "ms",
-        "direction": "lower",
-        "gate": "warn",
-        "comparison": "p95",
-        "budget": 16.0,
-        "current": null
-      },
-      "tui.frame.gap_ms": {
-        "unit": "ms",
-        "direction": "lower",
-        "gate": "warn",
-        "comparison": "p95",
-        "budget": 16.0,
-        "current": null
-      },
-      "tui.fps": {
-        "unit": "fps",
-        "direction": "higher",
-        "gate": "info",
-        "comparison": "p50",
+    "cli-import": {
+      "startup.cli_import_hot_modules": {
         "budget": null,
-        "current": null
-      },
-      "tui.yoga.live": {
-        "unit": "count",
+        "comparison": "p95",
+        "current": 7.0,
         "direction": "lower",
         "gate": "info",
-        "comparison": "max",
-        "budget": null,
-        "current": null
-      }
-    },
-    "tool-surface": {
-      "tool.count": {
-        "unit": "count",
-        "direction": "lower",
-        "gate": "blocking",
-        "comparison": "p95",
-        "budget": 51,
-        "current": null
-      },
-      "tool.schema_bytes": {
-        "unit": "bytes",
-        "direction": "lower",
-        "gate": "blocking",
-        "comparison": "p95",
-        "budget": null,
-        "current": null
-      }
-    },
-    "startup": {
-      "startup.first_paint_ms": {
-        "unit": "ms",
-        "direction": "lower",
-        "gate": "warn",
-        "comparison": "p95",
-        "budget": 400.0,
-        "current": null
-      },
-      "startup.gateway_ready_ms": {
-        "unit": "ms",
-        "direction": "lower",
-        "gate": "warn",
-        "comparison": "p95",
-        "budget": 1500.0,
-        "current": null
-      },
-      "startup.session_ready_ms": {
-        "unit": "ms",
-        "direction": "lower",
-        "gate": "warn",
-        "comparison": "p95",
-        "budget": 2500.0,
-        "current": null
+        "unit": "count"
       },
       "startup.cli_import_ms": {
-        "unit": "ms",
+        "budget": null,
+        "comparison": "p95",
+        "current": 194.9564,
         "direction": "lower",
         "gate": "warn",
-        "comparison": "p95",
+        "unit": "ms"
+      },
+      "startup.cli_import_self_ms": {
         "budget": null,
-        "current": null
+        "comparison": "p95",
+        "current": 173.551,
+        "direction": "lower",
+        "gate": "warn",
+        "unit": "ms"
+      }
+    },
+    "idle": {
+      "idle.cpu_pct": {
+        "budget": 1.0,
+        "comparison": "p95",
+        "current": null,
+        "direction": "lower",
+        "gate": "warn",
+        "unit": "%"
+      },
+      "idle.frames": {
+        "budget": 0,
+        "comparison": "p95",
+        "current": null,
+        "direction": "lower",
+        "gate": "blocking",
+        "unit": "count"
       }
     },
     "input": {
       "input.echo_ms": {
-        "unit": "ms",
+        "budget": 33.0,
+        "comparison": "p95",
+        "current": null,
         "direction": "lower",
         "gate": "warn",
-        "comparison": "p95",
-        "budget": 33.0,
-        "current": null
+        "unit": "ms"
       },
       "input.enter_to_visible_ms": {
-        "unit": "ms",
+        "budget": 100.0,
+        "comparison": "p95",
+        "current": null,
         "direction": "lower",
         "gate": "warn",
-        "comparison": "p95",
-        "budget": 100.0,
-        "current": null
+        "unit": "ms"
       },
       "input.picker_open_ms": {
-        "unit": "ms",
+        "budget": 500.0,
+        "comparison": "p95",
+        "current": null,
         "direction": "lower",
         "gate": "warn",
-        "comparison": "p95",
-        "budget": 500.0,
-        "current": null
+        "unit": "ms"
       }
     },
-    "idle": {
-      "idle.frames": {
-        "unit": "count",
-        "direction": "lower",
-        "gate": "blocking",
+    "startup": {
+      "startup.first_paint_ms": {
+        "budget": 400.0,
         "comparison": "p95",
-        "budget": 0,
-        "current": null
-      },
-      "idle.cpu_pct": {
-        "unit": "%",
+        "current": 101.0,
         "direction": "lower",
         "gate": "warn",
+        "unit": "ms"
+      },
+      "startup.gateway_ready_ms": {
+        "budget": 1500.0,
         "comparison": "p95",
-        "budget": 1.0,
-        "current": null
+        "current": 1582.0,
+        "direction": "lower",
+        "gate": "warn",
+        "unit": "ms"
+      },
+      "startup.gateway_spawn_ms": {
+        "budget": null,
+        "comparison": "p95",
+        "current": 50.0,
+        "direction": "lower",
+        "gate": "info",
+        "unit": "ms"
+      },
+      "startup.module_eval_ms": {
+        "budget": null,
+        "comparison": "p95",
+        "current": 49.0,
+        "direction": "lower",
+        "gate": "info",
+        "unit": "ms"
+      },
+      "startup.session_ready_ms": {
+        "budget": 2500.0,
+        "comparison": "p95",
+        "current": 2105.0,
+        "direction": "lower",
+        "gate": "warn",
+        "unit": "ms"
+      }
+    },
+    "tool-surface": {
+      "tool.count": {
+        "budget": 51,
+        "comparison": "p95",
+        "current": null,
+        "direction": "lower",
+        "gate": "blocking",
+        "unit": "count"
+      },
+      "tool.schema_bytes": {
+        "budget": null,
+        "comparison": "p95",
+        "current": null,
+        "direction": "lower",
+        "gate": "blocking",
+        "unit": "bytes"
+      }
+    },
+    "tui-frames": {
+      "tui.fps": {
+        "budget": null,
+        "comparison": "p50",
+        "current": null,
+        "direction": "higher",
+        "gate": "info",
+        "unit": "fps"
+      },
+      "tui.frame.duration_ms": {
+        "budget": 16.0,
+        "comparison": "p95",
+        "current": null,
+        "direction": "lower",
+        "gate": "warn",
+        "unit": "ms"
+      },
+      "tui.frame.gap_ms": {
+        "budget": 16.0,
+        "comparison": "p95",
+        "current": null,
+        "direction": "lower",
+        "gate": "warn",
+        "unit": "ms"
+      },
+      "tui.yoga.live": {
+        "budget": null,
+        "comparison": "max",
+        "current": null,
+        "direction": "lower",
+        "gate": "info",
+        "unit": "count"
       }
     },
     "turn": {
-      "turn.submit_to_wire_ms": {
-        "unit": "ms",
+      "turn.chunk_to_paint_ms": {
+        "budget": 50.0,
+        "comparison": "p95",
+        "current": null,
         "direction": "lower",
         "gate": "warn",
-        "comparison": "p95",
-        "budget": 150.0,
-        "current": null
+        "unit": "ms"
       },
       "turn.first_chunk_ms": {
-        "unit": "ms",
+        "budget": 50.0,
+        "comparison": "p95",
+        "current": null,
         "direction": "lower",
         "gate": "warn",
-        "comparison": "p95",
-        "budget": 50.0,
-        "current": null
-      },
-      "turn.chunk_to_paint_ms": {
-        "unit": "ms",
-        "direction": "lower",
-        "gate": "warn",
-        "comparison": "p95",
-        "budget": 50.0,
-        "current": null
+        "unit": "ms"
       },
       "turn.prompt_bytes": {
-        "unit": "bytes",
+        "budget": null,
+        "comparison": "p95",
+        "current": null,
         "direction": "lower",
         "gate": "info",
-        "comparison": "p95",
-        "budget": null,
-        "current": null
+        "unit": "bytes"
       },
       "turn.schema_bytes": {
-        "unit": "bytes",
+        "budget": null,
+        "comparison": "p95",
+        "current": null,
         "direction": "lower",
         "gate": "info",
+        "unit": "bytes"
+      },
+      "turn.submit_to_wire_ms": {
+        "budget": 150.0,
         "comparison": "p95",
-        "budget": null,
-        "current": null
+        "current": null,
+        "direction": "lower",
+        "gate": "warn",
+        "unit": "ms"
       }
     }
-  }
+  },
+  "tolerance_pct": 10.0,
+  "updated_at": "2026-10-28T15:12:12+00:00"
 }

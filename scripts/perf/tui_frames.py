@@ -24,10 +24,7 @@ import argparse
 import json
 import os
 import re
-import select
-import signal
 import sqlite3
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -38,6 +35,7 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 from scripts.perf import metrics as perf
+from scripts.perf import tui_process
 try:
     from hermes_constants import get_hermes_home
 except ImportError:
@@ -45,9 +43,6 @@ except ImportError:
         val = (os.environ.get("HERMES_HOME") or "").strip()
         return Path(val) if val else Path.home() / ".hermes"
 
-DEFAULT_TUI_DIR = Path(
-    os.environ.get("HERMES_TUI_DIR") or str(_PROJECT_ROOT / "ui-tui")
-)
 DEFAULT_LOG = Path(os.environ.get("HERMES_PERF_LOG", str(get_hermes_home() / "perf.log")))
 DEFAULT_STATE_DB = get_hermes_home() / "state.db"
 
@@ -73,24 +68,6 @@ def pick_longest_session(db: Path) -> str:
     return row[0]
 
 
-def drain(fd: int, timeout: float) -> bytes:
-    """Read whatever's available from fd within `timeout`, then return."""
-    chunks = []
-    end = time.monotonic() + timeout
-    while time.monotonic() < end:
-        r, _, _ = select.select([fd], [], [], max(0.0, end - time.monotonic()))
-        if not r:
-            break
-        try:
-            data = os.read(fd, 4096)
-        except OSError:
-            break
-        if not data:
-            break
-        chunks.append(data)
-    return b"".join(chunks)
-
-
 def hold_key(fd: int, seq: bytes, seconds: float, rate_hz: int) -> int:
     """Write `seq` to fd at ~rate_hz for `seconds`. Returns keystrokes sent."""
     interval = 1.0 / max(1, rate_hz)
@@ -103,7 +80,7 @@ def hold_key(fd: int, seq: bytes, seconds: float, rate_hz: int) -> int:
         except OSError:
             break
         # Drain stdout to keep the PTY buffer flowing; ignore content.
-        drain(fd, 0)
+        tui_process.drain(fd, 0)
         time.sleep(interval)
     return sent
 
@@ -358,46 +335,9 @@ def metrics_from_data(data: dict[str, Any]) -> dict[str, perf.Metric]:
     return out
 
 
-def build(tui_dir: Path) -> bool:
-    """Build the TUI bundle; return False after printing the captured failure."""
-    try:
-        result = subprocess.run(
-            ["npm", "run", "build"],
-            cwd=tui_dir,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=600,
-            check=False,
-        )
-    except subprocess.TimeoutExpired:
-        print("TUI build timed out after 600s", file=sys.stderr)
-        return False
-    if result.returncode == 0:
-        return True
-    print("TUI build failed:", file=sys.stderr)
-    print(result.stdout[-2000:], file=sys.stderr)
-    print(result.stderr[-2000:], file=sys.stderr)
-    return False
-
-
-def ensure_built(tui_dir: Path, *, build_first: bool) -> None:
-    if build_first and not build(tui_dir):
-        raise SystemExit("TUI build failed")
-    entry = tui_dir / "dist" / "entry.js"
-    if not entry.exists():
-        raise SystemExit(
-            f"{entry} is missing; pass --build or run `npm run build` in {tui_dir} first"
-        )
-
-
 def run_once(args: argparse.Namespace) -> tuple[dict[str, perf.Metric], str]:
     """Run one scripted TUI session and return metrics plus the detailed report."""
-    import pty  # windows-footgun: ok - the TUI suite is POSIX-only by design
-
     tui_dir = Path(args.tui_dir).resolve()
-    entry = tui_dir / "dist" / "entry.js"
 
     sid = args.session or pick_longest_session(DEFAULT_STATE_DB)
     print(f"session: {sid}", file=sys.stderr)
@@ -423,46 +363,26 @@ def run_once(args: argparse.Namespace) -> tuple[dict[str, perf.Metric], str]:
     env["LINES"] = str(args.rows)
     env["TERM"] = env.get("TERM", "xterm-256color")
 
-    # Pass through extra flags the TUI wrapper recognizes (e.g. --no-fullscreen).
-    # Stored on args as `extra_flags` list.
-    node = os.environ.get("HERMES_PERF_NODE", "node")
-    node_args = [node, str(entry), *getattr(args, "extra_flags", [])]
-
-    pid, fd = pty.fork()
-    if pid == 0:
-        os.execvpe(node, node_args, env)
+    pid, fd = tui_process.spawn(
+        tui_dir,
+        env,
+        cols=args.cols,
+        rows=args.rows,
+        extra_flags=tuple(getattr(args, "extra_flags", [])),
+    )
 
     try:
-        import fcntl, struct, termios
-        winsize = struct.pack("HHHH", args.rows, args.cols, 0, 0)
-        fcntl.ioctl(fd, termios.TIOCSWINSZ, winsize)
-
         print(f"pid: {pid}  fd: {fd}", file=sys.stderr)
         print(f"warmup {args.warmup}s (drain startup output)", file=sys.stderr)
-        drain(fd, args.warmup)
+        tui_process.drain(fd, args.warmup)
 
         print(f"holding {args.hold}", file=sys.stderr)
         sent = hold_key(fd, KEYS[args.hold], args.seconds, args.rate)
         print(f"sent {sent} keystrokes", file=sys.stderr)
 
-        drain(fd, 0.5)
+        tui_process.drain(fd, 0.5)
     finally:
-        try:
-            os.kill(pid, signal.SIGTERM)
-            for _ in range(10):
-                pid_done, _ = os.waitpid(pid, os.WNOHANG)
-                if pid_done == pid:
-                    break
-                time.sleep(0.1)
-            else:
-                os.kill(pid, signal.SIGKILL)  # windows-footgun: ok - POSIX-only script (imports pty at top)
-                os.waitpid(pid, 0)
-        except (ProcessLookupError, ChildProcessError):
-            pass
-        try:
-            os.close(fd)
-        except OSError:
-            pass
+        tui_process.stop(pid, fd)
 
     time.sleep(0.2)
     data = summarize(log, since_ms)
@@ -481,7 +401,7 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--cols", type=int, default=120)
     parser.add_argument("--rows", type=int, default=40)
     parser.add_argument("--keep-log", action="store_true", help="keep the previous perf log")
-    parser.add_argument("--tui-dir", default=str(DEFAULT_TUI_DIR))
+    parser.add_argument("--tui-dir", default=str(tui_process.DEFAULT_TUI_DIR))
     parser.add_argument("--log", default=str(DEFAULT_LOG))
     parser.add_argument("--loop", action="store_true",
                         help="watch sources, rebuild, rerun, and diff against the previous run")
@@ -522,7 +442,7 @@ def loop(args: argparse.Namespace) -> int:
             print(f"\niteration {iteration} at {time.strftime('%H:%M:%S')}", file=sys.stderr)
             if iteration > 1:
                 print("rebuilding...", file=sys.stderr)
-                if not build(tui_dir):
+                if not tui_process.build(tui_dir):
                     print("waiting for source changes to retry...", file=sys.stderr)
                     previous_mtimes = wait_for_change(previous_mtimes, collect_mtimes)
                     continue

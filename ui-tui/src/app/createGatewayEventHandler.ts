@@ -23,6 +23,7 @@ import { type ImageAttachment, stageImagePath } from '../lib/imageAttachments.js
 import { isTodoDone } from '../lib/liveProgress.js'
 import { openExternalUrl } from '../lib/openExternalUrl.js'
 import { rpcErrorMessage } from '../lib/rpc.js'
+import { traceStartup } from '../lib/startupTrace.js'
 import { topLevelSubagents } from '../lib/subagentTree.js'
 import { isPaintableHex, setTerminalBackground, setTerminalForeground } from '../lib/terminalModes.js'
 import { formatAbandonedClarify, formatToolCall } from '../lib/text.js'
@@ -644,6 +645,8 @@ interface SessionInfoSinks {
 }
 
 function applySessionInfo(payload: unknown, { appendMessage, setHistoryItems, setStatus }: SessionInfoSinks): void {
+  traceStartup?.('session_info')
+
   const current = getUiState().info
   const incoming = payload as SessionInfo | undefined
 
@@ -1059,6 +1062,8 @@ export function createGatewayEventHandler(ctx: GatewayEventHandlerContext): (ev:
   const keepTerminalElseRunning = (s: SubagentProgress['status']) => (isTerminalStatus(s) ? s : 'running')
 
   const handleReady = (skin?: GatewaySkin) => {
+    traceStartup?.('gateway_ready')
+
     if (skin) {
       applySkin(skin)
     }

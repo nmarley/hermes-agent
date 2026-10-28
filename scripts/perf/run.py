@@ -26,7 +26,7 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 from scripts.perf import metrics as perf
-from scripts.perf import tui_frames
+from scripts.perf import startup, tui_frames, tui_process
 
 
 @dataclass(frozen=True)
@@ -39,6 +39,19 @@ class Suite:
 
 
 SUITES: dict[str, Suite] = {
+    "cli-import": Suite(
+        name="cli-import",
+        description="cold interpreter import cost for the classic CLI",
+        add_arguments=startup.add_import_arguments,
+        run_once=startup.run_import_once,
+    ),
+    "startup": Suite(
+        name="startup",
+        description="cold start to first frame, gateway ready, and session ready",
+        add_arguments=startup.add_arguments,
+        run_once=startup.run_once,
+        needs_tui=True,
+    ),
     "tui-frames": Suite(
         name="tui-frames",
         description="frame and React timings from a scripted TUI scroll run",
@@ -101,7 +114,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"--build is only meaningful for suites that need the TUI ({args.suite} does not)")
 
     if suite.needs_tui:
-        tui_frames.ensure_built(Path(args.tui_dir), build_first=args.build)
+        tui_process.ensure_built(Path(args.tui_dir), build_first=args.build)
     if getattr(args, "loop", False):
         return tui_frames.loop(args)
 
