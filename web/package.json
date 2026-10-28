@@ -3,16 +3,17 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "bun@1.4.2",
   "scripts": {
     "dev": "vite",
     "build": "node ../scripts/build/web.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "fix": "npm run lint:fix",
+    "fix": "eslint . --fix",
     "preview": "vite preview",
     "typecheck": "tsc -b . --noEmit",
     "test": "vitest run",
-    "check": "npm run typecheck && npm run test && npm run lint"
+    "check": "bun run typecheck && bun run test && bun run lint"
   },
   "dependencies": {
     "@hermes/shared": "file:../apps/shared",
@@ -54,5 +55,29 @@
     "typescript": "6.0.3",
     "vite": "8.2.4",
     "vitest": "4.1.12"
+  },
+  "overrides": {
+    "@electron/osx-sign": {
+      "isbinaryfile": "5.0.7"
+    },
+    "lodash": "4.18.1",
+    "protobufjs": "^8.7.1",
+    "brace-expansion": "5.0.12",
+    "mermaid": "11.16.1",
+    "dompurify": "3.4.17",
+    "katex": "0.18.4",
+    "ip-address": "10.7.4",
+    "nanoid@^3": "3.3.20",
+    "nanoid@^6": "6.0.0",
+    "js-yaml@^4": "4.3.2",
+    "undici@^6": "6.29.0",
+    "undici@^7": "7.30.0",
+    "postcss": "8.5.29",
+    "postcss-selector-parser": "7.1.6",
+    "tar": "7.5.22",
+    "source-map-js": "1.2.2",
+    "yaml": "2.9.1",
+    "vitest": "4.1.12",
+    "@vitest/mocker": "4.1.12"
   }
 }

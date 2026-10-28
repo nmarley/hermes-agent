@@ -17,10 +17,12 @@
 // `--concurrency N` sets the limit. `--list` prints the units and exits.
 
 import { execFileSync, spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { availableParallelism } from 'node:os'
 
 const IS_CI = Boolean(process.env.GITHUB_ACTIONS)
 const NPM = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+const BUN = process.platform === 'win32' ? 'bun.exe' : 'bun'
 
 /** @returns {{pkg: string, script: string}[]} */
 function discoverUnits() {
@@ -31,7 +33,7 @@ function discoverUnits() {
   /** @type {{location: string, scripts?: Record<string,string>}[]} */
   const pkgs = JSON.parse(raw)
 
-  /** @type {{pkg: string, script: string}[]} */
+  /** @type {{pkg: string, script: string, runner?: string}[]} */
   const units = []
   for (const pkg of pkgs) {
     const scripts = pkg.scripts || {}
@@ -42,14 +44,21 @@ function discoverUnits() {
       units.push({ pkg: pkg.location, script: 'check' })
     }
   }
+  // web is a Bun project, so `npm query .workspace` cannot see it.
+  if (existsSync('web/package.json')) {
+    units.unshift({ pkg: 'web', script: 'check', runner: 'bun' })
+  }
   return units
 }
 
-/** @param {{pkg: string, script: string}} unit */
+/** @param {{pkg: string, script: string, runner?: string}} unit */
 function runUnit(unit) {
   return new Promise((resolve) => {
     const started = Date.now()
-    const child = spawn(NPM, ['run', '--prefix', unit.pkg, unit.script], {
+    const command = unit.runner === 'bun'
+      ? [BUN, ['run', '--cwd', unit.pkg, unit.script]]
+      : [NPM, ['run', '--prefix', unit.pkg, unit.script]]
+    const child = spawn(command[0], command[1], {
       // Buffer, and do not inherit. Children that share one stdout
       // interleave their lines, and a failure is then hard to read.
       stdio: ['ignore', 'pipe', 'pipe'],

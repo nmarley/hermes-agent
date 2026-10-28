@@ -74,3 +74,9 @@ def test_render_markdown_omits_unchanged_lockfiles():
     md = _mod.render_markdown({"a/package-lock.json": changed, "b/package-lock.json": unchanged})
     assert "a/package-lock.json" in md
     assert "b/package-lock.json" not in md
+
+
+def test_bun_lockfile_change_renders_a_review_note():
+    md = _mod.render_markdown({"web/bun.lock": {"note": "Bun lockfile changed. Review the textual diff."}})
+    assert "web/bun.lock" in md
+    assert "Review the textual diff" in md

@@ -5,6 +5,7 @@ import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 /** Same component/hook-scoped compiler preset as vite.config.ts. */
 function compilerPreset() {
   const preset = reactCompilerPreset();
+  preset.rolldown.filter ??= {};
   preset.rolldown.filter.code = /\/>|<\/|from\s*['"][^'"]*react/;
   return preset;
 }
@@ -15,6 +16,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Bun installs the file: dependency as a copy. Point tests at the live
+      // source, matching the Vite and TypeScript aliases.
+      "@hermes/shared": path.resolve(__dirname, "../apps/shared/src"),
     },
   },
   test: {

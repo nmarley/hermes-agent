@@ -414,6 +414,19 @@ def _plural(n: int) -> str:
     return "vulnerability" if n == 1 else "vulnerabilities"
 
 
+def _audit_counts(audit_data: dict) -> dict:
+    """Severity counts from npm's metadata block or Bun's raw registry response."""
+    counts = audit_data.get("metadata", {}).get("vulnerabilities", {})
+    if counts:
+        return counts
+    counts = {}
+    for vulnerability in (audit_data.get("vulnerabilities") or {}).values():
+        severity = vulnerability.get("severity")
+        if severity in ("critical", "high", "moderate"):
+            counts[severity] = counts.get(severity, 0) + 1
+    return counts
+
+
 def _audit_one(npm_bin: str, npm_dir, label: str, audit_extra: list[str], manual_issues: list[str]) -> None:
     """Run one `npm audit --json` and report; any failure is silently skipped.
 
@@ -433,7 +446,7 @@ def _audit_one(npm_bin: str, npm_dir, label: str, audit_extra: list[str], manual
                                       capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=30,
                                       env=with_hermes_node_path(), check=False)
         audit_data = json.loads(audit_result.stdout) if audit_result.stdout.strip() else {}
-        counts = audit_data.get("metadata", {}).get("vulnerabilities", {})
+        counts = _audit_counts(audit_data)
         critical, high, moderate = (counts.get(k, 0) for k in ("critical", "high", "moderate"))
         total = critical + high + moderate
         workspace_scoped = bool(audit_extra) and audit_extra[0] == "--workspace"
@@ -458,28 +471,59 @@ def _audit_one(npm_bin: str, npm_dir, label: str, audit_extra: list[str], manual
         pass
 
 
+def _audit_bun(bun_bin: str, web_dir, label: str, manual_issues: list[str]) -> None:
+    """Run `bun audit --json` against web/bun.lock; failures are skipped."""
+    import json
+    try:
+        audit_result = subprocess.run([bun_bin, "audit", "--json"], cwd=str(web_dir),
+                                      capture_output=True, text=True, encoding='utf-8', errors='replace',
+                                      timeout=30, check=False)
+        audit_data = json.loads(audit_result.stdout) if audit_result.stdout.strip() else {}
+        counts = _audit_counts(audit_data)
+        critical, high, moderate = (counts.get(k, 0) for k in ("critical", "high", "moderate"))
+        total = critical + high + moderate
+        if total == 0:
+            check_ok(f"{label} deps", "(no known vulnerabilities)")
+        elif critical > 0 or high > 0:
+            remedy = ("fix is an upstream bun.lock bump; a local manual fix does not persist"
+                      " (the next `hermes update` reinstalls from the committed lockfile)")
+            check_warn(f"{label} deps", f"({critical} critical, {high} high, {moderate} moderate, {remedy})")
+            check_info("  ^ web dependencies come from web/bun.lock; bump it and ship the lockfile")
+            manual_issues.append(
+                f"{label} has {total} Bun {_plural(total)}; wait for an upstream lockfile fix, then update "
+                "your installation (Docker: pull a rebuilt image; recreating the same image restores the same dependencies)"
+            )
+        else:
+            check_ok(f"{label} deps", f"({moderate} moderate {_plural(moderate)})")
+    except Exception:  # health: allow BLE001, S110 -- best-effort audit; network and parser failures must not fail the check
+        pass
+
+
 @doctor_check()
-def _check_npm_audit(should_fix: bool, f: Finding) -> None:
-    """npm audit per Node package tree (root, web/ui-tui workspaces, WhatsApp bridge).
+def _check_node_audit(should_fix: bool, f: Finding) -> None:
+    """Audit every Node package tree (root, ui-tui, WhatsApp bridge, Bun web).
 
     PROJECT_ROOT is audited with --workspaces=false so the apps/* glob (Electron, node-pty, ...) is never
-    resolved for a routine check; web and ui-tui via --workspace. The WhatsApp bridge may live under a writable
-    HERMES_HOME mirror rather than the (possibly read-only) Docker install tree, hence the shared resolver.
+    resolved for a routine check; ui-tui via --workspace. Web has its own Bun lockfile and is audited with
+    `bun audit`. The WhatsApp bridge may live under a writable HERMES_HOME mirror rather than the (possibly
+    read-only) Docker install tree, hence the shared resolver.
     """
     from hermes_cli.doctor import PROJECT_ROOT
     staged = _pm_tool_path("npm")
     npm_bin = str(staged) if staged else (_safe_which("npm") if _is_termux() else None)
+    staged_bun = _pm_tool_path("bun")
+    bun_bin = str(staged_bun) if staged_bun else _safe_which("bun")
     if npm_bin:
         try:
             # Each entry: (cwd, label, extra_audit_args) PROJECT_ROOT is audited with --workspaces=false so
             # that the apps/* glob (which pulls in Electron, node-pty, etc.) is never resolved for a routine
-            # security check. The web and ui-tui workspaces are audited separately via --workspace flags.
+            # security check. ui-tui is audited separately via its --workspace flag; web has its own Bun lock.
             # See #38772. The WhatsApp bridge may live under a writable HERMES_HOME mirror instead of the
             # (possibly read-only) install tree in Docker — resolve it through the shared helper so we audit
             # the dir that actually holds node_modules. See #49561.
             from gateway.platforms.whatsapp_common import resolve_whatsapp_bridge_dir
             whatsapp_bridge_dir = resolve_whatsapp_bridge_dir()
-        except Exception:
+        except Exception:  # health: allow BLE001 -- optional bridge resolver; a missing import falls back to the repo path
             whatsapp_bridge_dir = PROJECT_ROOT / "scripts" / "whatsapp-bridge"
         for npm_dir, label, audit_extra in (
             # NOT agent-browser: it is now a pm-managed precompiled binary
@@ -487,13 +531,14 @@ def _check_npm_audit(should_fix: bool, f: Finding) -> None:
             # of its own to audit. This row is the root package.json itself
             # (js-yaml, semver, eslint tooling). See #122223.
             (PROJECT_ROOT, "Root npm package", ["--workspaces=false"]),
-            (PROJECT_ROOT, "web workspace", ["--workspace", "web"]),
             (PROJECT_ROOT, "ui-tui workspace", ["--workspace", "ui-tui"]),
             (whatsapp_bridge_dir, "WhatsApp bridge", []),
         ):
             # Workspace-scoped audits check the root node_modules; standalone dirs check their own.
             if ((PROJECT_ROOT if audit_extra else npm_dir) / "node_modules").exists():
                 _audit_one(npm_bin, npm_dir, label, audit_extra, f.manual_issues)
+    if bun_bin and (PROJECT_ROOT / "web/bun.lock").is_file():
+        _audit_bun(bun_bin, PROJECT_ROOT / "web", "web workspace", f.manual_issues)
     if _is_termux():
         check_info("Termux compatibility fallbacks:")
         for note in _TERMUX_INSTALL_ALL_FALLBACK_NOTES:

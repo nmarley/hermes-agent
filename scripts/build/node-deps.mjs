@@ -90,18 +90,68 @@ function runNpmCi(node, npm, args, { source, env }) {
   }
 }
 
+const BUN_WORKSPACE = 'web'
+
+// Bun is a real executable, unlike npm's JS entrypoint. HERMES_BUN wins so a
+// caller can pass PM's verified copy without changing the child PATH.
+function bunCommand({ env = process.env } = {}) {
+  const names = process.platform === 'win32' ? ['bun.exe', 'bun'] : ['bun']
+  const candidates = env.HERMES_BUN ? [env.HERMES_BUN] : []
+  for (const dir of (env.PATH || env.Path || '').split(delimiter)) {
+    for (const name of names) candidates.push(join(dir, name))
+  }
+  const binary = candidates.find(path => path && existsSync(path))
+  if (!binary) throw new Error('Bun is required to install web dependencies; add it to PATH or run `hermes pm install bun`')
+  return binary
+}
+
+// Bun installs web from its own lockfile; a frozen install is fast enough that
+// there is no second receipt to keep in sync with the tree.
+function installBunWorkspace({ source, env, install }) {
+  const web = join(source, BUN_WORKSPACE)
+  const manifestPath = join(web, 'package.json')
+  const lockfile = join(web, 'bun.lock')
+  if (!existsSync(manifestPath) || !existsSync(lockfile)) {
+    throw new Error('web is selected but web/package.json or web/bun.lock is missing')
+  }
+  if (!install) {
+    if (!existsSync(join(web, 'node_modules/.bin/vite')) || !existsSync(join(web, 'node_modules/@hermes/shared/package.json'))) {
+      throw new Error('Web dependencies are stale or missing and lazy installs are disabled; run an explicit build/update')
+    }
+    return
+  }
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  const pinned = /^bun@(.+)$/.exec(manifest.packageManager ?? '')?.[1]
+  const bun = bunCommand({ env })
+  const version = execFileSync(bun, ['--version'], { cwd: web, env, encoding: 'utf8' }).trim()
+  if (pinned && version !== pinned) {
+    throw new Error(`web/package.json requires Bun ${pinned}, but ${bun} reports ${version}`)
+  }
+  console.log(`node-deps: installing web dependencies with Bun ${version}...`)
+  execFileSync(bun, ['install', '--frozen-lockfile'], { cwd: web, env, stdio: 'inherit' })
+}
+
 /** Install the full requested workspace union in one strict, locked operation. */
 export function prepareNodeDependencies({ source, workspaces, env = process.env, reuse = false, install = true, nativeToolchain }) {
   source = resolve(source)
   if (!Array.isArray(workspaces) || workspaces.length === 0) {
     throw new Error('Select at least one workspace; implicit all-workspace installation is not allowed')
   }
+  const requested = [...new Set(workspaces)]
+  const usesBun = requested.includes(BUN_WORKSPACE)
+    && existsSync(join(source, BUN_WORKSPACE, 'bun.lock'))
+  const npmRequested = requested.filter(workspace => workspace !== BUN_WORKSPACE || !usesBun)
+
+  if (usesBun) installBunWorkspace({ source, env, install })
+
+  if (npmRequested.length === 0) return { source, workspaces: requested }
+
   const manifest = JSON.parse(readFileSync(join(source, 'package.json'), 'utf8'))
   const lock = JSON.parse(readFileSync(join(source, 'package-lock.json'), 'utf8'))
   const workspacePaths = Object.values(lock.packages || {})
     .filter(entry => entry.link)
     .map(entry => entry.resolved)
-  const selected = [...new Set(workspaces.map(workspace => {
+  const selected = [...new Set(npmRequested.map(workspace => {
     const path = workspacePaths.find(path => path === workspace || lock.packages[path]?.name === workspace)
     if (!path || !existsSync(join(source, path, 'package.json'))) {
       throw new Error(`Unknown or missing locked workspace: ${workspace}`)
@@ -147,7 +197,7 @@ export function prepareNodeDependencies({ source, workspaces, env = process.env,
   if (reuse && completedInstallMatches({ source, receipt, hiddenLock, key, nativeKey })) {
     if (prepareElectron) prepareElectronRuntime({ source, install, env })
     console.log(`node-deps: reusing completed install (${selected.join(', ')})`)
-    return { source, workspaces: selected }
+    return { source, workspaces: requested }
   }
   if (!install) throw new Error('Workspace dependencies are stale or missing and lazy installs are disabled; run an explicit build/update')
   // npm can fail during validation before deleting node_modules. Invalidate first.
@@ -161,7 +211,7 @@ export function prepareNodeDependencies({ source, workspaces, env = process.env,
     writeFileSync(receipt, completed)
     if (nativeKey !== undefined) writeFileSync(nativeReceipt, `${completed}${nativeKey}\n`)
   }
-  return { source, workspaces: selected }
+  return { source, workspaces: requested }
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

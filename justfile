@@ -15,7 +15,7 @@ lint-all-js: lint-web lint-bootstrap-installer lint-desktop lint-tui lint-tests 
 
 [group('lint js')]
 lint-web:
-    @cd web && npx eslint ./
+    @cd web && bun run lint
 
 [group('lint js')]
 lint-bootstrap-installer:

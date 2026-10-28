@@ -36,6 +36,11 @@ jobs:
           extras: '[]'
           test-environment: 'true'
 
+      - name: Set up the pinned Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6  # v2.2.0
+        with:
+          bun-version: 1.4.2
+
       - name: Install zsh and a virtual display for Electron
         if: runner.os == 'Linux'
         run: |
@@ -68,12 +73,17 @@ jobs:
             ui-tui/packages/*/node_modules
             tests-js/node_modules
             web/node_modules
-          key: node-modules-scripts-${{ runner.os }}-${{ runner.arch }}-node${{ steps.node.outputs.node-version }}-npm${{ steps.node.outputs.npm-version }}-${{ hashFiles('package-lock.json') }}
+          key: node-modules-scripts-${{ runner.os }}-${{ runner.arch }}-node${{ steps.node.outputs.node-version }}-npm${{ steps.node.outputs.npm-version }}-${{ hashFiles('package-lock.json', 'web/bun.lock') }}
 
       - uses: ./.github/actions/retry
         if: steps.node-modules-cache.outputs.cache-hit != 'true'
         with:
           command: npm ci
+
+      - name: Install web dependencies
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+        working-directory: web
+        run: bun ci
 
       - name: Prepare locked Electron runtime before parallel checks
         run: node scripts/build/electron-runtime.mjs --source .

@@ -89,6 +89,10 @@ def render_markdown(diffs: dict[str, dict[str, list]]) -> str:
     """
     sections = []
     for lockfile, d in sorted(diffs.items()):
+        note = d.get("note")
+        if note:
+            sections.append(f"#### `{lockfile}`\n\n{note}")
+            continue
         added, removed, updated = d["added"], d["removed"], d["updated"]
         n = len(added) + len(removed) + len(updated)
         if n == 0:
@@ -122,7 +126,7 @@ def _git_show(ref: str, path: str, repo_root: str) -> str | None:
     return proc.stdout if proc.returncode == 0 else None
 
 
-def _tracked_lockfiles(ref: str, repo_root: str) -> set[str]:
+def _tracked_lockfiles(ref: str, repo_root: str, names: tuple[str, ...] = ("package-lock.json",)) -> set[str]:
     proc = subprocess.run(
         ["git", "ls-tree", "-r", "--name-only", ref],
         capture_output=True,
@@ -133,12 +137,12 @@ def _tracked_lockfiles(ref: str, repo_root: str) -> set[str]:
     return {
         line
         for line in proc.stdout.splitlines()
-        if line.split("/")[-1] == "package-lock.json"
+        if line.split("/")[-1] in names
     }
 
 
-def diff_refs(base: str, head: str, repo_root: str = ".") -> dict[str, dict[str, list]]:
-    """Diff every package-lock.json tracked at either ref."""
+def diff_refs(base: str, head: str, repo_root: str = ".") -> dict[str, dict]:
+    """Diff every npm package-lock and note Bun lockfile changes."""
     lockfiles = _tracked_lockfiles(base, repo_root) | _tracked_lockfiles(head, repo_root)
     diffs = {}
     for path in sorted(lockfiles):
@@ -147,6 +151,10 @@ def diff_refs(base: str, head: str, repo_root: str = ".") -> dict[str, dict[str,
         base_map = parse_lockfile(base_text) if base_text else {}
         head_map = parse_lockfile(head_text) if head_text else {}
         diffs[path] = diff_locks(base_map, head_map)
+    bun_lockfiles = _tracked_lockfiles(base, repo_root, ("bun.lock",)) | _tracked_lockfiles(head, repo_root, ("bun.lock",))
+    for path in sorted(bun_lockfiles):
+        if _git_show(base, path, repo_root) != _git_show(head, path, repo_root):
+            diffs[path] = {"note": "Bun lockfile changed. Review the textual diff and the resolved versions."}
     return diffs
 
 
@@ -164,7 +172,7 @@ def main() -> int:
         fh.write(markdown)
 
     if markdown:
-        changed = sum(len(v) for d in diffs.values() for v in d.values())
+        changed = sum(len(v) if isinstance(v, list) else 1 for d in diffs.values() for v in d.values())
         print(f"{changed} package version change(s) — report written to {args.output}")
     else:
         print("No package version changes.")

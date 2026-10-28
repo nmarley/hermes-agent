@@ -217,7 +217,7 @@ _REMOTE_BACKEND_PATHS = (
 # suite itself, its harness, and the product code the suite exists to guard.
 # Everything else reaches these lanes on the next push to main.
 _DEP_MANIFESTS = ("pyproject.toml", "uv.lock", "setup.py")
-_NPM_MANIFESTS = ("package.json", "package-lock.json")
+_NPM_MANIFESTS = ("package.json", "package-lock.json", "web/bun.lock", "web/bunfig.toml")
 # Shared pytest harness: a bad edit here can break every Python E2E suite.
 _PY_TEST_HARNESS = (
     "tests/conftest.py",
@@ -613,7 +613,7 @@ def classify(files: list[str], run_e2e: bool = False) -> dict[str, bool]:
         for f in files
     )
     deps = any(f == "pyproject.toml" for f in files)
-    npm_lock = any(f.split("/")[-1] == "package-lock.json" for f in files)
+    npm_lock = any(f.split("/")[-1] in ("package-lock.json", "bun.lock") for f in files)
     docker_meta = any(f.startswith(_DOCKER_META) for f in files)
     
     ret = {

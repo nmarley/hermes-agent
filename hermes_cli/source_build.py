@@ -75,8 +75,12 @@ def run_source_script(project_root: Path, script: str, *args: str, env: dict, la
 
 def prepare_source_dependencies(project_root: Path, workspaces: tuple[str, ...], *, env: dict,
                                 explicit: bool = False) -> None:
-    from pm import lazy_installs_allowed
+    from pm import ensure, lazy_installs_allowed
 
+    if "web" in workspaces and (project_root / "web" / "bun.lock").is_file():
+        # Web installs from its own Bun lockfile. Composing Bun first keeps the
+        # verified binary on the child PATH without changing the npm toolchain.
+        env = ensure("bun", base_env=env, explicit=explicit).env
     run_source_script(
         project_root, "scripts/build/node-deps.mjs", "--source", str(project_root), "--reuse",
         *(() if explicit or lazy_installs_allowed() else ("--no-install",)),

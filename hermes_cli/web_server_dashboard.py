@@ -164,7 +164,7 @@ def mount_spa(application: FastAPI):
             html = (WEB_DIST / "index.html").read_text(encoding="utf-8-sig")
         except OSError:
             # Partial build / wiped dist / permissions: same JSON 404 as a fully-missing dist.
-            return JSONResponse({"error": "Frontend not built. Run: cd web && npm run build"}, status_code=404)
+            return JSONResponse({"error": "Frontend not built. Run: cd web && bun install && bun run build"}, status_code=404)
         chat_js = "true" if _DASHBOARD_EMBEDDED_CHAT_ENABLED else "false"
         gated = bool(getattr(app.state, "auth_required", False))
         # The gateway-hosted listener (gateway/run_api.py) never publishes it: local clients use tickets.

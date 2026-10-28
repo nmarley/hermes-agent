@@ -7,7 +7,7 @@ pre-commit:
     - name: lint web
       root: web/
       glob: "web/**/*.{js,ts,tsx}"
-      run: npx eslint {staged_files}
+      run: bunx eslint {staged_files}
 
     - name: lint bootstrap installer
       root: apps/bootstrap-installer/
