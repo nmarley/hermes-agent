@@ -10,10 +10,8 @@ Invoked through the perf harness:
 from __future__ import annotations
 
 import argparse
-import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -25,8 +23,9 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
+from scripts.perf import hermetic
 from scripts.perf import metrics as perf
-from scripts.perf import tui_process
+from scripts.perf import tui_process, tui_session
 
 PHASES = {
     "module_eval": ("startup.module_eval_ms", "Node boot to the first TUI module"),
@@ -44,90 +43,6 @@ def parse_importtime(stderr: str) -> list[int]:
     return [int(match.group(1)) for match in _IMPORT_TIME.finditer(stderr)]
 
 
-def _install_state() -> Path | None:
-    from hermes_constants import get_default_hermes_root
-    from pm.environments import install_key, owning_home_root
-
-    owner = owning_home_root(_PROJECT_ROOT) or get_default_hermes_root()
-    state = owner / "installs" / install_key(_PROJECT_ROOT)
-    return state if state.is_dir() else None
-
-
-def _committed_python() -> Path | None:
-    state = _install_state()
-    if state is None:
-        return None
-    try:
-        facts = json.loads((state / "facts.json").read_text(encoding="utf-8-sig"))
-        venv = Path(facts["packages"]["venv"]["environment"])
-    except (OSError, ValueError, KeyError, TypeError):
-        return None
-    python = venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-    return python if python.exists() else None
-
-
-def _link_install_state(hermes_home: Path) -> None:
-    """Point the isolated home at this checkout's committed dependency generation.
-
-    The TUI's gateway bootstrap activates PM's committed environment before it
-    imports Hermes. A temp HERMES_HOME has no install state, so link the real
-    state in; the app's config and sessions still live in the temp home.
-    """
-    state = _install_state()
-    if state is None:
-        print(
-            f"warning: no committed dependency state for {_PROJECT_ROOT}; "
-            "the gateway bootstrap may fail",
-            file=sys.stderr,
-        )
-        return
-    installs = hermes_home / "installs"
-    installs.mkdir(parents=True, exist_ok=True)
-    link = installs / state.name
-    if not link.exists():
-        link.symlink_to(state, target_is_directory=True)
-
-
-def _clean_env(home: Path, log: Path) -> dict[str, str]:
-    """A hermetic child environment: no inherited Hermes or credential state."""
-    env = {
-        key: value
-        for key, value in os.environ.items()
-        if not key.startswith("HERMES_")
-        and not key.endswith(("_API_KEY", "_TOKEN", "_SECRET", "_PASSWORD", "_CREDENTIALS"))
-        and key not in {"NODE_OPTIONS", "NODE_PATH", "PYTHONHOME"}
-    }
-    env.update(
-        {
-            "HOME": str(home),
-            "HERMES_HOME": str(home / ".hermes"),
-            "HERMES_DEV_PERF": "1",
-            "HERMES_DEV_PERF_LOG": str(log),
-            "HERMES_DEV_PERF_MS": "0",
-            "HERMES_PYTHON": sys.executable,
-            "HERMES_PYTHON_SRC_ROOT": str(_PROJECT_ROOT),
-            "PYTHONPATH": str(_PROJECT_ROOT),
-            "XDG_CACHE_HOME": str(home / ".cache"),
-            "XDG_CONFIG_HOME": str(home / ".config"),
-            "XDG_DATA_HOME": str(home / ".local" / "share"),
-            "XDG_STATE_HOME": str(home / ".local" / "state"),
-            "TERM": env.get("TERM", "xterm-256color"),
-        }
-    )
-    return env
-
-
-def _startup_rows(path: Path, since_ms: int) -> dict[str, dict[str, Any]]:
-    rows: dict[str, dict[str, Any]] = {}
-    for row in tui_process.read_jsonl(path, since_ms=since_ms):
-        if row.get("src") != "startup":
-            continue
-        phase = row.get("phase")
-        if isinstance(phase, str) and phase not in rows:
-            rows[phase] = row
-    return rows
-
-
 def metrics_from_rows(rows: dict[str, dict[str, Any]]) -> dict[str, perf.Metric]:
     metrics: dict[str, perf.Metric] = {}
     for phase, (name, note) in PHASES.items():
@@ -142,7 +57,7 @@ def metrics_from_rows(rows: dict[str, dict[str, Any]]) -> dict[str, perf.Metric]
 
 def cli_import_metrics(timeout: float = 120.0) -> dict[str, perf.Metric]:
     """Cold interpreter import cost for the classic CLI entry point."""
-    python = _committed_python()
+    python = hermetic.committed_python()
     if python is None:
         print(
             "cli import probe: no committed dependency environment; run `hermes pm repair`",
@@ -240,7 +155,7 @@ def _detail(
 
 def add_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--timeout", type=float, default=30.0,
-                        help="seconds to wait for the first session info")
+                        help="seconds to wait for the first ready session")
     parser.add_argument("--cols", type=int, default=120)
     parser.add_argument("--rows", type=int, default=40)
     parser.add_argument("--tui-dir", default=str(tui_process.DEFAULT_TUI_DIR))
@@ -250,38 +165,11 @@ def add_arguments(parser: argparse.ArgumentParser) -> None:
 
 def run_once(args: argparse.Namespace) -> tuple[dict[str, perf.Metric], str]:
     """Launch one cold TUI and return its startup phases."""
-    from tests.fakes.fake_llm_provider import FakeLLMServer, write_hermes_home
-
-    root = Path(tempfile.mkdtemp(prefix="hermes-perf-startup-"))
-    home = root / "home"
-    log = root / "perf.log"
+    session = tui_session.launch(args, wait_for="session_ready", timeout=args.timeout)
     try:
-        home.mkdir(parents=True, exist_ok=True)
-        with FakeLLMServer() as server:
-            write_hermes_home(home / ".hermes", server.base_url)
-            _link_install_state(home / ".hermes")
-            env = _clean_env(home, log)
-            since_ms = int(time.time() * 1000)
-            pid, fd = tui_process.spawn(
-                Path(args.tui_dir), env, cols=args.cols, rows=args.rows
-            )
-            rows: dict[str, dict[str, Any]] = {}
-            try:
-                deadline = time.monotonic() + args.timeout
-                while time.monotonic() < deadline:
-                    tui_process.drain(fd, 0.02)
-                    rows = _startup_rows(log, since_ms)
-                    if "session_ready" in rows:
-                        break
-                if not rows:
-                    time.sleep(0.2)
-                    rows = _startup_rows(log, since_ms)
-            finally:
-                tui_process.stop(pid, fd)
-                tui_process.stop_gateway(home / ".hermes")
+        rows = session.startup_rows()
         return metrics_from_rows(rows), _detail(
-            rows, log, home, keep_home=args.keep_home
+            rows, session.log, session.home, keep_home=args.keep_home
         )
     finally:
-        if not args.keep_home:
-            shutil.rmtree(root, ignore_errors=True)
+        session.close()

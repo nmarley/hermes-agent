@@ -146,20 +146,24 @@ def stop(pid: int, fd: int, *, grace: float = 1.0) -> None:
                 reaped = True
                 break
             time.sleep(0.05)
-    if not reaped:
-        print(f"warning: TUI child {pid} did not exit", file=sys.stderr)
     try:
         os.close(fd)
     except OSError:
         pass
 
 
-def stop_gateway(hermes_home: Path, *, grace: float = 2.0) -> None:
-    """Stop the detached gateway a measured TUI launch started for its profile."""
+def read_gateway_pid(hermes_home: Path) -> int | None:
     try:
         payload = json.loads((hermes_home / "gateway.pid").read_text(encoding="utf-8-sig"))
-        pid = int(payload["pid"])
+        return int(payload["pid"])
     except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def stop_gateway(hermes_home: Path, *, grace: float = 2.0) -> None:
+    """Stop the detached gateway a measured TUI launch started for its profile."""
+    pid = read_gateway_pid(hermes_home)
+    if pid is None:
         return
     try:
         os.kill(pid, signal.SIGTERM)

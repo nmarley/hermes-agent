@@ -25,6 +25,8 @@ _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
+from scripts.perf import idle
+from scripts.perf import input as keyboard
 from scripts.perf import metrics as perf
 from scripts.perf import startup, tui_frames, tui_process
 
@@ -44,6 +46,20 @@ SUITES: dict[str, Suite] = {
         description="cold interpreter import cost for the classic CLI",
         add_arguments=startup.add_import_arguments,
         run_once=startup.run_import_once,
+    ),
+    "idle": Suite(
+        name="idle",
+        description="frames and CPU while a ready TUI sits idle",
+        add_arguments=idle.add_arguments,
+        run_once=idle.run_once,
+        needs_tui=True,
+    ),
+    "input": Suite(
+        name="input",
+        description="keyboard echo and first picker-open latency",
+        add_arguments=keyboard.add_arguments,
+        run_once=keyboard.run_once,
+        needs_tui=True,
     ),
     "startup": Suite(
         name="startup",

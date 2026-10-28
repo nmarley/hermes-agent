@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from scripts.perf import startup
+from scripts.perf import hermetic, startup
 
 
 def test_parse_importtime_reads_self_times() -> None:
@@ -41,7 +41,7 @@ def test_clean_env_isolates_hermes_state(monkeypatch, tmp_path) -> None:
 
     home = tmp_path / "home"
     log = tmp_path / "perf.log"
-    env = startup._clean_env(home, log)
+    env = hermetic.clean_env(home, log)
 
     assert env["HERMES_HOME"] == str(home / ".hermes")
     assert "HERMES_TUI_RESUME" not in env

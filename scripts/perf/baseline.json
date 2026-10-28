@@ -28,10 +28,34 @@
       }
     },
     "idle": {
+      "idle.active_frames": {
+        "budget": 0,
+        "comparison": "p95",
+        "current": 0.0,
+        "direction": "lower",
+        "gate": "blocking",
+        "unit": "count"
+      },
+      "idle.backend_cpu_pct": {
+        "budget": 1.0,
+        "comparison": "p95",
+        "current": 2.4,
+        "direction": "lower",
+        "gate": "warn",
+        "unit": "%"
+      },
+      "idle.clock_frames": {
+        "budget": null,
+        "comparison": "p95",
+        "current": 30.0,
+        "direction": "lower",
+        "gate": "info",
+        "unit": "count"
+      },
       "idle.cpu_pct": {
         "budget": 1.0,
         "comparison": "p95",
-        "current": null,
+        "current": 1.0,
         "direction": "lower",
         "gate": "warn",
         "unit": "%"
@@ -39,9 +63,9 @@
       "idle.frames": {
         "budget": 0,
         "comparison": "p95",
-        "current": null,
+        "current": 30.0,
         "direction": "lower",
-        "gate": "blocking",
+        "gate": "warn",
         "unit": "count"
       }
     },
@@ -49,23 +73,23 @@
       "input.echo_ms": {
         "budget": 33.0,
         "comparison": "p95",
-        "current": null,
+        "current": 12.2014,
         "direction": "lower",
         "gate": "warn",
         "unit": "ms"
       },
-      "input.enter_to_visible_ms": {
-        "budget": 100.0,
-        "comparison": "p95",
-        "current": null,
-        "direction": "lower",
-        "gate": "warn",
-        "unit": "ms"
-      },
-      "input.picker_open_ms": {
+      "input.model_picker_open_ms": {
         "budget": 500.0,
         "comparison": "p95",
-        "current": null,
+        "current": 651.553,
+        "direction": "lower",
+        "gate": "warn",
+        "unit": "ms"
+      },
+      "input.session_picker_open_ms": {
+        "budget": 500.0,
+        "comparison": "p95",
+        "current": 23.3917,
         "direction": "lower",
         "gate": "warn",
         "unit": "ms"
@@ -174,6 +198,14 @@
         "gate": "warn",
         "unit": "ms"
       },
+      "turn.enter_to_visible_ms": {
+        "budget": 100.0,
+        "comparison": "p95",
+        "current": null,
+        "direction": "lower",
+        "gate": "warn",
+        "unit": "ms"
+      },
       "turn.first_chunk_ms": {
         "budget": 50.0,
         "comparison": "p95",
@@ -209,5 +241,5 @@
     }
   },
   "tolerance_pct": 10.0,
-  "updated_at": "2026-10-28T15:12:12+00:00"
+  "updated_at": "2026-10-28T15:59:25+00:00"
 }
