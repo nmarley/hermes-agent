@@ -43,7 +43,6 @@ import { ConfirmDialog } from "@nous-research/ui/ui/components/confirm-dialog";
 import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { HermesConsoleModal } from "@/components/HermesConsoleModal";
-import { cn, themedBody } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import {
@@ -802,7 +801,7 @@ export default function SystemPage() {
           role="dialog"
           aria-modal="true"
         >
-          <div className={cn(themedBody, "relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col")}>
+          <div className="relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col">
             <Button
               ghost
               size="icon"
@@ -813,7 +812,7 @@ export default function SystemPage() {
               <X />
             </Button>
             <header className="p-5 pb-3 border-b border-border">
-              <h2 className="font-mondwest text-display text-base tracking-wider">
+              <h2 className="text-display text-base tracking-wider">
                 New shell hook
               </h2>
             </header>

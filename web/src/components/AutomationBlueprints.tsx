@@ -11,7 +11,6 @@ import { useToast } from "@nous-research/ui/hooks/use-toast";
 import { Toast } from "@nous-research/ui/ui/components/toast";
 import { api } from "@/lib/api";
 import type { AutomationBlueprint, AutomationBlueprintField } from "@/lib/automation-blueprints";
-import { cn, themedBody } from "@/lib/utils";
 import { errorMessage } from "@/lib/api-error";
 
 interface AutomationBlueprintsProps {
@@ -103,7 +102,7 @@ function BlueprintCard({
   }, [blueprint, values, profile, showToast, onCreated]);
 
   return (
-    <Card className={cn("overflow-hidden", themedBody)}>
+    <Card className="overflow-hidden">
       <CardContent className="space-y-3 p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

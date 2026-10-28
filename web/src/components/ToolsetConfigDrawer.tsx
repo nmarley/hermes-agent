@@ -15,7 +15,7 @@ import { Badge } from "@nous-research/ui/ui/components/badge";
 import { Switch } from "@nous-research/ui/ui/components/switch";
 import { Spinner } from "@nous-research/ui/ui/components/spinner";
 import { Toast } from "@nous-research/ui/ui/components/toast";
-import { cn, themedBody } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface Props {
   /** The toolset whose backends are being configured. */
@@ -221,10 +221,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
       }}
     >
       <div
-        className={cn(
-          themedBody,
-          "relative w-full max-w-2xl max-h-[85vh] border border-border bg-card shadow-2xl flex flex-col",
-        )}
+        className="relative w-full max-w-2xl max-h-[85vh] border border-border bg-card shadow-2xl flex flex-col"
       >
         <Button
           ghost
@@ -239,7 +236,7 @@ export function ToolsetConfigDrawer({ toolset, profile, onClose, onChanged }: Pr
         {/* Header — toolset identity + enable toggle */}
         <header className="p-5 pb-3 border-b border-border">
           <div className="flex items-center gap-3 pr-8">
-            <span className="font-mondwest text-display text-base tracking-wider">
+            <span className="text-display text-base tracking-wider">
               {labelText}
             </span>
             <Badge tone={enabled ? "success" : "outline"} className="text-xs">

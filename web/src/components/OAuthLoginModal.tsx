@@ -7,7 +7,6 @@ import { api, type OAuthProvider, type OAuthStartResponse } from "@/lib/api";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { Input } from "@nous-research/ui/ui/components/input";
 import { useI18n } from "@/i18n";
-import { cn, themedBody } from "@/lib/utils";
 import { errorMessage } from "@/lib/api-error";
 
 interface Props {
@@ -226,7 +225,7 @@ export function OAuthLoginModal({ provider, onClose, onSuccess }: Props) {
       aria-modal="true"
       aria-labelledby="oauth-modal-title"
     >
-      <div className={cn(themedBody, "relative w-full max-w-md border border-border bg-card shadow-2xl")}>
+      <div className="relative w-full max-w-md border border-border bg-card shadow-2xl">
         <Button
           ghost
           size="icon"

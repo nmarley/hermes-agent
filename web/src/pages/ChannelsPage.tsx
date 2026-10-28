@@ -37,7 +37,7 @@ import { useModalBehavior } from "@/hooks/useModalBehavior";
 import { AllowlistInput } from "@/components/AllowlistInput";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { usePageHeader } from "@/contexts/usePageHeader";
-import { cn, themedBody } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { errorMessage } from "@/lib/api-error";
 
 // State → badge mapping. The backend emits a small, fixed vocabulary plus
@@ -388,10 +388,7 @@ export default function ChannelsPage() {
           aria-labelledby="channel-config-title"
         >
           <div
-            className={cn(
-              themedBody,
-              "relative flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col border border-border bg-card shadow-2xl sm:max-h-[90dvh]",
-            )}
+            className="relative flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col border border-border bg-card shadow-2xl sm:max-h-[90dvh]"
           >
             <Button
               ghost
@@ -406,7 +403,7 @@ export default function ChannelsPage() {
             <header className="p-5 pb-3 border-b border-border">
               <h2
                 id="channel-config-title"
-                className="font-mondwest text-display text-base tracking-wider"
+                className="text-display text-base tracking-wider"
               >
                 {editing.id === "telegram"
                   ? "Use your own Telegram bot"
@@ -596,7 +593,7 @@ export default function ChannelsPage() {
                     />
                     <div className="flex flex-col gap-0.5 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mondwest normal-case text-sm font-medium">
+                        <span className="text-sm font-medium">
                           {platform.name}
                         </span>
                         <Badge tone={badge.tone}>{badge.label}</Badge>
@@ -1332,7 +1329,7 @@ function TelegramOnboardingPanel({
   return (
     <div className="rounded-sm border border-border bg-background/35 p-4">
       <div className="grid gap-1">
-        <span className="font-mondwest text-sm text-foreground">
+        <span className="text-sm text-foreground">
           Choose how to connect your Telegram bot
         </span>
         <span className="text-xs text-muted-foreground">

@@ -44,7 +44,7 @@ import {
 import { Checkbox } from "@nous-research/ui/ui/components/checkbox";
 import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
-import { cn, themedBody } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { errorMessage } from "@/lib/api-error";
 
 // Mirrors hermes_cli/profiles.py::_PROFILE_ID_RE so we can reject obviously
@@ -814,10 +814,7 @@ export default function ProfilesPage() {
           aria-labelledby="create-profile-title"
         >
           <div
-            className={cn(
-              themedBody,
-              "relative w-full max-w-md border border-border bg-card shadow-2xl flex flex-col max-h-[90vh]",
-            )}
+            className="relative w-full max-w-md border border-border bg-card shadow-2xl flex flex-col max-h-[90vh]"
           >
             <Button
               ghost
@@ -832,7 +829,7 @@ export default function ProfilesPage() {
             <header className="p-5 pb-3 border-b border-border">
               <h2
                 id="create-profile-title"
-                className="font-mondwest text-display text-base tracking-wider"
+                className="text-display text-base tracking-wider"
               >
                 {t.profiles.newProfile}
               </h2>
@@ -925,7 +922,7 @@ export default function ProfilesPage() {
               </div>
 
               <fieldset className="grid gap-3 border-t border-border pt-4">
-                <legend className="font-mondwest text-display text-xs tracking-wider text-muted-foreground">
+                <legend className="text-display text-xs tracking-wider text-muted-foreground">
                   {L.advancedOptions}
                 </legend>
 
@@ -939,7 +936,7 @@ export default function ProfilesPage() {
 
                   <Label
                     className={cn(
-                      "font-mondwest normal-case tracking-normal text-sm cursor-pointer",
+                      "tracking-normal text-sm cursor-pointer",
                       !cloning && "opacity-50",
                     )}
                     htmlFor="clone-all"
@@ -958,7 +955,7 @@ export default function ProfilesPage() {
 
                   <Label
                     className={cn(
-                      "font-mondwest normal-case tracking-normal text-sm cursor-pointer",
+                      "tracking-normal text-sm cursor-pointer",
                       cloning && "opacity-50",
                     )}
                     htmlFor="no-skills"
@@ -1239,10 +1236,7 @@ export default function ProfilesPage() {
           aria-labelledby="profile-editor-title"
         >
           <div
-            className={cn(
-              themedBody,
-              "relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col max-h-[90vh]",
-            )}
+            className="relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col max-h-[90vh]"
           >
             <Button
               ghost
@@ -1257,7 +1251,7 @@ export default function ProfilesPage() {
             <header className="p-5 pb-3 border-b border-border">
               <h2
                 id="profile-editor-title"
-                className="font-mondwest text-display text-base tracking-wider"
+                className="text-display text-base tracking-wider"
               >
                 {editorKind === "model"
                   ? L.editModel
@@ -1322,7 +1316,7 @@ export default function ProfilesPage() {
                   <div className="flex items-center justify-between gap-2">
                     <Label
                       htmlFor="profile-desc-editor"
-                      className="font-mondwest text-display text-xs tracking-wider text-muted-foreground"
+                      className="text-display text-xs tracking-wider text-muted-foreground"
                     >
                       {L.description}
                     </Label>
@@ -1364,7 +1358,7 @@ export default function ProfilesPage() {
                 <>
                   <Label
                     htmlFor="profile-soul-editor"
-                    className="font-mondwest text-display text-xs tracking-wider text-muted-foreground"
+                    className="text-display text-xs tracking-wider text-muted-foreground"
                   >
                     {t.profiles.soulSection}
                   </Label>

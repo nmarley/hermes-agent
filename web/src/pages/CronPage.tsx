@@ -56,7 +56,6 @@ import { PluginSlot } from "@/plugins";
 import { LoadErrorNotice } from "@/components/LoadErrorNotice";
 import { Segmented } from "@nous-research/ui/ui/components/segmented";
 import { AutomationBlueprints } from "@/components/AutomationBlueprints";
-import { cn, themedBody } from "@/lib/utils";
 import { errorMessage } from "@/lib/api-error";
 
 function formatTime(iso?: string | null): string {
@@ -953,7 +952,7 @@ export default function CronPage() {
           aria-modal="true"
           aria-labelledby="create-cron-title"
         >
-          <div className={cn(themedBody, "relative w-full max-w-3xl max-h-[90vh] border border-border bg-card shadow-2xl flex flex-col")}>
+          <div className="relative w-full max-w-3xl max-h-[90vh] border border-border bg-card shadow-2xl flex flex-col">
             <Button
               ghost
               size="icon"
@@ -967,7 +966,7 @@ export default function CronPage() {
             <header className="p-5 pb-3 border-b border-border">
               <h2
                 id="create-cron-title"
-                className="font-mondwest text-display text-base tracking-wider"
+                className="text-display text-base tracking-wider"
               >
                 {t.cron.newJob}
               </h2>
@@ -1028,7 +1027,7 @@ export default function CronPage() {
           aria-modal="true"
           aria-labelledby="edit-cron-title"
         >
-          <div className={cn(themedBody, "relative w-full max-w-3xl max-h-[90vh] border border-border bg-card shadow-2xl flex flex-col")}>
+          <div className="relative w-full max-w-3xl max-h-[90vh] border border-border bg-card shadow-2xl flex flex-col">
             <Button
               ghost
               size="icon"
@@ -1042,7 +1041,7 @@ export default function CronPage() {
             <header className="p-5 pb-3 border-b border-border">
               <h2
                 id="edit-cron-title"
-                className="font-mondwest text-display text-base tracking-wider"
+                className="text-display text-base tracking-wider"
               >
                 Edit job
               </h2>

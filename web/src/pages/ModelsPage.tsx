@@ -23,7 +23,7 @@ import type {
   ModelsAnalyticsModelEntry,
   ModelsAnalyticsResponse,
 } from "@/lib/api";
-import { timeAgo, cn, themedBody } from "@/lib/utils";
+import { timeAgo, cn } from "@/lib/utils";
 import {
   DASHBOARD_MODAL_BACKDROP,
   DASHBOARD_MODAL_PANEL,
@@ -580,7 +580,7 @@ function AuxiliaryTasksModal({
       aria-modal="true"
       aria-labelledby="aux-modal-title"
     >
-      <div className={cn(themedBody, "relative w-full max-w-2xl max-h-[80vh] border border-border bg-card shadow-2xl flex flex-col")}>
+      <div className="relative w-full max-w-2xl max-h-[80vh] border border-border bg-card shadow-2xl flex flex-col">
         <Button
           ghost
           size="icon"
@@ -595,7 +595,7 @@ function AuxiliaryTasksModal({
           <div className="flex items-center justify-between gap-3 pr-8">
             <h2
               id="aux-modal-title"
-              className="font-mondwest text-display text-base tracking-wider"
+              className="text-display text-base tracking-wider"
             >
               Auxiliary Tasks
             </h2>
@@ -831,7 +831,6 @@ function MoaModelsModal({
       {/* Opaque panel — do not use <Card> here; Card defaults to bg-background-base/80. */}
       <div
         className={cn(
-          themedBody,
           DASHBOARD_MODAL_PANEL,
           "max-h-[85vh] max-w-2xl overflow-auto flex flex-col",
         )}
@@ -839,7 +838,7 @@ function MoaModelsModal({
         <header className="p-5 pb-3 border-b border-border">
           <h2
             id="moa-modal-title"
-            className="font-mondwest text-display text-base tracking-wider"
+            className="text-display text-base tracking-wider"
           >
             Configure Mixture of Agents presets
           </h2>

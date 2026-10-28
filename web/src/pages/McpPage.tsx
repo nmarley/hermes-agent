@@ -22,7 +22,7 @@ import { Card, CardContent } from "@nous-research/ui/ui/components/card";
 import { Input } from "@nous-research/ui/ui/components/input";
 import { Label } from "@nous-research/ui/ui/components/label";
 import { usePageHeader } from "@/contexts/usePageHeader";
-import { cn, themedBody } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import {
   buildMcpServerCreate,
   type McpTransport,
@@ -351,10 +351,7 @@ export default function McpPage() {
           aria-labelledby="create-mcp-title"
         >
           <div
-            className={cn(
-              themedBody,
-              "relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col",
-            )}
+            className="relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col"
           >
             <Button
               ghost
@@ -369,7 +366,7 @@ export default function McpPage() {
             <header className="p-5 pb-3 border-b border-border">
               <h2
                 id="create-mcp-title"
-                className="font-mondwest text-display text-base tracking-wider"
+                className="text-display text-base tracking-wider"
               >
                 Add MCP server
               </h2>
@@ -517,10 +514,7 @@ export default function McpPage() {
           aria-labelledby="install-mcp-title"
         >
           <div
-            className={cn(
-              themedBody,
-              "relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col",
-            )}
+            className="relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col"
           >
             <Button
               ghost
@@ -535,7 +529,7 @@ export default function McpPage() {
             <header className="p-5 pb-3 border-b border-border">
               <h2
                 id="install-mcp-title"
-                className="font-mondwest text-display text-base tracking-wider"
+                className="text-display text-base tracking-wider"
               >
                 Install {installEntry.name}
               </h2>

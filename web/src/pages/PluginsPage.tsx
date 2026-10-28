@@ -878,7 +878,7 @@ export default function PluginsPage() {
 
         <div className="flex flex-col gap-3" data-testid="plugin-catalog-section">
 
-          <h3 className="font-mondwest text-display text-xs tracking-[0.12em] text-text-secondary">
+          <h3 className="text-display text-xs tracking-[0.12em] text-text-secondary">
             {t.pluginsPage.catalogHeading ?? "Plugin catalog"}
           </h3>
 
@@ -931,7 +931,7 @@ export default function PluginsPage() {
 
         <div className="flex flex-col gap-3">
 
-          <h3 className="font-mondwest text-display text-xs tracking-[0.12em] text-text-secondary">
+          <h3 className="text-display text-xs tracking-[0.12em] text-text-secondary">
             {t.pluginsPage.pluginListHeading}
           </h3>
 
@@ -969,7 +969,7 @@ export default function PluginsPage() {
 
           <div className="flex flex-col gap-3 opacity-95">
 
-            <h3 className="font-mondwest text-display text-xs tracking-[0.12em] text-text-secondary">
+            <h3 className="text-display text-xs tracking-[0.12em] text-text-secondary">
               {t.pluginsPage.orphanHeading}
             </h3>
 
@@ -1147,7 +1147,7 @@ function PluginRowCard(props: PluginRowCardProps) {
                 className={cn(
                   "inline-flex items-center rounded-none px-3 py-1.5",
                   "border border-current/25 hover:bg-current/10",
-                  "font-mondwest text-display text-xs tracking-[0.1em]",
+                  "text-display text-xs tracking-[0.1em]",
                 )}
                 to={tabPath}
               >

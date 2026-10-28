@@ -16,7 +16,6 @@ import {
   refitWhenTerminalFontLoads,
   TERMINAL_FONT_FAMILY,
 } from "@/lib/terminal-font-refit";
-import { cn, themedBody } from "@/lib/utils";
 import { useTheme } from "@/themes";
 import { errorMessage } from "@/lib/api-error";
 
@@ -509,10 +508,7 @@ export function HermesConsoleModal({ open, onClose }: HermesConsoleModalProps) {
       aria-labelledby="hermes-console-title"
     >
       <div
-        className={cn(
-          themedBody,
-          "relative flex h-[min(82dvh,760px)] w-full max-w-5xl flex-col border border-border bg-card shadow-2xl",
-        )}
+        className="relative flex h-[min(82dvh,760px)] w-full max-w-5xl flex-col border border-border bg-card shadow-2xl"
       >
         <header className="flex min-h-14 items-center gap-3 border-b border-border px-4 py-3">
           <div className="flex h-9 w-9 items-center justify-center border border-border bg-background/60 text-primary">
@@ -521,7 +517,7 @@ export function HermesConsoleModal({ open, onClose }: HermesConsoleModalProps) {
           <div className="min-w-0 flex-1">
             <h2
               id="hermes-console-title"
-              className="font-mondwest text-display text-base tracking-wider"
+              className="text-display text-base tracking-wider"
             >
               Hermes Console
             </h2>

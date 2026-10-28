@@ -523,7 +523,7 @@ export default function ProfileBuilderPage() {
             <div className="space-y-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="space-y-1">
-                  <h3 className="font-expanded text-base font-bold tracking-[0.04em]">
+                  <h3 className="font-sans text-base font-bold tracking-[0.04em]">
                     MCP servers
                   </h3>
                   <p className="text-sm text-muted-foreground">

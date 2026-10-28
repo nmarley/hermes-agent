@@ -26,7 +26,7 @@ import { Card, CardContent } from "@nous-research/ui/ui/components/card";
 import { Input } from "@nous-research/ui/ui/components/input";
 import { Label } from "@nous-research/ui/ui/components/label";
 import { usePageHeader } from "@/contexts/usePageHeader";
-import { cn, themedBody } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { errorMessage } from "@/lib/api-error";
 
 interface CreatedWebhook {
@@ -309,7 +309,7 @@ export default function WebhooksPage() {
           aria-modal="true"
           aria-labelledby="create-webhook-title"
         >
-          <div className={cn(themedBody, "relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto")}>
+          <div className="relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto">
             <Button
               ghost
               size="icon"
@@ -323,7 +323,7 @@ export default function WebhooksPage() {
             <header className="p-5 pb-3 border-b border-border">
               <h2
                 id="create-webhook-title"
-                className="font-mondwest text-display text-base tracking-wider"
+                className="text-display text-base tracking-wider"
               >
                 New subscription
               </h2>
