@@ -64,8 +64,8 @@ class CliPlatformHooks:
     def spawner_is_dead(self, entry: Any) -> Optional[bool]:
         return process_identity.spawner_is_dead(entry)
 
-    def process_start_time(self, pid: int) -> Any:
-        return gateway_status.get_process_start_time(pid)
+    def is_live_process(self, pid: int, stamp: Any) -> bool:
+        return gateway_status.get_process_start_time(pid) == stamp
 
     def report_startup_progress(self, *args: Any, **kwargs: Any) -> Any:
         return startup_watchdog.report_startup_progress(*args, **kwargs)

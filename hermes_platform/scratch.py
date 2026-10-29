@@ -20,10 +20,37 @@ import subprocess
 import time
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from typing import Any, Callable, Mapping, Optional, Protocol
 
 from hermes_platform import scratch_stuck as stuck
 
 logger = logging.getLogger(__name__)
+
+
+class ScratchHooks(Protocol):
+    """Process liveness owned by the surface composition root."""
+
+    def spawner_is_dead(self, entry: Mapping[str, Any]) -> Optional[bool]: ...
+
+    def is_live_process(self, pid: int, stamp: Any) -> bool: ...
+
+
+_hooks_provider: Optional[Callable[[], ScratchHooks]] = None
+
+
+def set_scratch_hooks_provider(provider: Optional[Callable[[], ScratchHooks]]) -> None:
+    """Install the scratch liveness callbacks; the root composition shim owns them."""
+    global _hooks_provider
+    _hooks_provider = provider
+
+
+def _resolved_scratch_hooks() -> ScratchHooks:
+    provider = _hooks_provider
+    if provider is not None:
+        return provider()
+    from hermes_platform.hooks import platform_hooks
+    return platform_hooks()
+
 
 # How long a TERMed process gets before KILL; browsers exit well within this.
 _REAP_GRACE_SECONDS = 3.0
@@ -182,9 +209,9 @@ def _registered_live_pids(home: Path) -> set[int]:
     matches is a reused pid, not ownership."""
     import psutil
 
-    from hermes_platform.hooks import platform_hooks
     from hermes_platform.constants import get_default_hermes_root
 
+    hooks = _resolved_scratch_hooks()
     root = get_default_hermes_root(home=home)
     sources = [(root / "spawn-ledger.json", "create_time")]
     sources += [(base / "processes.json", "host_start_time") for base in {home, root}]
@@ -201,7 +228,7 @@ def _registered_live_pids(home: Path) -> set[int]:
             # An MCP helper whose recorded spawner is provably gone is an orphan, not owned: the
             # rule reap_orphaned_mcp_helpers applies. Long-lived entry points (gateway, serve) that
             # outlive their launcher stay owned; an unprovable spawner keeps ownership.
-            if entry.get("purpose") == "mcp-helper" and platform_hooks().spawner_is_dead(entry) is True:
+            if entry.get("purpose") == "mcp-helper" and hooks.spawner_is_dead(entry) is True:
                 continue
             try:
                 if stamp is None:
@@ -209,7 +236,7 @@ def _registered_live_pids(home: Path) -> set[int]:
                 elif stamp_key == "create_time":
                     alive = abs(psutil.Process(pid).create_time() - float(stamp)) < 2.0
                 else:
-                    alive = platform_hooks().process_start_time(pid) == stamp
+                    alive = hooks.is_live_process(pid, stamp)
             except (psutil.Error, OSError, TypeError, ValueError):
                 continue
             if alive:
