@@ -88,11 +88,15 @@ Existing packages keep their names initially:
 - `cron`: scheduler.
 - `hermes_cli`, `tui_gateway`: surfaces.
 - `pm`: environment and dependency manager.
-- `hermes_platform`: host paths, constants, YAML and file I/O, logging, time, executable lookup.
+- `hermes_platform`: host paths, constants, YAML and file I/O, logging, time, executable lookup,
+  startup watchdog.
 
-Root `.py` files are compatibility shims only. The final allowlist is `setup.py`,
-`hermes_constants.py`, `hermes_state.py`, and `utils.py`; the last three replace themselves in
-`sys.modules` so the old path and the new module are one object.
+Root `.py` files are compatibility shims or the process bootstrap. The final allowlist is
+`setup.py`, `hermes_constants.py`, `hermes_state.py`, `utils.py`, and `hermes_bootstrap.py`; the
+three compatibility shims replace themselves in `sys.modules` so the old path and the new module
+are one object. `hermes_bootstrap.py` stays at the root because it runs before import-path
+hardening, resolves the repository root from its own `__file__`, and is the entry point for
+interrupted-update recovery. It is not a shim and has no removal target.
 
 Allowed edges:
 
@@ -233,18 +237,21 @@ Exit criteria:
    `hermes_cli.main:main`.
 3.5c. Move `model_tools.py`, `toolsets.py`, and `toolset_distributions.py` into `tools/` once
    the graph allows their imports there.
-3.5d. Move `hermes_bootstrap.py`, `hermes_startup_watchdog.py`, and
-   `registration_lifecycle.py` into `hermes_cli/`.
+3.5d. Move `hermes_startup_watchdog.py` into `hermes_platform/` (it must be importable before
+   the gateway graph; its lifecycle and home callbacks are injected) and
+   `registration_lifecycle.py` into `hermes_cli/`. Leave `hermes_bootstrap.py` at the root:
+   it is the process bootstrap, imported before import-path hardening, and the
+   interrupted-update recovery entry point.
 3.5e. Move `batch_runner.py`, `mini_swe_runner.py`, and `trajectory_compressor.py` into
    `hermes_cli/runners/`.
-3.5f. Shrink the `ROOT_MODULE` allowlist after each move. The final allowlist is `setup.py`
-   plus the three compatibility shims.
+3.5f. Shrink the `ROOT_MODULE` allowlist after each move. The final allowlist is `setup.py`,
+   the three compatibility shims, and `hermes_bootstrap.py`.
 3.5g. Update `pyproject.toml`, `setup.py`, the updater compatibility surface, and docs paths in
    the same change as each move.
 
 Exit criteria:
 
-- `ls *.py` at the root shows only `setup.py` and the three alias shims.
+- `ls *.py` at the root shows only `setup.py`, the three alias shims, and `hermes_bootstrap.py`.
 - `ROOT_MODULE` passes.
 - Console entry points and updater compatibility still work.
 
@@ -450,7 +457,8 @@ Graph:
 Structure:
 
 - `hermes_cli` under 100k lines.
-- Root `.py` files: 80 at baseline, 4 at the end (`setup.py` plus three compatibility shims).
+- Root `.py` files: 80 at baseline, 5 at the end (`setup.py`, three compatibility shims, and
+  `hermes_bootstrap.py`).
 - No new root modules outside the `ROOT_MODULE` allowlist.
 - Zero `hermes_state_*` siblings in new code.
 - Fewer than 20 flat modules in `gateway/`.

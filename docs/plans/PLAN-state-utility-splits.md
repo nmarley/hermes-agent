@@ -78,6 +78,7 @@ files remain at the root.
 | `logging.py` | Handlers, rotation, queue plumbing, log routing. Redaction arrives through a protocol. |
 | `time.py` | Pure clock, timezone conversion, and formatting. Timezone source arrives through a protocol. |
 | `scratch.py` | Scratch retention and reaping. Liveness arrives through callbacks. |
+| `startup_watchdog.py` | Pre-loop liveness, progress leases, and exit forensics. Lifecycle and home callbacks arrive through protocols. |
 | `yaml.py` | The YAML 1.1 policy loader. |
 | `utils.py` | Generic filesystem and truthiness helpers. No config or agent imports. |
 | `fs.py` | Directory ACL and secure filesystem helpers. Already moved. |
@@ -89,13 +90,16 @@ files remain at the root.
 | `paths.py` | Config paths, env paths, profile selectors, and path helpers shared with the store. |
 | `time.py` | Config-backed timezone resolution, when it cannot stay in `hermes_platform/time.py`. |
 
-Root after the split: `setup.py` plus the three compatibility shims `hermes_constants.py`,
-`hermes_state.py`, and `utils.py`.
+Root after the split: `setup.py`, the three compatibility shims `hermes_constants.py`,
+`hermes_state.py`, and `utils.py`, plus `hermes_bootstrap.py`. The bootstrap stays at the root
+because it runs before import-path hardening, resolves the repository root from its own
+`__file__`, and is the interrupted-update recovery entry point. It is not a shim.
 
 ## Dependency rules
 
 - `hermes_platform` imports only `hermes_types`. During the migration it may import the root
-  shims; remove that allowance in Phase 8.
+  shims; remove that allowance in Phase 8. The startup watchdog's fire-time home resolver is
+  one of those temporary imports; Phase 8 injects it from the arm sites.
 - `hermes_store` imports `hermes_types`, `hermes_config`, and `hermes_platform`, plus its own
   subpackages. It must not import `agent`, `gateway`, `tools`, `cron`, `tui_gateway`,
   `hermes_cli`, or `plugins`.
@@ -307,12 +311,14 @@ the utilities first would force a second import rewrite.
    - `gateway.status` at line 212.
    Move retention and reaping to `hermes_platform/scratch.py`. Inject `is_live_process` and
    gateway status callbacks. Move the pure `hermes_constants_scratch_stuck` helpers with it.
-7g. Delete the root implementations and leave only the three compatibility shims.
+7g. Delete the root utility implementations and leave the three compatibility shims plus
+   `hermes_bootstrap.py`.
 
 Exit criteria:
 
 - `hermes_platform` has no imports of `agent`, `gateway`, `tools`, or `hermes_cli`.
-- The root has only `setup.py`, `hermes_constants.py`, `hermes_state.py`, and `utils.py`.
+- The utility implementations are out of the root. Only the entry-point modules scheduled for
+  Stage 3.5, `setup.py`, the three shims, and `hermes_bootstrap.py` remain.
 - The three root shims are aliases, not copies.
 - Full `scripts/check` passes.
 
@@ -320,7 +326,8 @@ Exit criteria:
 
 8a. Remove `ROOT_PACKAGE` from the `hermes_platform` and `hermes_store` allowed sets once their
    callers import package paths.
-8b. Remove the three temporary `# health: allow` waivers.
+8b. Remove the temporary `# health: allow` waivers. Inject the startup watchdog's home
+   resolver from the arm sites so its fire-time root import can go too.
 8c. Remove `MOVED_MODULES` entries whose old paths no longer exist in any supported base
    revision.
 8d. Update `PACKAGE_LAYERS` to the final table:
@@ -331,7 +338,7 @@ Exit criteria:
    - `agent`, `gateway`, `tools`, `cron`, `plugins` import the lower layers they need.
    - Surfaces may import inward.
 8e. Set the `ROOT_MODULE` allowlist to `setup.py`, `hermes_constants.py`, `hermes_state.py`,
-   and `utils.py`.
+   `utils.py`, and `hermes_bootstrap.py`.
 8f. Update the root `AGENTS.md` routing table and `hermes_platform/AGENTS.md`.
 
 Exit criteria:
