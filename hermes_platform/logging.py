@@ -18,11 +18,36 @@ import threading
 from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
 from time import monotonic as _monotonic
-from typing import Optional, Sequence
+from typing import Any, Callable, Mapping, Optional, Protocol, Sequence
 
 from hermes_platform.constants import (
     get_config_path, get_hermes_home, mkdir_under_hermes_home, named_profile_is_deleted,
 )
+
+
+class Redactor(Protocol):
+    """Secret redaction owned by the surface that knows the policy."""
+
+    def redact_sensitive_text(self, text: str) -> str: ...
+
+    def redacting_formatter(self) -> type[logging.Formatter]: ...
+
+
+_redactor_provider: Optional[Callable[[], Redactor]] = None
+
+
+def set_redactor_provider(provider: Optional[Callable[[], Redactor]]) -> None:
+    """Install the redaction implementation; the root composition shim owns it."""
+    global _redactor_provider
+    _redactor_provider = provider
+
+
+def _resolved_redactor() -> Redactor:
+    provider = _redactor_provider
+    if provider is not None:
+        return provider()
+    from hermes_platform.hooks import platform_hooks
+    return platform_hooks()
 
 # setup_logging() is idempotent: a second call is a no-op unless ``force=True``.
 _logging_initialized = False
@@ -172,8 +197,8 @@ class _RedactingStdio:
         self._stream = stream
 
     def write(self, text):
-        from hermes_platform.hooks import platform_hooks
-        return self._stream.write(platform_hooks().redact_sensitive_text(text) if isinstance(text, str) else text)
+        redactor = _resolved_redactor()
+        return self._stream.write(redactor.redact_sensitive_text(text) if isinstance(text, str) else text)
 
     def __getattr__(self, name):
         return getattr(self._stream, name)
@@ -355,13 +380,16 @@ def setup_logging(
     max_size_mb: Optional[int] = None,
     backup_count: Optional[int] = None,
     mode: Optional[str] = None,
+    config: Optional[Mapping[str, Any]] = None,
+    managed: Optional[bool] = None,
     force: bool = False,
 ) -> Path:
     """Configure the Hermes logging subsystem; returns the ``logs/`` directory.
 
     Safe to call multiple times; the second call is a no-op unless *force*. Level and
-    rotation defaults come from config.yaml ``logging.*``. ``mode="gateway"`` adds
-    ``gateway.log`` and ``mode="gui"`` adds ``gui.log``.
+    rotation defaults come from *config*'s ``logging.*``; when the caller does not hold
+    the effective config snapshot, config.yaml is parsed directly. ``mode="gateway"``
+    adds ``gateway.log`` and ``mode="gui"`` adds ``gui.log``.
     """
     global _logging_initialized
     global _fallback_warned
@@ -381,14 +409,16 @@ def setup_logging(
     # an existing router.
     if _adopt_secondary_home(home):
         return log_dir
-    cfg_level, cfg_max_size, cfg_backup = _read_logging_config()
+    if managed is None:
+        from hermes_platform.hooks import platform_hooks
+        managed = platform_hooks().is_managed()
+    cfg_level, cfg_max_size, cfg_backup = _read_logging_config(config)
     level_name = (log_level or cfg_level or "INFO").upper()
     level = getattr(logging, level_name, logging.INFO)
     max_bytes = (max_size_mb or cfg_max_size or 5) * 1024 * 1024
     backups = backup_count or cfg_backup or 3
 
-    from hermes_platform.hooks import platform_hooks
-    RedactingFormatter = platform_hooks().redacting_formatter()
+    RedactingFormatter = _resolved_redactor().redacting_formatter()
 
     root = logging.getLogger()
 
@@ -405,7 +435,7 @@ def setup_logging(
             continue
         _add_rotating_handler(
             log_dir / filename, level=lvl, max_bytes=size, backup_count=count,
-            formatter=RedactingFormatter(_LOG_FORMAT),
+            formatter=RedactingFormatter(_LOG_FORMAT), managed=managed,
             log_filter=_ComponentFilter(COMPONENT_PREFIXES[component]) if component else None,
         )
 
@@ -432,8 +462,7 @@ def setup_logging(
 
 def setup_verbose_logging() -> None:
     """Enable DEBUG-level console logging for ``--verbose`` / ``-v`` mode."""
-    from hermes_platform.hooks import platform_hooks
-    RedactingFormatter = platform_hooks().redacting_formatter()
+    RedactingFormatter = _resolved_redactor().redacting_formatter()
 
     root = logging.getLogger()
 
@@ -470,9 +499,8 @@ class _ManagedRotatingFileHandler(RotatingFileHandler):
     to the open stream's and reopens on mismatch (the ``WatchedFileHandler`` pattern).
     """
 
-    def __init__(self, *args, **kwargs):
-        from hermes_platform.hooks import platform_hooks
-        self._managed = platform_hooks().is_managed()
+    def __init__(self, *args, managed: bool = False, **kwargs):
+        self._managed = managed
         self._unavailable_reported = False
         # Set by _ProfileRoutingFileHandler: a vanished logs/ dir means the profile was deleted,
         # so skip the write (the router re-routes the record) instead of a FileNotFoundError traceback.
@@ -615,7 +643,8 @@ class _ManagedRotatingFileHandler(RotatingFileHandler):
 
 
 def _new_file_handler(
-    path: Path, *, level: int, max_bytes: int, backup_count: int, formatter
+    path: Path, *, level: int, max_bytes: int, backup_count: int, formatter,
+    managed: bool = False,
 ) -> _ManagedRotatingFileHandler:
     """Create the ``logs/`` directory and a configured ``_ManagedRotatingFileHandler``."""
     mkdir_under_hermes_home(path.parent)
@@ -624,7 +653,8 @@ def _new_file_handler(
         # and every emit re-triggers the WinError 32 rename failure (#44873).
         max_bytes, backup_count = 0, 0
     handler = _ManagedRotatingFileHandler(
-        str(path), maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8"
+        str(path), maxBytes=max_bytes, backupCount=backup_count, encoding="utf-8",
+        managed=managed,
     )
     handler.setLevel(level)
     handler.setFormatter(formatter)
@@ -657,6 +687,7 @@ class _ProfileRoutingFileHandler(logging.Handler):
         self._filename = resolved.name
         self._max_bytes = getattr(existing, "maxBytes", 0)
         self._backup_count = getattr(existing, "backupCount", 0)
+        self._managed = bool(getattr(existing, "_managed", False))
         self._profile_handlers: dict[Path, _ManagedRotatingFileHandler] = {}
         self._profile_handlers_lock = threading.RLock()
         self._router_closed = False  # under _profile_handlers_lock; close() is final
@@ -710,7 +741,7 @@ class _ProfileRoutingFileHandler(logging.Handler):
         # either router lock here deadlocked the QueueListener against ``dictConfig`` (T23).
         built = _new_file_handler(
             home / "logs" / self._filename, level=self.level, max_bytes=self._max_bytes,
-            backup_count=self._backup_count, formatter=self.formatter,
+            backup_count=self._backup_count, formatter=self.formatter, managed=self._managed,
         )
         built._skip_write_when_dir_missing = home != self._default_home
         built._never_reopen_after_close = True
@@ -986,6 +1017,7 @@ def _add_rotating_handler(
     max_bytes: int,
     backup_count: int,
     formatter: logging.Formatter,
+    managed: bool = False,
     log_filter: Optional[logging.Filter] = None,
 ) -> None:
     """Register a queued ``RotatingFileHandler`` for *path*; idempotent per resolved path."""
@@ -1004,6 +1036,7 @@ def _add_rotating_handler(
             return
     handler = _new_file_handler(
         path, level=level, max_bytes=max_bytes, backup_count=backup_count, formatter=formatter,
+        managed=managed,
     )
     if log_filter is not None:
         handler.addFilter(log_filter)
@@ -1022,25 +1055,21 @@ def _add_rotating_handler(
     _register_queued_handler(handler)
 
 
-def _read_logging_config():
-    """Best-effort read of ``logging.*`` from config.yaml."""
+def _read_logging_config(config: Optional[Mapping[str, Any]] = None):
+    """Best-effort read of ``logging.*`` from *config*, else config.yaml."""
     try:
-        # Prefer the shared effective-config cache (managed overlay included, so an administrator
-        # can pin logging.*) so this reuses hermes_cli.main's early parse (one config.yaml parse
-        # per process); fall back to a direct parse for bare hermes_logging consumers.
-        try:
-            from hermes_platform.hooks import platform_hooks
-            cfg = platform_hooks().load_user_config_effective(get_config_path())
-        except Exception:
+        # Callers that already hold the effective config pass it in, so the managed overlay and
+        # the early parse are shared. Bare consumers get a direct parse instead.
+        if config is None:
             from hermes_platform.utils import fast_safe_load
             config_path = get_config_path()
-            cfg = {}
+            config = {}
             if config_path.exists():
                 with open(config_path, "r", encoding="utf-8-sig") as f:
-                    cfg = fast_safe_load(f) or {}
-        if not cfg:
+                    config = fast_safe_load(f) or {}
+        if not config:
             return (None, None, None)
-        log_cfg = cfg.get("logging", {})
+        log_cfg = config.get("logging", {})
         if isinstance(log_cfg, dict):
             return (log_cfg.get("level"), log_cfg.get("max_size_mb"), log_cfg.get("backup_count"))
     except Exception:

@@ -90,7 +90,9 @@ _api.set_media_hooks_provider(_load_media_hooks)
 _api.set_adapter_hooks_provider(_load_adapter_hooks)
 _api.set_storage_hooks_provider(_load_storage_hooks)
 from hermes_platform.hooks import set_platform_hooks_provider
+from hermes_platform.logging import set_redactor_provider
 set_platform_hooks_provider(_load_platform_hooks)
+set_redactor_provider(_load_platform_hooks)
 _install_agent_turn_hooks()
 
 sys.modules[__name__] = _api

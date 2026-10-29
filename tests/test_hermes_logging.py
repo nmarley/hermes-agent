@@ -110,6 +110,42 @@ def test_repeated_setup_routes_records_once(hermes_home, mode, component, config
 
 
 class TestSetupLogging:
+    def test_uses_injected_redactor(self, hermes_home, monkeypatch):
+        class FakeFormatter(logging.Formatter):
+            pass
+
+        class FakeRedactor:
+            def redact_sensitive_text(self, text):
+                return text.replace("secret", "[redacted]")
+
+            def redacting_formatter(self):
+                return FakeFormatter
+
+        monkeypatch.setattr(hermes_logging, "_redactor_provider", lambda: FakeRedactor())
+        hermes_logging.setup_logging(hermes_home=hermes_home)
+        handlers = [
+            h for h in hermes_logging._queued_file_handlers
+            if isinstance(h, RotatingFileHandler)
+        ]
+        assert handlers
+        assert all(isinstance(handler.formatter, FakeFormatter) for handler in handlers)
+
+    def test_uses_passed_config_snapshot(self, hermes_home):
+        (hermes_home / "config.yaml").write_text("logging:\n  level: ERROR\n", encoding="utf-8")
+        hermes_logging.setup_logging(
+            hermes_home=hermes_home,
+            config={"logging": {"level": "DEBUG", "max_size_mb": 7, "backup_count": 2}},
+        )
+        handlers = [
+            h for h in hermes_logging._queued_file_handlers
+            if isinstance(h, RotatingFileHandler)
+        ]
+        agent_log = next(h for h in handlers if Path(h.baseFilename).name == "agent.log")
+        assert agent_log.level == logging.DEBUG
+        if not hermes_logging._WINDOWS_CLH_FALLBACK:
+            assert agent_log.maxBytes == 7 * 1024 * 1024
+            assert agent_log.backupCount == 2
+
     def test_profile_routing_follows_context_home(self, hermes_home, tmp_path):
         """Desktop multiplex cron records are written to their owning profile."""
         from hermes_constants import reset_hermes_home_override, set_hermes_home_override
@@ -524,12 +560,11 @@ class TestAddRotatingHandler:
 
         old_umask = os.umask(0o022)
         try:
-            with patch("hermes_cli.config.is_managed", return_value=True):
-                hermes_logging._add_rotating_handler(
-                    log_path,
-                    level=logging.INFO, max_bytes=1024, backup_count=1,
-                    formatter=formatter,
-                )
+            hermes_logging._add_rotating_handler(
+                log_path,
+                level=logging.INFO, max_bytes=1024, backup_count=1,
+                formatter=formatter, managed=True,
+            )
         finally:
             os.umask(old_umask)
 
@@ -731,6 +766,16 @@ class TestReadLoggingConfig:
         (hermes_home / "config.yaml").write_text(yaml.safe_dump(config), encoding="utf-8")
 
         level, max_size, backup = hermes_logging._read_logging_config()
+        assert level == "DEBUG"
+        assert max_size == 10
+        assert backup == 5
+
+    def test_prefers_passed_snapshot_over_config_file(self, hermes_home):
+        (hermes_home / "config.yaml").write_text("logging:\n  level: ERROR\n", encoding="utf-8")
+
+        level, max_size, backup = hermes_logging._read_logging_config(
+            {"logging": {"level": "DEBUG", "max_size_mb": 10, "backup_count": 5}}
+        )
         assert level == "DEBUG"
         assert max_size == 10
         assert backup == 5

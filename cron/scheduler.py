@@ -42,7 +42,7 @@ from hermes_cli.observability.shared_metrics_gateway import note_cron_execution,
 from cron.env_settings import cron_env_setting
 from hermes_cli._subprocess_compat import windows_hide_flags
 from hermes_cli.config import (
-    load_config, load_config_readonly)
+    is_managed, load_config, load_config_readonly)
 from hermes_cli.fallback_config import get_fallback_chain, scoped_fallback_chain
 from hermes_platform.time import now as _hermes_now, safe_strftime
 from agent.interrupt_compat import request_hard_interrupt
@@ -4423,7 +4423,7 @@ if __name__ == "__main__":
         try:
             from hermes_platform.logging import setup_logging
 
-            setup_logging(hermes_home=_get_hermes_home(), mode="cron")
+            setup_logging(hermes_home=_get_hermes_home(), mode="cron", managed=is_managed())
         except Exception:
             pass
         raise SystemExit(

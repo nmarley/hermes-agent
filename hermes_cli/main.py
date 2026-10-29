@@ -707,7 +707,7 @@ if sys.platform == "win32":
 
 # Load .env from ~/.hermes/.env first, then project root as dev fallback.
 # User-managed env files should override stale shell exports on restart.
-from hermes_cli.config import get_hermes_home
+from hermes_cli.config import get_hermes_home, is_managed
 from hermes_cli.env_loader import load_hermes_dotenv
 
 # ``update`` must not resolve external secret sources (Windows self-lock via cryptography, slow
@@ -715,49 +715,13 @@ from hermes_cli.env_loader import load_hermes_dotenv
 # owns that argv check for every dotenv load in the process. See #73381.
 load_hermes_dotenv(project_env=PROJECT_ROOT / ".env")
 
-# Bridge security.redact_secrets → HERMES_REDACT_SECRETS BEFORE hermes_logging
-# imports agent.redact, which snapshots the flag exactly once at import. A
-# .env value still wins — this is config.yaml fallback only. network.force_ipv4
-# is read from the same parse to avoid a second full load_config() (~17ms).
-_FORCE_IPV4_EARLY = False
-try:
-    # The effective-config cache (shared raw parse with read_raw_config()) means this SAME parse
-    # serves hermes_logging, hermes_time and later raw reads: 3-4 config.yaml parses become one.
-    # Managed overlay included: administrator-pinned redact_secrets / force_ipv4 win here too.
-    from hermes_cli.config_effective import load_user_config_effective as _load_effective_early
+# Bridge security.redact_secrets into the environment before the redactor imports and
+# snapshots it, read network.force_ipv4 from the same parse, then configure file logging
+# for every subcommand. Dashboard entrypoints use GUI mode so gui.log captures pre-dispatch
+# failures.
+from hermes_cli.main_logging_bootstrap import bootstrap_early_logging
 
-    _cfg_path = get_hermes_home() / "config.yaml"
-    if _cfg_path.exists():
-        _early_cfg_raw = _load_effective_early(_cfg_path)
-        if "HERMES_REDACT_SECRETS" not in os.environ:
-            _early_sec_cfg = _early_cfg_raw.get("security", {})
-            if isinstance(_early_sec_cfg, dict):
-                _early_redact = _early_sec_cfg.get("redact_secrets")
-                if _early_redact is not None:
-                    os.environ["HERMES_REDACT_SECRETS"] = str(_early_redact).lower()
-        _early_net_cfg = _early_cfg_raw.get("network", {})
-        if isinstance(_early_net_cfg, dict) and _early_net_cfg.get("force_ipv4"):
-            _FORCE_IPV4_EARLY = True
-        del _early_cfg_raw
-    del _cfg_path
-except Exception:
-    pass  # best-effort — redaction stays at default (enabled) on config errors
-
-# Centralized file logging for every subcommand (agent.log + errors.log).
-# Dashboard entrypoints use GUI mode so gui.log captures pre-dispatch failures.
-try:
-    from hermes_platform.logging import setup_logging as _setup_logging
-
-    _setup_logging(
-        mode=(
-            "gui"
-            if next((arg for arg in sys.argv[1:] if not arg.startswith("-")), "")
-            in {"dashboard", "serve", "gui", "desktop"}
-            else "cli"
-        )
-    )
-except Exception:
-    pass  # best-effort — don't crash the CLI if logging setup fails
+_FORCE_IPV4_EARLY = bootstrap_early_logging(sys.argv[1:])
 
 # Apply IPv4 preference before any HTTP client is created.
 if _FORCE_IPV4_EARLY:
@@ -2585,7 +2549,7 @@ def _dashboard_prepare_runtime(args, headless_backend) -> bool:
     # the same logs directory as every other Hermes surface.
     try:
         from hermes_platform.logging import setup_logging as _setup_logging_gui
-        _setup_logging_gui(mode="gui")
+        _setup_logging_gui(mode="gui", managed=is_managed())
     except Exception:
         pass
 
