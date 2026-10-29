@@ -11,12 +11,39 @@ import os
 import re
 import threading
 from datetime import datetime
-from typing import Dict, Optional, Tuple
+from pathlib import Path
+from typing import Any, Callable, Mapping, Optional, Protocol
 from zoneinfo import ZoneInfo
 
 from hermes_platform.constants import get_config_path
 
 logger = logging.getLogger(__name__)
+
+
+class TimezoneSource(Protocol):
+    """Config and profile state owned by the surface composition root."""
+
+    def is_multiplex_active(self) -> bool: ...
+
+    def load_user_config_effective(self, path: Path) -> Mapping[str, Any]: ...
+
+
+_source_provider: Optional[Callable[[], TimezoneSource]] = None
+
+
+def set_timezone_source_provider(provider: Optional[Callable[[], TimezoneSource]]) -> None:
+    """Install the timezone source; the root composition shim owns it."""
+    global _source_provider
+    _source_provider = provider
+
+
+def _resolved_timezone_source() -> TimezoneSource:
+    provider = _source_provider
+    if provider is not None:
+        return provider()
+    from hermes_platform.hooks import platform_hooks
+    return platform_hooks()
+
 
 # Cache keyed by timezone *source* identity. This process can multiplex profiles by switching
 # HERMES_HOME, so one unkeyed global would leak the first profile's timezone into later
@@ -68,9 +95,7 @@ def _env_timezone() -> str:
     """``HERMES_TIMEZONE`` when it may speak for the active profile. Under the multiplexed
     gateway the env var holds only the DEFAULT profile's value (bridged from its config.yaml at
     startup), so every routed profile must read its own config.yaml instead."""
-    from hermes_platform.hooks import platform_hooks
-
-    if platform_hooks().is_multiplex_active():
+    if _resolved_timezone_source().is_multiplex_active():
         return ""
     return os.getenv("HERMES_TIMEZONE", "").strip()
 
@@ -89,10 +114,9 @@ def _resolve_timezone_name() -> str:
         # Prefer the shared cached effective-config loader (mtime-keyed + libyaml, managed overlay
         # included so an administrator can pin ``timezone``): a direct safe_load of a large
         # config.yaml costs ~100 ms and this ran inside the FIRST system prompt build. The bare
-        # parse is the stdlib-safe fallback for bootstrap consumers without hermes_cli importable.
+        # parse is the stdlib-safe fallback for bootstrap consumers without a composition root.
         try:
-            from hermes_platform.hooks import platform_hooks
-            cfg = platform_hooks().load_user_config_effective(get_config_path())
+            cfg = _resolved_timezone_source().load_user_config_effective(get_config_path())
         except Exception:
             from hermes_platform import yaml
             config_path = get_config_path()
