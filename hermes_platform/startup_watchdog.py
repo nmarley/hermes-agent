@@ -17,8 +17,9 @@ extensions before firing; the observed class is parked-thread deadlocks. Idle-by
 waits call :func:`kick_startup_watchdog` (respawn-storm backoff, up to 300s); MCP
 discovery's 120s wait sits inside the 300s default.
 
-IMPORT-LIGHTNESS IS A CORRECTNESS PROPERTY: top-level module, stdlib only. Arming must
-precede importing ``gateway`` (hundreds of modules; an import-time deadlock is in scope),
+IMPORT-LIGHTNESS IS A CORRECTNESS PROPERTY: stdlib only, and this package's ``__init__``
+is a docstring. Arming must precede importing ``gateway`` (hundreds of modules; an
+import-time deadlock is in scope),
 and at fire time the wedged main thread may hold the import lock — so the fire path does
 no imports on its own thread; the ledger write runs on a helper thread joined with a
 timeout. Config is env-only (``HERMES_STARTUP_WATCHDOG=0``,
@@ -36,7 +37,7 @@ import threading
 import time
 from datetime import datetime, timezone, UTC
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +100,7 @@ _handle: Optional[StartupWatchdogHandle] = None
 
 def _process_hermes_home() -> Path:
     """Use the stdlib-only process resolver before application startup."""
-    from hermes_constants import get_process_hermes_home
+    from hermes_constants import get_process_hermes_home  # health: allow LATE_IMPORT -- watchdog stays stdlib-only until fire
 
     return get_process_hermes_home()
 
@@ -160,17 +161,28 @@ def _log_quietly(level: str, msg: str, *args) -> None:
         pass
 
 
+LifecycleSink = Callable[[int, str], None]
+_lifecycle_sink_provider: Optional[Callable[[], LifecycleSink]] = None
+
+
+def set_lifecycle_sink_provider(provider: Optional[Callable[[], LifecycleSink]]) -> None:
+    """Install the NS-608 lifecycle writer; the surface arm sites own the import."""
+    global _lifecycle_sink_provider
+    _lifecycle_sink_provider = provider
+
+
 def _mark_lifecycle_exit(exit_code: int) -> None:
     """Record the watchdog exit in the NS-608 lifecycle sentinel.
 
-    Runs on a helper thread (see ``_fire``): the import can block on the
-    interpreter import lock, and the fire path must reach ``os._exit`` regardless.
+    Runs on a helper thread (see ``_fire``): the sink can import ``gateway`` and block on
+    the interpreter import lock, and the fire path must reach ``os._exit`` regardless.
     """
     try:
-        from gateway.lifecycle_ledger import mark_exited
-
-        mark_exited(exit_code, reason="startup_liveness_watchdog")
-    except Exception:
+        provider = _lifecycle_sink_provider
+        if provider is None:
+            return
+        provider()(exit_code, "startup_liveness_watchdog")
+    except Exception:  # health: allow BLE001 S110 -- watchdog exit must never raise
         pass
 
 

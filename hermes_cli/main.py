@@ -47,6 +47,8 @@ if _bootstrap_root not in sys.path:
 from hermes_cli import _startup_fast
 import itertools
 
+from hermes_platform import startup_watchdog as _startup_watchdog
+
 # A literal ``~``/``$VAR`` in HERMES_HOME (fish, or any quoted value) must become absolute
 # before the first reader — otherwise it resolves against cwd and scaffolds <cwd>/~/.hermes.
 _startup_fast.normalize_hermes_home_env()
@@ -54,8 +56,8 @@ _startup_fast.normalize_hermes_home_env()
 # Startup-liveness watchdog: for gateway runs, arm BEFORE the heavy import
 # graph below — an import-time deadlock (native-extension init, contended
 # import lock) is exactly the "wedged before the event loop, no logs, live
-# PID" class it exists for. ``hermes_startup_watchdog`` is stdlib-only so it
-# cannot itself wedge. The match requires the ADJACENT pair ``gateway run``
+# PID" class it exists for. ``hermes_platform.startup_watchdog`` is stdlib-only
+# so it cannot itself wedge. The match requires the ADJACENT pair ``gateway run``
 # (wherever global flags like ``-p <profile>`` put it) so unrelated commands
 # mentioning both words never arm a 300s hard-exit timer. Foreground runs arm
 # too — a pre-loop wedge is just as dead without a supervisor; GatewayRunner
@@ -64,12 +66,15 @@ def _argv_is_gateway_run(argv: list) -> bool:
     return any(a == "gateway" and b == "run" for a, b in itertools.pairwise(argv))
 
 
+def _startup_watchdog_lifecycle_sink(code: int, reason: str) -> None:
+    from gateway.lifecycle_ledger import mark_exited  # health: allow LATE_IMPORT -- gateway arms before its package graph
+    mark_exited(code, reason=reason)
+
+
 if _argv_is_gateway_run(sys.argv[1:]):
     try:
-        from hermes_startup_watchdog import arm_startup_watchdog as _arm_sw
-
-        _arm_sw()
-        del _arm_sw
+        _startup_watchdog.set_lifecycle_sink_provider(lambda: _startup_watchdog_lifecycle_sink)
+        _startup_watchdog.arm_startup_watchdog()
     except Exception:
         pass
 

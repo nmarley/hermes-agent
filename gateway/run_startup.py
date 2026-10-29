@@ -31,6 +31,7 @@ from gateway.shutdown_watchdog import (
     DEFAULT_HEARTBEAT_INTERVAL_S, DEFAULT_LOOP_WATCHDOG_INTERVAL_S,
     DEFAULT_LOOP_WATCHDOG_MAX_STRIKES, DEFAULT_LOOP_WATCHDOG_TIMEOUT_S, loop_heartbeat_forever,
 )
+from hermes_platform.startup_watchdog import disarm_startup_watchdog
 from typing import Any, Dict, Optional, Tuple
 
 # Log-record parity with the origin module.
@@ -921,7 +922,6 @@ class GatewayStartupMixin:
             # Loop live: the loop-liveness watchdog takes over from the startup watchdog. Disarm even
             # when loop guards are config-disabled; only inside this branch (no live loop = stay armed).
             with _log_suppressed(logging.DEBUG, "Startup watchdog disarm failed", exc_info=True):
-                from hermes_startup_watchdog import disarm_startup_watchdog
                 disarm_startup_watchdog()
         logger.info("Session storage: %s", self.config.sessions_dir)
         self._start_log_systemd_timing_alignment()

@@ -147,6 +147,7 @@ MOVED_MODULES: dict[str, str] = {
     "hermes_state_worker_lifecycle": "hermes_store.runtime.worker_lifecycle",
     "hermes_cli.config_defaults": "hermes_config.defaults",
     "hermes_dir_acl": "hermes_platform.fs",
+    "hermes_startup_watchdog": "hermes_platform.startup_watchdog",
     "registration_lifecycle": "hermes_cli.registration_lifecycle",
     "hermes_state_errors": "hermes_store.errors",
     "hermes_state_guard": "hermes_store.guard",

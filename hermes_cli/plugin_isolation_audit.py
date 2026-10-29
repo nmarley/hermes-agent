@@ -33,8 +33,8 @@ VERDICT_PORTABLE = "portable"
 HERMES_PACKAGES: frozenset = frozenset({
     "agent", "tools", "hermes_cli", "gateway", "cron", "providers", "plugins", "tui_gateway",
     "acp_adapter", "run_agent", "cli", "model_tools", "toolsets", "hermes_state", "hermes_store",
-    "hermes_constants", "hermes_platform.logging", "hermes_platform.time", "utils",
-    "hermes_cli.registration_lifecycle",
+    "hermes_constants", "hermes_platform.logging", "hermes_platform.time",
+    "hermes_platform.startup_watchdog", "utils", "hermes_cli.registration_lifecycle",
     "hermes_platform",
 })
 # ``<module>.<callable>`` that mutate a Hermes-process registry when called from plugin code.

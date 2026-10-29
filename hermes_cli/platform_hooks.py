@@ -9,7 +9,7 @@ import hermes_cli._subprocess_compat as subprocess_compat
 import hermes_cli.config as hermes_config
 from hermes_cli import config_effective
 from hermes_cli import process_identity
-import hermes_startup_watchdog as startup_watchdog
+from hermes_platform import startup_watchdog
 import pm
 import pm.environments as pm_environments
 from agent import redact

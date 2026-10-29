@@ -6,7 +6,7 @@ from gateway import message_timestamps, runtime_ownership
 import gateway.status as gateway_status
 import hermes_cli.config as hermes_config
 from hermes_cli import sqlite_safe_read
-import hermes_startup_watchdog as startup_watchdog
+from hermes_platform import startup_watchdog
 
 
 class CliRepairHooks:

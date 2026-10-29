@@ -2,7 +2,7 @@
 
 The watchdog covers the pre-event-loop window: armed at process entry
 (before the gateway package imports — the implementation is the stdlib-only
-top-level module ``hermes_startup_watchdog``), disarmed once the gateway's asyncio loop is confirmed
+stdlib-only module ``hermes_platform.startup_watchdog``), disarmed once the gateway's asyncio loop is confirmed
 live. If neither happens within the deadline — and the process shows no CPU
 progress, so slow-but-alive schema migrations are exempt — it must dump
 diagnostics, record a lifecycle exit, and hard-exit with the service-restart
@@ -20,8 +20,8 @@ from pathlib import Path
 import pytest
 
 
-import hermes_startup_watchdog as sw
-from hermes_startup_watchdog import (
+from hermes_platform import startup_watchdog as sw
+from hermes_platform.startup_watchdog import (
     SERVICE_RESTART_EXIT_CODE,
     StartupWatchdogHandle,
     arm_startup_watchdog,
@@ -43,6 +43,16 @@ def _isolate(tmp_path, monkeypatch):
     sw._reset_for_tests()
     yield
     sw._reset_for_tests()
+
+
+@pytest.fixture(autouse=True)
+def _lifecycle_sink():
+    def _sink(code, reason):
+        from gateway.lifecycle_ledger import mark_exited
+        mark_exited(code, reason=reason)
+    sw.set_lifecycle_sink_provider(lambda: _sink)
+    yield
+    sw.set_lifecycle_sink_provider(None)
 
 
 @pytest.fixture(autouse=True)

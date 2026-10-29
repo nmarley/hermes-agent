@@ -31,6 +31,8 @@ logger = logging.getLogger(__name__)
 os.environ["HERMES_QUIET"] = "1"  # suppress our modules' startup chatter
 
 
+from hermes_platform import startup_watchdog as _startup_watchdog
+
 from hermes_cli.cli_agent_setup_mixin import CLIAgentSetupMixin
 from hermes_cli.cli_commands_mixin import CLICommandsMixin
 from hermes_cli.cli_billing_mixin import CLIBillingMixin
@@ -1607,12 +1609,17 @@ def _build_cli_from_args(model, toolsets, provider, reasoning, api_key, base_url
     return cli
 
 
+def _startup_watchdog_lifecycle_sink(code: int, reason: str) -> None:
+    from gateway.lifecycle_ledger import mark_exited
+    mark_exited(code, reason=reason)
+
+
 def _run_legacy_gateway():
     """Legacy `cli.py --gateway` entry: arm the startup watchdog (before importing the gateway graph), then run it."""
     import asyncio
     with suppress(Exception):
-        from hermes_startup_watchdog import arm_startup_watchdog
-        arm_startup_watchdog()
+        _startup_watchdog.set_lifecycle_sink_provider(lambda: _startup_watchdog_lifecycle_sink)
+        _startup_watchdog.arm_startup_watchdog()
     from gateway.run import start_gateway
     print(_t("cli.gateway.starting"))
     asyncio.run(start_gateway())

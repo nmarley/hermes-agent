@@ -21,6 +21,10 @@ from datetime import datetime, timezone, UTC
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from hermes_platform.startup_watchdog import (
+    arm_startup_watchdog, report_startup_progress, set_lifecycle_sink_provider,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -201,6 +205,16 @@ _INTEGRITY_CHECK_LEASE_RENEW_S = 60.0
 STATE_DB_INTEGRITY_DEADLINE_S = 1800.0
 
 
+def _watchdog_lifecycle_sink(code: int, reason: str) -> None:
+    mark_exited(code, reason=reason)
+
+
+def arm_startup_watchdog_with_lifecycle() -> None:
+    """Arm the watchdog with this module's NS-608 exit record as its lifecycle sink."""
+    set_lifecycle_sink_provider(lambda: _watchdog_lifecycle_sink)
+    arm_startup_watchdog()
+
+
 def _install_integrity_check_lease(conn: sqlite3.Connection, *, deadline_at: Optional[float] = None) -> None:
     """Claim the integrity-check lease and renew it from a SQLite progress handler.
 
@@ -211,8 +225,6 @@ def _install_integrity_check_lease(conn: sqlite3.Connection, *, deadline_at: Opt
     caller can bound the scan.  Synchronous by design: no checker worker thread can outlive
     the check.
     """
-    from hermes_startup_watchdog import report_startup_progress
-
     report_startup_progress(_INTEGRITY_CHECK_LEASE_S, phase=_INTEGRITY_CHECK_LEASE_PHASE)
     last_renew = time.monotonic()
 

@@ -7,6 +7,7 @@ import asyncio
 import contextlib
 from hermes_cli.cli_output import line_input
 from hermes_cli.gateway_host_record import _discard_dead_host_record, _forget_host_gateway_probe
+from hermes_platform import startup_watchdog
 import json
 import logging
 import os
@@ -33,6 +34,7 @@ if os.name == "posix":
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
 from gateway.config import coerce_systemd_watchdog_seconds, load_gateway_config
+from gateway.lifecycle_ledger import arm_startup_watchdog_with_lifecycle
 from gateway.status import terminate_pid
 from gateway.restart import (
     DEFAULT_GATEWAY_RESTART_DRAIN_TIMEOUT,
@@ -4443,28 +4445,24 @@ def _apply_startup_watchdog_config() -> None:
     vars bridge it because the argv fast-path arms before config loads, and explicit env wins. arm() is
     idempotent, so a config timeout needs disarm+re-arm. GatewayRunner disarms once the loop is live."""
     try:
-        from hermes_startup_watchdog import (
-            ENV_STARTUP_WATCHDOG, ENV_STARTUP_WATCHDOG_TIMEOUT_S, arm_startup_watchdog,
-            disarm_startup_watchdog, startup_watchdog_disabled,
-        )
         _sw_timeout_bridged = False
         try:
             from hermes_cli.config import load_config as _sw_load_config
             _gw_cfg = (_sw_load_config() or {}).get("gateway", {}) or {}
-            if ENV_STARTUP_WATCHDOG not in os.environ and not _gw_cfg.get("startup_watchdog", True):
-                os.environ[ENV_STARTUP_WATCHDOG] = "0"
+            if startup_watchdog.ENV_STARTUP_WATCHDOG not in os.environ and not _gw_cfg.get("startup_watchdog", True):
+                os.environ[startup_watchdog.ENV_STARTUP_WATCHDOG] = "0"
             _sw_timeout = _gw_cfg.get("startup_watchdog_timeout_seconds")
-            if ENV_STARTUP_WATCHDOG_TIMEOUT_S not in os.environ and _sw_timeout is not None:
-                os.environ[ENV_STARTUP_WATCHDOG_TIMEOUT_S] = str(_sw_timeout)
+            if startup_watchdog.ENV_STARTUP_WATCHDOG_TIMEOUT_S not in os.environ and _sw_timeout is not None:
+                os.environ[startup_watchdog.ENV_STARTUP_WATCHDOG_TIMEOUT_S] = str(_sw_timeout)
                 _sw_timeout_bridged = True
         except Exception:
             pass
-        if startup_watchdog_disabled():
-            disarm_startup_watchdog()
+        if startup_watchdog.startup_watchdog_disabled():
+            startup_watchdog.disarm_startup_watchdog()
         else:
             if _sw_timeout_bridged:
-                disarm_startup_watchdog()
-            arm_startup_watchdog()
+                startup_watchdog.disarm_startup_watchdog()
+            arm_startup_watchdog_with_lifecycle()
     except Exception:
         pass
 
@@ -4546,8 +4544,7 @@ def _respawn_storm_backoff() -> None:
             )
             # Tell the startup watchdog the backoff sleep is intentional, not a parked deadlock.
             try:
-                from hermes_startup_watchdog import kick_startup_watchdog
-                kick_startup_watchdog(extra_s=_storm.backoff_s)
+                startup_watchdog.kick_startup_watchdog(extra_s=_storm.backoff_s)
             except Exception:
                 pass
             time.sleep(_storm.backoff_s)
@@ -4931,9 +4928,7 @@ def _maybe_redirect_run_to_s6_supervision(args) -> bool:
     # This process never reaches a GatewayRunner, so the watchdog armed by hermes_cli.main's argv
     # fast-path has no other disarm site: the in-process heartbeat below parks with zero CPU and no
     # progress lease, which the watchdog reads as a startup deadlock and os._exit(75)s the CMD process.
-    from hermes_startup_watchdog import disarm_startup_watchdog
-
-    disarm_startup_watchdog()
+    startup_watchdog.disarm_startup_watchdog()
     # Breadcrumb on stderr (keep stdout clean for scripts); gateway logs follow via s6-log.
     print(
         "→ gateway is now running under s6 supervision (auto-restart on crash,\n"
