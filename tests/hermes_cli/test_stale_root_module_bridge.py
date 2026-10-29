@@ -45,15 +45,19 @@ def test_fresh_hermes_cli_import_heals_stale_utils_missing_file_signature(
     monkeypatch, pre_handoff_purge, consumer
 ):
     """Restart-phase shape: hermes_cli.* purged, root utils stale, consumer freshly imported."""
-    import utils
+    import types
 
-    monkeypatch.delattr(utils, "file_signature")
+    import hermes_platform.utils as current_utils
+
+    stale_utils = types.ModuleType("utils")
+    stale_utils.fast_safe_load = current_utils.fast_safe_load
+    monkeypatch.setitem(sys.modules, "utils", stale_utils)
     pre_handoff_purge()
     assert consumer not in sys.modules
 
     module = importlib.import_module(consumer)
     assert callable(module.file_signature)
-    assert hasattr(sys.modules["utils"], "file_signature")
+    assert sys.modules["utils"] is current_utils
 
 
 def test_drop_stale_root_modules_leaves_complete_utils_alone():
