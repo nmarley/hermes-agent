@@ -138,7 +138,7 @@ and background-process plumbing) but not required.
 
 Your backend reads its own image setting (a `config_schema` key, or a
 `terminal.<name>_image` key you document). Hermes passes `image=` only for a
-per-task override: a batch run (`batch_runner.py`) giving each prompt its own
+per-task override: a batch run (`hermes_cli.runners.batch_runner`) giving each prompt its own
 container registers it as `<name>_image` for the active backend, and that value
 reaches `create_environment(image=...)`. Otherwise `image` is `""`; fall back to
 your setting.

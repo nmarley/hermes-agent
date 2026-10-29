@@ -1,4 +1,4 @@
-"""Trajectory saving + scratchpad helpers (``_convert_to_trajectory_format`` stays an AIAgent method — batch_runner.py calls it)."""
+"""Trajectory saving + scratchpad helpers (``_convert_to_trajectory_format`` stays an AIAgent method; the batch runner calls it)."""
 
 import json
 import logging

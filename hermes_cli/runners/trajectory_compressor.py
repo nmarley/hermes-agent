@@ -6,9 +6,9 @@ turns; from the middle, summarize only as many turns as needed (never splitting 
 <tool_call>/<tool_response> pair) and replace them with one human summary turn.
 
 Usage:
-    python trajectory_compressor.py --input=data/my_run            # directory
-    python trajectory_compressor.py --input=data/trajectories.jsonl --sample_percent=15
-    python trajectory_compressor.py --input=data/trajectories.jsonl --output=out.jsonl --target_max_tokens=16000
+    python -m hermes_cli.runners.trajectory_compressor --input=data/my_run            # directory
+    python -m hermes_cli.runners.trajectory_compressor --input=data/trajectories.jsonl --sample_percent=15
+    python -m hermes_cli.runners.trajectory_compressor --input=data/trajectories.jsonl --output=out.jsonl --target_max_tokens=16000
 """
 
 import json
@@ -35,7 +35,13 @@ from agent.retry_utils import jittered_backoff
 from hermes_cli.env_loader import load_hermes_dotenv
 
 # Load .env from HERMES_HOME first, then project root as a dev fallback.
-load_hermes_dotenv(hermes_home=get_hermes_home(), project_env=Path(__file__).parent / ".env")
+load_hermes_dotenv(hermes_home=get_hermes_home(), project_env=Path(__file__).resolve().parents[2] / ".env")
+
+
+def _auxiliary_client():
+    """Return the optional auxiliary client module, loaded only when a summary needs it."""
+    from agent import auxiliary_client  # health: allow LATE_IMPORT -- keep the standalone compressor light; auxiliary client is optional
+    return auxiliary_client
 
 
 def _response_finish_reason(response: Any) -> str:
@@ -58,14 +64,14 @@ def _effective_temperature_for_model(model: str, requested_temperature: Optional
 
     Returns ``None`` when the model manages temperature server-side (Kimi);
     callers must omit the ``temperature`` kwarg entirely in that case.
-    Shared with ``mini_swe_runner`` (which passes ``requested_temperature=None``).
+    Shared with the Mini-SWE runner (which passes ``requested_temperature=None``).
     """
     try:
-        from agent.auxiliary_client import _fixed_temperature_for_model, OMIT_TEMPERATURE
+        auxiliary_client = _auxiliary_client()
     except Exception:
         return requested_temperature
-    fixed_temperature = _fixed_temperature_for_model(model, base_url)
-    if fixed_temperature is OMIT_TEMPERATURE:
+    fixed_temperature = auxiliary_client._fixed_temperature_for_model(model, base_url)
+    if fixed_temperature is auxiliary_client.OMIT_TEMPERATURE:
         return None  # caller must omit temperature
     return requested_temperature if fixed_temperature is None else fixed_temperature
 
@@ -73,7 +79,7 @@ def _effective_temperature_for_model(model: str, requested_temperature: Optional
 def _load_jsonl(path: Path, on_error: Optional[Callable[[int, json.JSONDecodeError], None]] = None, start: int = 0) -> list[tuple[int, Any]]:
     """Return ``(line_num, entry)`` for each non-blank line; bad lines go to ``on_error``."""
     entries = []
-    with open(path, 'r', encoding='utf-8') as f:
+    with open(path, 'r', encoding='utf-8-sig') as f:
         for line_num, line in enumerate(f, start):
             if not line.strip():
                 continue
@@ -136,7 +142,7 @@ class CompressionConfig:
     @classmethod
     def from_yaml(cls, yaml_path: str) -> "CompressionConfig":
         """Load configuration from YAML file (missing keys keep the defaults)."""
-        with open(yaml_path, 'r', encoding="utf-8") as f:
+        with open(yaml_path, 'r', encoding="utf-8-sig") as f:
             data = yaml.safe_load(f) or {}
         config = cls()
         for section, keys in _YAML_SECTIONS.items():
@@ -308,8 +314,7 @@ class TrajectoryCompressor:
         self._use_call_llm = bool(provider)
         if provider:
             self._llm_provider = provider
-            from agent.auxiliary_client import resolve_provider_client
-            client, _ = resolve_provider_client(provider, model=self.config.summarization_model)
+            client, _ = _auxiliary_client().resolve_provider_client(provider, model=self.config.summarization_model)
             if client is None:
                 raise RuntimeError(f"Provider '{provider}' is not configured. Check your API key or run: hermes setup")
             self.client = self.async_client = None  # Not used directly
@@ -319,8 +324,7 @@ class TrajectoryCompressor:
             if not api_key:
                 raise RuntimeError(f"Missing API key. Set {self.config.api_key_env} environment variable.")
             from openai import OpenAI
-            from agent.auxiliary_client import _to_openai_base_url
-            self.client = OpenAI(api_key=api_key, base_url=_to_openai_base_url(self.config.base_url))
+            self.client = OpenAI(api_key=api_key, base_url=_auxiliary_client()._to_openai_base_url(self.config.base_url))
             # AsyncOpenAI is created lazily in _get_async_client() so it binds to the current event
             # loop — each process_directory() runs its own asyncio.run(); a shared client would hit
             # "Event loop is closed".
@@ -332,8 +336,7 @@ class TrajectoryCompressor:
     def _get_async_client(self):
         """Return a fresh AsyncOpenAI client bound to the running event loop."""
         from openai import AsyncOpenAI
-        from agent.auxiliary_client import _to_openai_base_url
-        self.async_client = AsyncOpenAI(api_key=self._async_client_api_key, base_url=_to_openai_base_url(self.config.base_url))
+        self.async_client = AsyncOpenAI(api_key=self._async_client_api_key, base_url=_auxiliary_client()._to_openai_base_url(self.config.base_url))
         return self.async_client
 
     def _detect_provider(self) -> str:
@@ -461,8 +464,7 @@ Write only the summary, starting with "[CONTEXT SUMMARY]:" prefix."""
                 metrics.summarization_api_calls += 1
                 temperature, kwargs = self._summary_request(prompt)
                 if getattr(self, '_use_call_llm', False):
-                    from agent.auxiliary_client import call_llm
-                    response = call_llm(provider=self._llm_provider, temperature=temperature, **kwargs)
+                    response = _auxiliary_client().call_llm(provider=self._llm_provider, temperature=temperature, **kwargs)
                 else:
                     response = self.client.chat.completions.create(**kwargs)
                 return self._finish_summary(response)
@@ -480,8 +482,7 @@ Write only the summary, starting with "[CONTEXT SUMMARY]:" prefix."""
                 metrics.summarization_api_calls += 1
                 temperature, kwargs = self._summary_request(prompt)
                 if getattr(self, '_use_call_llm', False):
-                    from agent.auxiliary_client import async_call_llm
-                    response = await async_call_llm(provider=self._llm_provider, temperature=temperature, **kwargs)
+                    response = await _auxiliary_client().async_call_llm(provider=self._llm_provider, temperature=temperature, **kwargs)
                 else:
                     response = await self._get_async_client().chat.completions.create(**kwargs)
                 return self._finish_summary(response)
@@ -788,7 +789,7 @@ def _run_file_mode(input_path: Path, output: Optional[str], compression_config: 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, 'w', encoding='utf-8') as out_f:
             for jsonl_file in sorted(temp_output_dir.glob("*.jsonl")):
-                with open(jsonl_file, 'r', encoding='utf-8') as in_f:
+                with open(jsonl_file, 'r', encoding='utf-8-sig') as in_f:
                     shutil.copyfileobj(in_f, out_f)
         metrics_file = temp_output_dir / compression_config.metrics_output_file
         if metrics_file.exists():

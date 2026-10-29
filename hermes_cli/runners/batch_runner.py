@@ -33,9 +33,12 @@ from model_tools import TOOL_TO_TOOLSET_MAP
 from run_agent import AIAgent
 from toolset_distributions import (
     list_distributions,
+    print_distribution_info,
     sample_toolsets_from_distribution,
     validate_distribution,
 )
+from tools.terminal_tool import register_task_env_overrides
+from utils import atomic_json_write
 
 logger = logging.getLogger(__name__)
 
@@ -214,7 +217,6 @@ def _prepare_container_image(
         except Exception as img_err:
             if config.get("verbose"):
                 print(f"   Prompt {prompt_index}: Docker image check failed: {img_err}", flush=True)
-    from tools.terminal_tool import register_task_env_overrides
     overrides = {
         "docker_image": container_image,
         "modal_image": container_image,
@@ -492,7 +494,7 @@ class BatchRunner:
         if not self.dataset_file.exists():
             raise FileNotFoundError(f"Dataset file not found: {self.dataset_file}")
         dataset = []
-        with open(self.dataset_file, 'r', encoding='utf-8') as f:
+        with open(self.dataset_file, 'r', encoding='utf-8-sig') as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
                 if not line:
@@ -526,7 +528,7 @@ class BatchRunner:
             return self._empty_checkpoint()
 
         try:
-            with open(self.checkpoint_file, 'r', encoding='utf-8') as f:
+            with open(self.checkpoint_file, 'r', encoding='utf-8-sig') as f:
                 return json.load(f)
         except Exception as e:
             print(f"⚠️  Warning: Failed to load checkpoint: {e}")
@@ -535,7 +537,6 @@ class BatchRunner:
     def _save_checkpoint(self, checkpoint_data: dict[str, Any], lock: Optional[Lock] = None):
         """Atomically write *checkpoint_data* (stamped ``last_updated``), under *lock* if given."""
         checkpoint_data["last_updated"] = datetime.now().isoformat()
-        from utils import atomic_json_write
         if lock:
             with lock:
                 atomic_json_write(self.checkpoint_file, checkpoint_data)
@@ -558,7 +559,7 @@ class BatchRunner:
 
         for batch_file in batch_files:
             try:
-                with open(batch_file, 'r', encoding='utf-8') as f:
+                with open(batch_file, 'r', encoding='utf-8-sig') as f:
                     for line in f:
                         try:
                             entry = json.loads(line.strip())
@@ -726,7 +727,7 @@ class BatchRunner:
                 batch_files_found += 1
                 batch_num = batch_file.stem.split("_")[1]  # Extract batch number for logging
 
-                with open(batch_file, 'r', encoding='utf-8') as infile:
+                with open(batch_file, 'r', encoding='utf-8-sig') as infile:
                     for line in infile:
                         total_entries += 1
                         try:
@@ -920,27 +921,26 @@ def main(
         
     Examples:
         # Basic usage
-        python batch_runner.py --dataset_file=data.jsonl --batch_size=10 --run_name=my_run
+        python -m hermes_cli.runners.batch_runner --dataset_file=data.jsonl --batch_size=10 --run_name=my_run
         
         # Resume interrupted run
-        python batch_runner.py --dataset_file=data.jsonl --batch_size=10 --run_name=my_run --resume
+        python -m hermes_cli.runners.batch_runner --dataset_file=data.jsonl --batch_size=10 --run_name=my_run --resume
         
         # Use specific distribution
-        python batch_runner.py --dataset_file=data.jsonl --batch_size=10 --run_name=image_test --distribution=image_gen
+        python -m hermes_cli.runners.batch_runner --dataset_file=data.jsonl --batch_size=10 --run_name=image_test --distribution=image_gen
         
         # With disabled reasoning
-        python batch_runner.py --dataset_file=data.jsonl --batch_size=10 --run_name=my_run \\
+        python -m hermes_cli.runners.batch_runner --dataset_file=data.jsonl --batch_size=10 --run_name=my_run \\
                                --reasoning_disabled
         
         # With prefill messages from file
-        python batch_runner.py --dataset_file=data.jsonl --batch_size=10 --run_name=my_run \\
+        python -m hermes_cli.runners.batch_runner --dataset_file=data.jsonl --batch_size=10 --run_name=my_run \\
                                --prefill_messages_file=configs/prefill_opus.json
         
         # List available distributions
-        python batch_runner.py --list_distributions
+        python -m hermes_cli.runners.batch_runner --list_distributions
     """
     if list_distributions:
-        from toolset_distributions import print_distribution_info
         print("📊 Available Toolset Distributions")
         print("=" * 70)
         all_dists = list_distributions()
@@ -948,7 +948,7 @@ def main(
             print_distribution_info(dist_name)
 
         print("\n💡 Usage:")
-        print("  python batch_runner.py --dataset_file=data.jsonl --batch_size=10 \\")
+        print("  python -m hermes_cli.runners.batch_runner --dataset_file=data.jsonl --batch_size=10 \\")
         print("                         --run_name=my_run --distribution=<name>")
         return
 
@@ -976,13 +976,14 @@ def main(
     prefill_messages = None
     if prefill_messages_file:
         try:
-            with open(prefill_messages_file, 'r', encoding='utf-8') as f:
+            with open(prefill_messages_file, 'r', encoding='utf-8-sig') as f:
                 prefill_messages = json.load(f)
             if not isinstance(prefill_messages, list):
                 print("❌ Error: prefill_messages_file must contain a JSON array of messages")
                 raise SystemExit(1)
             print(f"💬 Loaded {len(prefill_messages)} prefill messages from {prefill_messages_file}")
         except Exception as e:
+            logger.debug("Failed to load prefill messages", exc_info=True)
             print(f"❌ Error loading prefill messages: {e}")
             raise SystemExit(1)
 
@@ -1011,6 +1012,7 @@ def main(
         )
         runner.run(resume=resume)
     except Exception as e:
+        logger.debug("Batch runner failed", exc_info=True)
         print(f"\n❌ Fatal error: {e}")
         if verbose:
             traceback.print_exc()

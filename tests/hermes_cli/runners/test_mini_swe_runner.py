@@ -13,7 +13,7 @@ def test_run_task_kimi_omits_temperature():
         )
         mock_openai.return_value = client
 
-        from mini_swe_runner import MiniSWERunner
+        from hermes_cli.runners.mini_swe_runner import MiniSWERunner
 
         runner = MiniSWERunner(
             model="kimi-for-coding",

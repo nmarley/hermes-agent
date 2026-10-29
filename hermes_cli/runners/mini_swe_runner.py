@@ -3,13 +3,13 @@
 
 Runs tool-calling agent tasks in Hermes-Agent's execution environments (local,
 docker, modal) and writes trajectories in Hermes format (from/value pairs with
-<tool_call>/<tool_response> XML), compatible with batch_runner.py and
-trajectory_compressor.py. Supports single tasks and JSONL batch mode.
+<tool_call>/<tool_response> XML), compatible with the batch runner and
+trajectory compressor. Supports single tasks and JSONL batch mode.
 
 Usage:
-    python mini_swe_runner.py --task "Create a hello world Python script" --env local
-    python mini_swe_runner.py --task "List files in the working directory" --env docker --image python:3.11-slim
-    python mini_swe_runner.py --prompts_file prompts.jsonl --output_file trajectories.jsonl --env docker
+    python -m hermes_cli.runners.mini_swe_runner --task "Create a hello world Python script" --env local
+    python -m hermes_cli.runners.mini_swe_runner --task "List files in the working directory" --env docker --image python:3.11-slim
+    python -m hermes_cli.runners.mini_swe_runner --prompts_file prompts.jsonl --output_file trajectories.jsonl --env docker
 """
 
 import importlib
@@ -23,7 +23,8 @@ from typing import List, Dict, Any, Optional
 import fire
 from dotenv import load_dotenv
 from agent.tool_dispatch_helpers import make_tool_result_message
-from trajectory_compressor import _effective_temperature_for_model
+from hermes_cli.runners.trajectory_compressor import _effective_temperature_for_model
+from tools.environments.local import LocalEnvironment
 
 # Load environment variables
 load_dotenv()
@@ -103,7 +104,6 @@ def create_environment(env_type: str = "local", image: str = "python:3.11-slim",
     ``cwd=None`` means the host temp dir locally and the sandbox's own ``/tmp`` inside a container.
     """
     if env_type == "local":
-        from tools.environments.local import LocalEnvironment
         return LocalEnvironment(cwd=cwd or tempfile.gettempdir(), timeout=timeout)
     if env_type not in ("docker", "modal"):
         raise ValueError(f"Unknown environment type: {env_type}. Use 'local', 'docker', or 'modal'")
@@ -152,7 +152,7 @@ class MiniSWERunner:
             from openai import OpenAI
             return OpenAI(base_url=base_url or _OPENROUTER_URL, api_key=api_key or os.getenv(
                 "OPENROUTER_API_KEY", os.getenv("ANTHROPIC_API_KEY", os.getenv("OPENAI_API_KEY", ""))))
-        from agent.auxiliary_client import resolve_provider_client
+        from agent.auxiliary_client import resolve_provider_client  # health: allow LATE_IMPORT -- provider router is optional; direct clients skip it
         client, _ = resolve_provider_client("openrouter", model=self.model)
         if client is None:
             client, _ = resolve_provider_client("auto", model=self.model)
@@ -215,7 +215,7 @@ class MiniSWERunner:
         return ("\n".join(tool_responses), j - 1) if tool_responses else (None, i)
 
     def _convert_to_hermes_format(self, messages: list[dict[str, Any]], user_query: str) -> list[dict[str, Any]]:
-        """Convert the OpenAI-style message list to the Hermes trajectory format used by batch_runner.py."""
+        """Convert the OpenAI-style message list to the Hermes trajectory format used by the batch runner."""
         system_msg = HERMES_SYSTEM_PREFIX + f"<tools>\n{self._format_tools_for_system_message()}\n</tools>\n" + HERMES_SYSTEM_SUFFIX
         trajectory = [{"from": "system", "value": system_msg}, {"from": "human", "value": user_query}]
         i = 1  # first user message already added
@@ -332,7 +332,7 @@ class MiniSWERunner:
 def _load_prompts(prompts_file: str) -> list[str]:
     """One prompt per non-blank line: JSON ``{"prompt"|"task": ...}`` or raw text."""
     prompts = []
-    with open(prompts_file, 'r', encoding='utf-8') as f:
+    with open(prompts_file, 'r', encoding='utf-8-sig') as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -399,7 +399,7 @@ def main(
         runner.run_batch(prompts, output_file)
     else:
         print("❌ Please provide either --task or --prompts_file")
-        print("   Example: python mini_swe_runner.py --task 'Create a hello world script'")
+        print("   Example: python -m hermes_cli.runners.mini_swe_runner --task 'Create a hello world script'")
 
 
 if __name__ == "__main__":

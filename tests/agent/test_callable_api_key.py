@@ -19,7 +19,7 @@ Covered:
   * Serialization scrub: dumping a runtime dict via ``json.dumps`` with
     a callable api_key raises (default behaviour) — guards against
     silently leaking ``"<function ...>"`` strings into event logs.
-  * ``batch_runner`` strips the callable from the worker config dict
+  * the batch runner strips the callable from the worker config dict
     so multiprocessing.Pool can pickle the rest.
 """
 
@@ -149,7 +149,7 @@ class TestTruncateTokenCallable:
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-# batch_runner strips callables from the worker config dict
+# the batch runner strips callables from the worker config dict
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------

@@ -1,15 +1,10 @@
-"""Tests for batch_runner checkpoint behavior — incremental writes, resume, atomicity."""
+"""Tests for batch runner checkpoint behavior: incremental writes, resume, atomicity."""
 
 import json
-from pathlib import Path
 
 import pytest
 
-# batch_runner uses relative imports, ensure project root is on path
-import sys
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from batch_runner import BatchRunner, _process_batch_worker
+from hermes_cli.runners.batch_runner import BatchRunner, _process_batch_worker
 
 @pytest.fixture
 def runner(tmp_path):
@@ -93,7 +88,7 @@ class TestBatchWorkerResumeBehavior:
             "toolsets_used": [],
         }
 
-        monkeypatch.setattr("batch_runner._process_single_prompt", lambda *args, **kwargs: prompt_result)
+        monkeypatch.setattr("hermes_cli.runners.batch_runner._process_single_prompt", lambda *args, **kwargs: prompt_result)
 
         result = _process_batch_worker((
             1,
@@ -133,7 +128,7 @@ class TestBatchWorkerResumeBehavior:
             "api_calls": 1,
             "toolsets_used": [],
         }
-        monkeypatch.setattr("batch_runner._process_single_prompt", lambda *args, **kwargs: prompt_result)
+        monkeypatch.setattr("hermes_cli.runners.batch_runner._process_single_prompt", lambda *args, **kwargs: prompt_result)
 
         # First run: prompt 0 gets processed and discarded, writing its
         # tombstone row into batch_1.jsonl.

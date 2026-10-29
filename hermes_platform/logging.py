@@ -334,7 +334,10 @@ COMPONENT_PREFIXES = {
     # components and belong in gateway.log. ``agent.memory_caller_scope``: a multiplexed gateway's
     # memory-provider profile refusals (#140058), which the operator reads in gateway.log.
     "gateway": ("gateway", "hermes_plugins", "plugins.platforms", "agent.memory_caller_scope"),
-    "agent": ("agent", "run_agent", "model_tools", "batch_runner"),
+    "agent": (
+        "agent", "run_agent", "model_tools", "batch_runner",
+        "hermes_cli.runners.batch_runner",
+    ),
     "tools": ("tools",),
     "cli": ("hermes_cli", "cli"),
     "cron": ("cron",),

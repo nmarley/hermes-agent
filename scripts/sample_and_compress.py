@@ -266,7 +266,7 @@ def run_compression(input_dir: Path, output_dir: Path, config_path: str):
     # Import the compressor
     import sys
     sys.path.insert(0, str(Path(__file__).parent.parent))
-    from trajectory_compressor import TrajectoryCompressor, CompressionConfig
+    from hermes_cli.runners.trajectory_compressor import TrajectoryCompressor, CompressionConfig
     
     print("\n🗜️  Running trajectory compression...")
     print(f"   Input: {input_dir}")

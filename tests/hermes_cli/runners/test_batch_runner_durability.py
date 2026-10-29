@@ -1,4 +1,4 @@
-"""Tests for batch_runner trajectory durability and pool cleanup.
+"""Tests for batch runner trajectory durability and pool cleanup.
 
 Verifies:
   1. Trajectory entries are fsync'd to disk before the checkpoint marks
@@ -12,18 +12,12 @@ Verifies:
 
 import json
 import os
-import sys
-from pathlib import Path
 from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-# batch_runner is a root-level module (not part of an installed package),
-# so make the repo root importable when tests run from elsewhere.
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-import batch_runner
-from batch_runner import BatchRunner, _process_batch_worker
+from hermes_cli.runners import batch_runner
+from hermes_cli.runners.batch_runner import BatchRunner, _process_batch_worker
 
 
 # =========================================================================
@@ -51,7 +45,7 @@ class TestTrajectoryWriteDurability:
         }
 
         monkeypatch.setattr(
-            "batch_runner._process_single_prompt", lambda *a, **kw: prompt_result
+            "hermes_cli.runners.batch_runner._process_single_prompt", lambda *a, **kw: prompt_result
         )
 
         # Intercept os.fsync to record calls

@@ -247,7 +247,6 @@ hermes-agent/
 ├── model_tools.py            # Tool orchestration (thin layer over tools/registry.py)
 ├── toolsets.py               # Tool groupings and presets (hermes-cli, hermes-telegram, etc.)
 ├── hermes_state.py           # SessionDB facade (~1.4k LOC); implementation in hermes_state_*.py (21 siblings) — FTS5 search, session titles
-├── batch_runner.py           # Parallel batch processing for trajectory generation
 │
 ├── agent/                    # Agent internals (extracted modules)
 │   ├── conversation_loop.py      # run_conversation() — the agent turn loop (phases in turn_*.py)
@@ -274,7 +273,8 @@ hermes-agent/
 │   ├── skills_hub.py             # Skills Hub CLI + /skills slash command
 │   ├── skin_engine.py            # Skin/theme engine — data-driven CLI visual customization
 │   ├── web_server.py             # Dashboard server (facade + web_server_*.py siblings)
-│   └── web_routers/              # Dashboard FastAPI routers (one file per surface)
+│   ├── web_routers/              # Dashboard FastAPI routers (one file per surface)
+│   └── runners/                  # Batch runner, Mini-SWE runner, trajectory compressor
 │
 ├── tools/                    # Tool implementations (self-registering)
 │   ├── registry.py               # Central tool registry (schemas, handlers, dispatch)

@@ -58,7 +58,6 @@ hermes-agent/
 ├── toolsets.py               # Tool groupings and platform presets
 ├── hermes_state.py           # SQLite session/state database facade (+ hermes_state_*.py siblings)
 ├── hermes_constants.py       # HERMES_HOME, profile-aware paths
-├── batch_runner.py           # Batch trajectory generation
 │
 ├── agent/                    # Agent internals
 │   ├── prompt_builder.py     # System prompt assembly
@@ -90,7 +89,8 @@ hermes-agent/
 │   ├── tools_config.py       # hermes tools — enable/disable per platform
 │   ├── plugins.py            # PluginManager — discovery, loading, hooks
 │   ├── callbacks.py          # Terminal callbacks (clarify, sudo, approval)
-│   └── gateway.py            # hermes gateway start/stop
+│   ├── gateway.py            # hermes gateway start/stop
+│   └── runners/              # Batch, Mini-SWE, and trajectory-compression entry points
 │
 ├── tools/                    # Tool implementations (one file per tool)
 │   ├── registry.py           # Central tool registry
@@ -275,7 +275,7 @@ tools/*.py  (each calls registry.register() at import time)
        ↑
 model_tools.py  (imports tools/registry + triggers tool discovery)
        ↑
-run_agent.py, cli.py, batch_runner.py, environments/
+run_agent.py, cli.py, hermes_cli/runners/, environments/
 ```
 
 This chain means tool registration happens at import time, before any agent instance is created. Any `tools/*.py` file with a top-level `registry.register()` call is auto-discovered — no manual import list needed.

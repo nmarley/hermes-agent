@@ -1,8 +1,9 @@
 """Tests for hermes_bootstrap — Windows UTF-8 stdio shim.
 
 The bootstrap module is imported at the top of every Hermes entry point
-(hermes, hermes-agent, hermes-acp, gateway, batch_runner, cli.py).  It
-fixes Python's Windows UTF-8 defaults so print("café") doesn't crash and
+(hermes, hermes-agent, hermes-acp, gateway,
+hermes_cli.runners.batch_runner, cli.py).  It fixes Python's Windows UTF-8
+defaults so print("café") doesn't crash and
 subprocess children inherit UTF-8 mode.
 
 Key invariants covered by these tests:
@@ -182,7 +183,7 @@ class TestStdioReconfigureErrorHandling:
 
 @pytest.mark.parametrize("path", [
     "hermes_cli/main.py", "run_agent.py", "acp_adapter/entry.py",
-    "gateway/run.py", "batch_runner.py", "cli.py",
+    "gateway/run.py", "hermes_cli/runners/batch_runner.py", "cli.py",
 ])
 def test_entrypoint_executes_bootstrap_before_application_imports(tmp_path, path):
     import subprocess
@@ -292,7 +293,7 @@ print('reached-pm')
 
 @pytest.mark.parametrize("path", [
     "hermes_cli/main.py", "run_agent.py", "acp_adapter/entry.py",
-    "gateway/run.py", "batch_runner.py", "cli.py",
+    "gateway/run.py", "hermes_cli/runners/batch_runner.py", "cli.py",
 ])
 @pytest.mark.parametrize("bootstrap,expected", [
     (None, "proceeded"),
