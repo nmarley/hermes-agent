@@ -12,6 +12,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from hermes_cli.route_identity import normalize_route_base_url
+from hermes_config.values import coerce_provider_id
 
 # Log-record parity with the origin module.
 logger = logging.getLogger("hermes_cli.config")
@@ -61,13 +62,6 @@ def _canonical_api_mode(api_mode: str) -> str:
     """Map alias ``api_mode`` spellings to canonical transport names (unknown pass through)."""
     cleaned = api_mode.strip()
     return _API_MODE_ALIASES.get(cleaned.lower(), cleaned)
-
-
-def coerce_provider_id(value: Any) -> str:
-    """Provider identity fields are strings."""
-    if value is None:
-        return ""
-    return str(value).strip()
 
 
 def stringify_provider_map(providers: Any) -> dict:
