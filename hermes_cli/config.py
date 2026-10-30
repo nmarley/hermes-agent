@@ -33,6 +33,7 @@ from typing import Dict, Any, Literal, Optional, List, Tuple, Set
 
 from hermes_platform import yaml
 
+from hermes_config.paths import get_config_path, get_env_path, get_project_root
 from hermes_cli.cli_output import line_input
 from hermes_cli.colors import Colors, color
 from hermes_cli import managed_scope
@@ -428,11 +429,6 @@ def get_container_exec_info() -> Optional[dict]:
 
 # ---- Config paths / HERMES_HOME skeleton ----
 
-def get_config_path() -> Path:
-    """Get the main config file path."""
-    return get_hermes_home() / "config.yaml"
-
-
 def require_parseable_user_config(*, ignore_user_config: bool = False) -> None:
     """Reject an existing invalid config before a non-interactive agent run.
     Interactive surfaces keep ``load_config()``'s recovery behavior so the operator can repair
@@ -467,16 +463,6 @@ def require_parseable_user_config(*, ignore_user_config: bool = False) -> None:
     message += f" Details: {_yaml_error_details(parse_error)}"
     logger.error(message)
     raise InvalidUserConfigError(message) from parse_error
-
-
-def get_env_path() -> Path:
-    """Get the .env file path (for API keys)."""
-    return get_hermes_home() / ".env"
-
-
-def get_project_root() -> Path:
-    """Get the project installation directory."""
-    return Path(__file__).parent.parent.resolve()
 
 
 def _secure_dir(path):
