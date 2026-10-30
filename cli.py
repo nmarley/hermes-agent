@@ -334,6 +334,7 @@ _COMMAND_SPINNER_FRAMES = ("⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧
 
 # ~/.hermes/.env first, project .env as dev fallback; user env files override stale shell exports.
 from hermes_constants import get_hermes_home
+from hermes_config.save import save_config_value
 from hermes_cli.env_loader import load_hermes_dotenv
 from agent.i18n import t as _t
 
@@ -768,28 +769,6 @@ def _parse_skills_argument(skills: str | list[str] | tuple[str, ...] | None) -> 
     raw_values = [str(item) for item in skills if item is not None] if isinstance(skills, (list, tuple)) else [str(skills)]
     parts = (p.strip() for raw in raw_values for p in raw.split(","))
     return list(dict.fromkeys(p for p in parts if p))
-
-
-def save_config_value(key_path: str, value: any) -> bool:
-    """Persist dot-separated ``key_path`` = value into HERMES_HOME/config.yaml; True on success.
-
-    Never the repo's cli-config.yaml: no config reader loads it, so the value would vanish.
-    """
-    config_path = get_hermes_home() / 'config.yaml'
-
-    try:
-        from hermes_constants import mkdir_under_hermes_home
-        mkdir_under_hermes_home(config_path.parent)
-        from utils import atomic_roundtrip_yaml_update
-        atomic_roundtrip_yaml_update(config_path, key_path, value)
-        try:  # owner-only: config files contain API keys
-            os.chmod(config_path, 0o600)
-        except (OSError, NotImplementedError):
-            pass
-        return True
-    except Exception as e:
-        logger.error("Failed to save config: %s", e)
-        return False
 
 
 def _normalize_moa_model(model: Optional[str]) -> tuple[Optional[str], Optional[str]]:

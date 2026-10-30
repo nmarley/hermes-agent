@@ -11,12 +11,12 @@ comes back on the next restart with no explanation.
 
 from __future__ import annotations
 
-import sys
 import types
 
 import pytest
 
 import gateway.run as gw
+from hermes_config import save as config_save
 
 
 class _Source:
@@ -62,19 +62,18 @@ async def _resolve(runner, choice, *, result="🧹 Conversation cleared."):
 
 @pytest.fixture
 def fake_cli(monkeypatch):
-    """Install a stub `cli` module whose save_config_value outcome is settable."""
+    """Install a stub save whose outcome and handler are settable."""
     calls = []
 
-    module = types.ModuleType("cli")
+    module = types.SimpleNamespace(_outcome=True, calls=calls)
+    module.handler = lambda key_path, value: module._outcome
 
     def save_config_value(key_path, value):
         calls.append((key_path, value))
-        return module._outcome
+        return module.handler(key_path, value)
 
     module.save_config_value = save_config_value
-    module._outcome = True
-    monkeypatch.setitem(sys.modules, "cli", module)
-    module.calls = calls
+    monkeypatch.setattr(config_save, "save_config_value", save_config_value)
     return module
 
 
@@ -108,7 +107,7 @@ async def test_raising_persist_is_also_reported_as_failed(fake_cli):
     def _boom(key_path, value):
         raise OSError(30, "Read-only file system")
 
-    fake_cli.save_config_value = _boom
+    fake_cli.handler = _boom
 
     out = await _resolve(_runner(), "always")
 

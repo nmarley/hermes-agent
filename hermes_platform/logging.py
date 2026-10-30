@@ -339,7 +339,7 @@ COMPONENT_PREFIXES = {
         "hermes_cli.runners.batch_runner",
     ),
     "tools": ("tools",),
-    "cli": ("hermes_cli", "cli"),
+    "cli": ("hermes_cli", "cli", "hermes_config"),
     "cron": ("cron",),
     "gui": ("hermes_cli.web_server", "hermes_cli.pty_bridge", "hermes_cli.desktop", "tui_gateway", "uvicorn"),
 }

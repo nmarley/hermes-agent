@@ -7,6 +7,7 @@ from __future__ import annotations
 import contextlib
 import threading
 
+from hermes_config import save as config_save
 from .method_ctx import HandlerRegistry, bind_module
 
 _registry = HandlerRegistry()
@@ -462,8 +463,7 @@ def _wake_resume_if_owner(owner: Transport, *, retry_seconds: float = 15.0,
 def _persist_wake_enabled(enabled: bool) -> bool:
     """Write ``wake_word.enabled``; only for explicit gestures (ear toggle, /wake on|off)."""
     try:
-        from cli import save_config_value
-        return bool(save_config_value("wake_word.enabled", enabled))
+        return bool(config_save.save_config_value("wake_word.enabled", enabled))
     except Exception as e:
         logger.warning("wake: failed to persist wake_word.enabled=%s: %s", enabled, e)
         return False

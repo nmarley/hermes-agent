@@ -31,6 +31,7 @@ from gateway.slash_commands_session import GatewaySessionCommandsMixin
 from gateway.slash_commands_login import GatewayLoginCommandsMixin
 from gateway.slash_commands_status import GatewayStatusCommandsMixin, history_unreadable
 from hermes_cli.config import atomic_config_write, cfg_get
+from hermes_config import save as config_save
 from utils import atomic_json_write, is_truthy_value
 
 logger = logging.getLogger("gateway.run")
@@ -1016,8 +1017,7 @@ class GatewaySlashCommandsMixin(
             return EphemeralReply(t("gateway.busy.unknown_mode", arg=arg))
 
         # Persist before mutate
-        from cli import save_config_value
-        if not save_config_value("display.busy_input_mode", arg):
+        if not config_save.save_config_value("display.busy_input_mode", arg):
             return EphemeralReply(t("gateway.busy.save_failed"))
         if live is not None:
             live.busy_input_mode = arg  # the frozen session does not re-read config.yaml
@@ -1096,8 +1096,7 @@ class GatewaySlashCommandsMixin(
             if choice == "always":
                 # Persist the opt-out and run the reload.
                 try:
-                    from cli import save_config_value
-                    save_config_value("approvals.mcp_reload_confirm", False)
+                    config_save.save_config_value("approvals.mcp_reload_confirm", False)
                     logger.info("User opted out of /reload-mcp confirmation (session=%s)", session_key)
                 except Exception as exc:
                     logger.warning("Failed to persist mcp_reload_confirm=false: %s", exc)

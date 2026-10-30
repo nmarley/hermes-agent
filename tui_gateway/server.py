@@ -28,6 +28,7 @@ from hermes_constants import (
     get_hermes_home, get_hermes_home_override, get_process_hermes_home, profile_name_for_home,
     reset_hermes_home_override, set_hermes_home_override)
 from hermes_cli.env_loader import load_hermes_dotenv
+from hermes_config import save as config_save
 from utils import file_signature, is_truthy_value
 from hermes_store.ids import new_session_id
 from tools.environments.local import hermes_subprocess_env
@@ -2096,8 +2097,7 @@ def _finish_reload(rid, params: dict, *, coalesced: bool) -> dict:
     """Shared tail for both reload paths: honor ``always`` (persist the confirm opt-out) and return the ok payload."""
     if bool(params.get("always", False)):
         try:
-            from cli import save_config_value
-            save_config_value("approvals.mcp_reload_confirm", False)
+            config_save.save_config_value("approvals.mcp_reload_confirm", False)
         except Exception as _exc:
             logger.warning("Failed to persist mcp_reload_confirm=false: %s", _exc)
     return _ok(rid, {"status": "reloaded", "loaded_rev": _mcp_reload_loaded_rev, **({"coalesced": True} if coalesced else {})})

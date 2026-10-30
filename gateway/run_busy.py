@@ -23,6 +23,7 @@ from gateway.platforms.base import EphemeralReply
 from gateway.platforms.event import MessageEvent, MessageType
 from gateway.session import SessionSource
 from gateway.whatsapp_identity import canonical_whatsapp_identifier
+from hermes_config import save as config_save
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 if TYPE_CHECKING:  # string annotations only; never imported at runtime (cycle)
@@ -1551,10 +1552,9 @@ class GatewayBusySessionMixin:
         persisted = False
         if choice == "always":
             try:
-                from cli import save_config_value
                 # save_config_value swallows its own errors and reports the outcome in the return
                 # value, so the try block alone says nothing about whether the write landed.
-                persisted = bool(save_config_value("approvals.destructive_slash_confirm", False))
+                persisted = bool(config_save.save_config_value("approvals.destructive_slash_confirm", False))
                 if persisted:
                     logger.info("User opted out of destructive slash confirm (session=%s)", session_key)
                 else:
