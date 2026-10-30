@@ -33,6 +33,10 @@ from typing import Dict, Any, Literal, Optional, List, Tuple, Set
 
 from hermes_platform import yaml
 
+from hermes_config.env_refs import (
+    env_ref_snapshot, env_ref_var_name as _env_ref_var_name, expand_env_vars,
+    is_non_env_secret_ref as _is_non_env_secret_ref, preserve_env_ref_templates,
+)
 from hermes_config.paths import get_config_path, get_env_path, get_project_root
 from hermes_config.values import (
     TURN_LIMIT_UNLIMITED, _deep_merge, _explicit_config_paths, _items_by_unique_name,
@@ -1461,9 +1465,6 @@ def _offer_skill_config_vars(missing_skill_config: list[dict[str, Any]], results
     _persist_migration(config)
 
 
-_ENV_REF_RE = re.compile(r"\${([^}]+)}")
-
-
 def _env_ref_lookup(name: str) -> Optional[str]:
     """Resolve the env var behind a ``${VAR}`` / ``${env:VAR}`` ref — plain ``os.environ`` outside
     a profile secret scope (legacy behavior for the default profile).
@@ -1483,120 +1484,20 @@ def _env_ref_lookup(name: str) -> Optional[str]:
     return _get_secret(name)
 
 
-def _env_expand_match(m: re.Match) -> str:
-    """Expand one ``${VAR}`` (legacy bare name) or ``${env:VAR}`` (Cursor-style SecretRef).
-    Other SecretRef sources (``file:``, ``bitwarden:``, ``vault:``...) are NOT resolved here:
-    external backends inject their values into the environment at startup (the ``secrets:``
-    block), so a config ref only ever needs the env shape. Unresolved refs stay verbatim so
-    callers can detect them."""
-    raw = m.group(0)
-    inner = m.group(1).strip()
-    name = _env_ref_var_name(inner)
-    if name is None:
-        if not inner.startswith("env:") and _is_non_env_secret_ref(inner):
-            logger.warning(
-                "Config ref %r uses source %r which is not resolvable in "
-                "config.yaml — external secret sources inject env vars at "
-                "startup, so reference the variable as ${env:NAME} instead",
-                raw, inner.split(":", 1)[0])
-        return raw  # non-env source, or empty ``${env:}``
-    val = _env_ref_lookup(name)
-    if val is not None:
-        return val
-    if inner.startswith("env:"):
-        logger.warning(
-            "Config ref %r: %s is not set (check ~/.hermes/.env); "
-            "keeping the literal placeholder", raw, name)
-    return raw
-
-
-def _is_non_env_secret_ref(ref: str) -> bool:
-    """True for a SecretRef body with a non-``env`` source (``bitwarden:FOO``, ``vault:...``)."""
-    return ":" in ref and re.match(r"^[a-z][a-z0-9_-]*:", ref) is not None
-
-
-def _env_ref_var_name(ref: str) -> Optional[str]:
-    """Env-var name a ``${...}`` body reads, or None for a non-env source / empty ``env:``."""
-    ref = ref.strip()
-    if ref.startswith("env:"):
-        return ref[len("env:"):].strip() or None
-    if _is_non_env_secret_ref(ref):
-        return None
-    return ref
-
-
 def _expand_env_vars(obj):
     """Recursively expand ``${VAR}`` / ``${env:VAR}`` in string values (keys/non-strings untouched)."""
-    if isinstance(obj, str):
-        return _ENV_REF_RE.sub(_env_expand_match, obj)
-    if isinstance(obj, dict):
-        return {k: _expand_env_vars(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_expand_env_vars(item) for item in obj]
-    return obj
+    return expand_env_vars(obj, _env_ref_lookup)
 
 
 def _env_ref_snapshot(obj, snapshot=None):
-    """Map each env-sourced ``${...}`` ref in *obj* to its current value.
-    Stored with cached ``load_config()`` results so a cache hit can detect that the expansion was
-    made against a different environment (load before ``load_hermes_dotenv()``, in-process
-    rotation) — file mtime/size alone cannot see either.
-
-    See #58514.
-    """
-    if snapshot is None:
-        snapshot = {}
-    if isinstance(obj, str):
-        for raw in _ENV_REF_RE.findall(obj):
-            name = _env_ref_var_name(raw)
-            if name is not None:
-                snapshot[name] = _env_ref_lookup(name)
-    elif isinstance(obj, dict):
-        for value in obj.values():
-            _env_ref_snapshot(value, snapshot)
-    elif isinstance(obj, list):
-        for item in obj:
-            _env_ref_snapshot(item, snapshot)
-    return snapshot
+    """Map each env-sourced ``${...}`` ref in *obj* to its current value."""
+    return env_ref_snapshot(obj, _env_ref_lookup, snapshot)
 
 
 def _preserve_env_ref_templates(current, raw, loaded_expanded=None):
-    """Restore raw ``${VAR}`` templates where the value is otherwise unchanged, so persisting a
-    loaded (expanded) config never writes the plaintext secret back to ``config.yaml``."""
-    if isinstance(current, str) and isinstance(raw, str) and _ENV_REF_RE.search(raw):
-        if current in (raw, loaded_expanded) or _expand_env_vars(raw) == current:
-            return raw
-        return current
-
-    if isinstance(current, dict) and isinstance(raw, dict):
-        return {
-            key: _preserve_env_ref_templates(
-                value, raw.get(key),
-                loaded_expanded.get(key) if isinstance(loaded_expanded, dict) else None)
-            for key, value in current.items()}
-
-    if isinstance(current, list) and isinstance(raw, list):
-        # Match named objects (e.g. custom_providers) by name so reordering keeps templates;
-        # with duplicate names fall back to positional matching rather than shadowing an entry.
-        current_by_name = _items_by_unique_name(current)
-        raw_by_name = _items_by_unique_name(raw)
-        loaded_by_name = _items_by_unique_name(loaded_expanded)
-        if current_by_name is not None and raw_by_name is not None:
-            return [
-                _preserve_env_ref_templates(
-                    item, raw_by_name.get(item.get("name")),
-                    loaded_by_name.get(item.get("name")) if loaded_by_name is not None else None)
-                for item in current]
-        return [
-            _preserve_env_ref_templates(
-                item,
-                raw[index] if index < len(raw) else None,
-                loaded_expanded[index]
-                if isinstance(loaded_expanded, list) and index < len(loaded_expanded)
-                else None)
-            for index, item in enumerate(current)]
-
-    return current
+    """Restore raw ``${VAR}`` templates where the value is otherwise unchanged."""
+    return preserve_env_ref_templates(
+        current, raw, loaded_expanded, lookup=_env_ref_lookup)
 
 
 def _normalize_root_model_keys(config: dict[str, Any]) -> dict[str, Any]:
