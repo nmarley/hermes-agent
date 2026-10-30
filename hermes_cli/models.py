@@ -28,6 +28,11 @@ if TYPE_CHECKING:
     from typing import TypeGuard
 
 from hermes_cli.route_identity import normalize_route_base_url
+from hermes_providers.model_normalize import (
+    OPENCODE_FAMILIES as _OPENCODE_FAMILIES,
+    normalize_copilot_model_id as _normalize_copilot_model_id_core,
+    opencode_provider_family,
+)
 from hermes_cli.urllib_security import open_credentialed_url
 from hermes_cli.version_info import get_version_info
 from hermes_cli.models_catalog_static import (
@@ -2433,38 +2438,8 @@ def normalize_copilot_model_id(
     model_id: Optional[str], *, catalog: Optional[list[dict[str, Any]]] = None,
     api_key: Optional[str] = None) -> str:
     raw = str(model_id or "").strip()
-    if not raw:
-        return ""
-
     catalog_ids = _copilot_catalog_ids(catalog=catalog, api_key=api_key)
-    alias = _COPILOT_MODEL_ALIASES.get(raw)
-    if alias:
-        return alias
-
-    candidates = [raw]
-    if "/" in raw:
-        candidates.append(raw.split("/", 1)[1].strip())
-    if raw.endswith(("-mini", "-nano", "-chat")):
-        candidates.append(raw[:-5])
-
-    seen: set[str] = set()
-    for candidate in candidates:
-        if not candidate or candidate in seen:
-            continue
-        seen.add(candidate)
-        if candidate in _COPILOT_MODEL_ALIASES:
-            return _COPILOT_MODEL_ALIASES[candidate]
-        if candidate in catalog_ids:
-            return candidate
-
-    if "/" in raw:
-        stripped = raw.split("/", 1)[1].strip()
-        # Enterprise BYOK custom models expose ``owner/sub/model`` ids (two
-        # slashes). A strip guess that still contains "/" cannot be a Copilot
-        # id, so pass the input through untouched instead of corrupting it.
-        if stripped and "/" not in stripped:
-            return stripped
-    return raw
+    return _normalize_copilot_model_id_core(raw, catalog_ids=catalog_ids)
 
 
 def _github_reasoning_efforts_for_model_id(model_id: str) -> list[str]:
@@ -2506,26 +2481,6 @@ def azure_foundry_model_api_mode(model_name: Optional[str]) -> Optional[str]:
     raw = str(model_name or "").strip().lower().rsplit("/", 1)[-1]
     return "codex_responses" if raw and raw.startswith(tuple(_AZURE_FOUNDRY_RESPONSES_PREFIXES)) else None
 
-
-_OPENCODE_FAMILIES = ("opencode-go", "opencode-zen")
-
-
-def opencode_provider_family(provider_id: Optional[str]) -> Optional[str]:
-    """Resolve a provider id (canonical or prefixed) to its OpenCode family, or None.
-
-    Returns ``"opencode-zen"`` or ``"opencode-go"`` for the built-in providers AND for custom providers
-    whose name extends a family slug (e.g. ``opencode-go-bridge`` pointing at
-    ``https://opencode.ai/zen/go/v1``, issue #85589). Matching is case-insensitive. Custom family providers
-    need the same per-model api_mode routing and /v1 base-url normalization as the built-ins — this
-    predicate is the single owner of that family-membership question; do not re-implement it inline.
-    """
-    raw = str(provider_id or "").strip().lower()
-    if not raw:
-        return None
-    canonical = normalize_provider(provider_id)
-    if canonical in _OPENCODE_FAMILIES:
-        return canonical
-    return next((f for f in _OPENCODE_FAMILIES if raw.startswith(f)), None)
 
 
 def normalize_opencode_model_id(provider_id: Optional[str], model_id: Optional[str]) -> str:
