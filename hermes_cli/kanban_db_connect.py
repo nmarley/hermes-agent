@@ -18,7 +18,7 @@ import threading
 import time
 from dataclasses import dataclass
 from dataclasses import field
-from hermes_cli.sqlite_util import add_column_if_missing as _add_column_if_missing
+from hermes_store.sqlite import add_column_if_missing as _add_column_if_missing
 from pathlib import Path
 from typing import Any
 from typing import Optional

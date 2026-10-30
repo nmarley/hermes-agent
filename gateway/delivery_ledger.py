@@ -22,7 +22,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 from gateway.dead_targets import classify_dead_error
-from hermes_cli.sqlite_util import add_column_if_missing
+from hermes_store.sqlite import add_column_if_missing
 from hermes_constants import get_process_hermes_home
 
 logger = logging.getLogger(__name__)
@@ -177,7 +177,7 @@ def _db_path():
 
 
 def _connect() -> sqlite3.Connection:
-    from hermes_cli.sqlite_util import open_db
+    from hermes_store.sqlite import open_db
 
     # Shared state.db: SessionDB owns the durable PRAGMA set; this opener keeps the plain-tuple rows
     # and the 10 s busy timeout it always had.
@@ -209,7 +209,7 @@ def _initialize_schema(conn: sqlite3.Connection) -> None:
 
 
 def _transaction():
-    from hermes_cli.sqlite_util import transaction
+    from hermes_store.sqlite import transaction
 
     return transaction(_connect())
 

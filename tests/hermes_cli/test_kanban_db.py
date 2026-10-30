@@ -1492,7 +1492,7 @@ def test_add_column_if_missing_is_idempotent_on_race(kanban_home):
     """
     import sqlite3
 
-    from hermes_cli.sqlite_util import add_column_if_missing as _add_column_if_missing
+    from hermes_store.sqlite import add_column_if_missing as _add_column_if_missing
 
     conn = sqlite3.connect(":memory:")
     conn.row_factory = sqlite3.Row

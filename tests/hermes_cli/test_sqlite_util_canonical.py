@@ -1,4 +1,4 @@
-"""Invariants for the canonical SQLite connect/transaction layer (``hermes_cli/sqlite_util.py``).
+"""Invariants for the canonical SQLite connect/transaction layer (``hermes_store/sqlite.py``).
 
 Every small store used to carry its own connect + PRAGMA + ``with conn:`` stack, so the #69567 fd-leak
 fix and the WAL fallback rules had to be re-pasted per module (and at least one copy missed each).
@@ -11,7 +11,7 @@ import sqlite3
 
 import pytest
 
-from hermes_cli import sqlite_util
+from hermes_store import sqlite as sqlite_util
 
 
 def test_transaction_closes_the_connection_even_when_the_body_raises(tmp_path):
@@ -97,7 +97,7 @@ def test_every_store_opens_through_the_canonical_open_db(monkeypatch, tmp_path, 
         calls.append(kwargs)
         return real_open_db(path, **kwargs)
 
-    # Patch where production reads: a module-level ``from sqlite_util import open_db`` binds its own name.
+    # Patch where production reads: a module-level ``from hermes_store.sqlite import open_db`` binds its own name.
     monkeypatch.setattr(sqlite_util, "open_db", spy)
     if getattr(module, "open_db", None) is real_open_db:
         monkeypatch.setattr(module, "open_db", spy)
