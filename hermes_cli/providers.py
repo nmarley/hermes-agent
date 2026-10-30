@@ -6,6 +6,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
+from hermes_providers.registry import PROVIDER_REGISTRY as _AUTH_PROVIDER_REGISTRY
 from utils import base_url_host_matches, base_url_hostname
 
 logger = logging.getLogger(__name__)
@@ -485,7 +486,6 @@ def _lossy_alias_registry_pdef(raw: str, canonical: str) -> Optional[ProviderDef
     single-entry rewrites ("copilot" -> "github-copilot") are correct routing and keep resolving
     through the built-in chain so overlay transports apply."""
     try:
-        from hermes_cli.auth import PROVIDER_REGISTRY as _AUTH_PROVIDER_REGISTRY
         _pcfg = _AUTH_PROVIDER_REGISTRY.get(raw)
         if _pcfg is None:
             return None

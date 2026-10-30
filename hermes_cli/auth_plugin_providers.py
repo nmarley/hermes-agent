@@ -20,6 +20,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable, Optional
 
+from hermes_providers.registry import PROVIDER_REGISTRY, ProviderConfig, _api_key_provider
+
 logger = logging.getLogger(__name__)
 
 # Providers handled outside the registry: copilot/kimi/zai have bespoke token refresh in auth.py;
@@ -48,8 +50,6 @@ def register_plugin_provider(pp: Any) -> None:
     Registering is what lets an out-of-tree provider pass ``resolve_provider()``'s known-provider
     gate ("Unknown provider"); OAuth-shaped plugins carry their own login via ``auth_handler``.
     """
-    from hermes_cli.auth import PROVIDER_REGISTRY, ProviderConfig, _api_key_provider
-
     if pp.name in _REGISTRY_PLUGIN_SKIP:
         return
     if pp.auth_type == "api_key":
