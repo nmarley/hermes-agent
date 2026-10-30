@@ -34,8 +34,9 @@ from typing import Dict, Any, Literal, Optional, List, Tuple, Set
 from hermes_platform import yaml
 
 from hermes_config.env_refs import (
-    env_ref_snapshot, env_ref_var_name as _env_ref_var_name, expand_env_vars,
-    is_non_env_secret_ref as _is_non_env_secret_ref, preserve_env_ref_templates,
+    ENV_REF_RE as _ENV_REF_RE, env_ref_snapshot, env_ref_var_name as _env_ref_var_name,
+    expand_env_vars, is_non_env_secret_ref as _is_non_env_secret_ref,
+    preserve_env_ref_templates,
 )
 from hermes_config.paths import get_config_path, get_env_path, get_project_root
 from hermes_config.values import (
@@ -57,7 +58,7 @@ from hermes_constants import (
 # Re-export from hermes_constants — canonical definition lives there.
 from hermes_constants import get_hermes_home, get_process_hermes_home
 from utils import atomic_replace, fast_safe_load, file_signature, mkstemp_beside
-from hermes_cli.config_read_errors import (
+from hermes_config.read_errors import (
     _CONFIG_PARSE_FAILURES, _FIX_PERMS, _FIX_YAML, FailedConfigRead, _backups_dir_display,
     _refuse_failed_read, _refuse_overwrite, _warn_config_parse_failure, _yaml_error_details,
     _yaml_error_location)
@@ -460,7 +461,7 @@ def require_parseable_user_config(*, ignore_user_config: bool = False) -> None:
             return
         parse_error = TypeError(f"top-level YAML value must be a mapping, got {type(data).__name__}")
 
-    from hermes_cli.config_backups import backup_config
+    from hermes_config.backups import backup_config
     backup_path = backup_config(config_path, "corrupt")
     where = _yaml_error_location(parse_error)
     message = (
@@ -1970,7 +1971,7 @@ def _last_known_good_fallback(config_path: Path, path_key: str, cache_sig, exc: 
         # fall back to the newest byte-exact copy the last successful parse left in backups/config/.
         # It holds the raw file (``${VAR}`` templates intact), so it goes through the same
         # canonicalize -> expand -> managed-overlay pipeline as a normal load.
-        from hermes_cli.config_backups import load_newest_good_backup
+        from hermes_config.backups import load_newest_good_backup
         from hermes_cli.moa_config import apply_user_moa_presets
         raw_good = load_newest_good_backup(config_path)
         if raw_good is not None:
@@ -2092,7 +2093,7 @@ def _load_config_impl(*, want_deepcopy: bool) -> dict[str, Any]:
                 # A copy of the file that just parsed is what a FRESH process falls back to when the
                 # next edit breaks the YAML (see _last_known_good_fallback). backup_config() skips
                 # byte-identical repeats and keeps a bounded count, so steady-state loads cost one stat.
-                from hermes_cli.config_backups import backup_config
+                from hermes_config.backups import backup_config
                 backup_config(config_path, "good")
             except Exception as e:
                 lkg_copy = _last_known_good_fallback(config_path, path_key, cache_sig, e)

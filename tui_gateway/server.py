@@ -29,6 +29,7 @@ from hermes_constants import (
     reset_hermes_home_override, set_hermes_home_override)
 from hermes_cli.env_loader import load_hermes_dotenv
 from hermes_config import save as config_save
+from hermes_config.read_errors import FailedConfigRead
 from utils import file_signature, is_truthy_value
 from hermes_store.ids import new_session_id
 from tools.environments.local import hermes_subprocess_env
@@ -999,7 +1000,6 @@ def _load_cfg_raw() -> dict:
     Cache keyed on the resolved path so profiles don't clobber."""
     global _cfg_cache, _cfg_sig, _cfg_path
     from hermes_cli.config import read_user_config_raw
-    from hermes_cli.config_read_errors import FailedConfigRead
     try:
         p = _active_config_path()
         sig = file_signature(p.stat()) if p.exists() else None
