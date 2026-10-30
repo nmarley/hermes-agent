@@ -113,7 +113,7 @@ def begin_local_desktop_boot() -> None:
     global _local_desktop_boot_started
     from agent.memory_provider import spawn_context_thread
     from hermes_cli import free_tier_bootstrap
-    from hermes_cli.process_identity import serving_local_desktop
+    from hermes_platform.process import serving_local_desktop
     from tui_gateway.launch_profile_policy import launch_profile_scope_if_multiplexed
 
     with _local_desktop_boot_lock:

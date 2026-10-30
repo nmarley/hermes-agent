@@ -25,7 +25,7 @@ def owner_reclaim_paused(conn, task_id):
             return row[1] == 'interrupted'
         if row is None or row[0] in {'queued', 'unknown'}:
             return True
-        from hermes_cli.process_identity import process_birth
+        from hermes_platform.process import process_birth
         return process_birth(psutil.Process(binding['pid'])) != binding['birth']
     except (OSError, ValueError, KeyError, sqlite3.Error):
         return True
@@ -81,7 +81,7 @@ def _owner_process_gone(receipt) -> bool:
     if not kb._pid_alive(pid):
         return True  # absent, or an exited zombie still waiting to be reaped
     try:
-        from hermes_cli.process_identity import process_birth
+        from hermes_platform.process import process_birth
         current = process_birth(psutil.Process(pid))
     except psutil.NoSuchProcess:
         return True

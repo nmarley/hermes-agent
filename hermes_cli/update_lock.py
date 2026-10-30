@@ -220,7 +220,7 @@ def _stdlib_create_time(pid: int) -> float | None:
 def process_create_time(pid: int | None = None) -> float | None:
     """Creation time of ``pid`` (default: this process) in unix seconds, or ``None``.
 
-    psutil when importable — the value ``process_identity._process_create_time`` records —
+    psutil when importable — the value ``hermes_platform.process._process_create_time`` records —
     else the stdlib probe of the same kernel clock, so a marker written by either is
     comparable by the other within :data:`CREATE_TIME_TOLERANCE_SECONDS`.
     """

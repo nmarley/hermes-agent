@@ -93,7 +93,7 @@ def test_systemd_owned_ledger_dashboard_is_classified_systemd(monkeypatch):
     entry = {"pid": DASH_PID, "create_time": 1000.0, "purpose": "dashboard", "profile": "",
              "argv": "hermes dashboard --host 0.0.0.0 --port 9119 --no-open", "host": "0.0.0.0", "port": 9119}
     fake_pi = SimpleNamespace(ledger_entries=lambda **k: [entry], spawner_is_dead=lambda e: None)
-    monkeypatch.setitem(sys.modules, "hermes_cli.process_identity", fake_pi)
+    monkeypatch.setitem(sys.modules, "hermes_platform.process", fake_pi)
     plan = UpdatePlan()
     update_inventory._collect_ledger_runtimes(plan, set())
     (row,) = plan.runtimes
@@ -109,7 +109,7 @@ def test_hand_started_dashboard_in_a_foreign_cgroup_stays_manual(monkeypatch):
     monkeypatch.setattr(main_dashboard, "_run_probe",
                         lambda cmd, *, timeout: SimpleNamespace(returncode=0, stdout="991\n", stderr=""))
     entry = {"pid": 4321, "create_time": 1.0, "purpose": "dashboard", "argv": "hermes dashboard"}
-    monkeypatch.setitem(sys.modules, "hermes_cli.process_identity",
+    monkeypatch.setitem(sys.modules, "hermes_platform.process",
                         SimpleNamespace(ledger_entries=lambda **k: [entry], spawner_is_dead=lambda e: None))
     plan = UpdatePlan()
     update_inventory._collect_ledger_runtimes(plan, set())
@@ -120,7 +120,7 @@ def test_stale_unit_dashboard_hint_names_its_unit_and_scope(monkeypatch, capsys)
     plan = UpdatePlan(runtimes=[RuntimeRecord(
         kind="dashboard", profile="default", pid=DASH_PID, supervisor="systemd", restart_via="systemd",
         detail={"create_time": 1000.0, "systemd_unit": UNIT, "systemd_scope": "system"})])
-    monkeypatch.setitem(sys.modules, "hermes_cli.process_identity", SimpleNamespace(
+    monkeypatch.setitem(sys.modules, "hermes_platform.process", SimpleNamespace(
         ledger_entries=lambda: [{"pid": DASH_PID, "purpose": "dashboard", "create_time": 1000.0}]))
     rows = update_cmd._surviving_pre_update_serve_runtimes(plan)
     update_cmd._warn_stale_serve_runtimes(rows)

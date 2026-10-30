@@ -498,7 +498,7 @@ def _get_process_start_time(pid: int) -> Optional[int]:
     # process_birth: macOS's clock-step-stable kernel start (#140580); unchanged with no step.
     try:
         import psutil  # type: ignore
-        from hermes_cli.process_identity import process_birth
+        from hermes_platform.process import process_birth
         return round(process_birth(psutil.Process(pid)) * 100)
     except Exception:
         return None

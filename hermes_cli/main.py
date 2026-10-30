@@ -779,7 +779,7 @@ from hermes_cli.main_platform_setup import (
     cmd_whatsapp,
     cmd_whatsapp_cloud,
 )
-from hermes_cli.process_identity import is_desktop_owned_backend as _is_desktop_owned_backend
+from hermes_platform.process import is_desktop_owned_backend as _is_desktop_owned_backend
 from hermes_cli.main_dashboard import (
     _attach_to_host_backend,
     _finalize_update_output,

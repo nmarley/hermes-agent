@@ -87,7 +87,7 @@ def test_inventory_includes_manual_serve_from_ledger(monkeypatch):
         ledger_entries=lambda **k: [entry],
         spawner_is_dead=lambda e: None,  # no spawner recorded → manual
     )
-    monkeypatch.setitem(sys.modules, "hermes_cli.process_identity", fake_pi)
+    monkeypatch.setitem(sys.modules, "hermes_platform.process", fake_pi)
     plan = update_inventory.collect_runtime_inventory()
     serves = [r for r in plan.runtimes if r.kind == "serve"]
     assert serves, "manual serve must appear in the inventory"
@@ -104,7 +104,7 @@ def test_inventory_classifies_desktop_owned_serve(monkeypatch):
         ledger_entries=lambda **k: [entry],
         spawner_is_dead=lambda e: False,  # Electron parent alive
     )
-    monkeypatch.setitem(sys.modules, "hermes_cli.process_identity", fake_pi)
+    monkeypatch.setitem(sys.modules, "hermes_platform.process", fake_pi)
     plan = update_inventory.collect_runtime_inventory()
     serves = [r for r in plan.runtimes if r.kind == "serve"]
     assert serves and serves[0].supervisor == "desktop"
@@ -124,7 +124,7 @@ def test_inventory_classifies_remote_desktop_ssh_serve_as_its_clients(monkeypatc
 
     entry = _ledger_entry(argv=_SSH_ARGV, host="127.0.0.1", port=57474, isolated=True)
     fake_pi = SimpleNamespace(ledger_entries=lambda **k: [entry], spawner_is_dead=lambda e: None)
-    monkeypatch.setitem(sys.modules, "hermes_cli.process_identity", fake_pi)
+    monkeypatch.setitem(sys.modules, "hermes_platform.process", fake_pi)
     plan = update_inventory.collect_runtime_inventory()
     row = next(r for r in plan.runtimes if r.kind == "serve")
     assert row.supervisor not in ("manual-serve", "desktop")
@@ -138,7 +138,7 @@ def test_hand_started_isolated_serve_stays_manual(monkeypatch):
     ``hermes serve --isolated`` keeps its manual-serve relaunch."""
     entry = _ledger_entry(argv="hermes serve --isolated --host 127.0.0.1 --port 9119", isolated=True)
     fake_pi = SimpleNamespace(ledger_entries=lambda **k: [entry], spawner_is_dead=lambda e: None)
-    monkeypatch.setitem(sys.modules, "hermes_cli.process_identity", fake_pi)
+    monkeypatch.setitem(sys.modules, "hermes_platform.process", fake_pi)
     row = next(r for r in update_inventory.collect_runtime_inventory().runtimes if r.kind == "serve")
     assert row.supervisor == "manual-serve"
 
@@ -151,7 +151,7 @@ def test_stale_remote_desktop_ssh_serve_is_deferred_to_its_client_not_unaccounte
 
     entry = _ledger_entry(argv=_SSH_ARGV, host="127.0.0.1", port=57474, isolated=True)
     fake_pi = SimpleNamespace(ledger_entries=lambda **k: [entry], spawner_is_dead=lambda e: None)
-    monkeypatch.setitem(sys.modules, "hermes_cli.process_identity", fake_pi)
+    monkeypatch.setitem(sys.modules, "hermes_platform.process", fake_pi)
     plan = update_inventory.collect_runtime_inventory()
     outcomes = update_inventory.match_runtime_outcomes(
         plan, restarted_services=[], relaunched_profiles=[], externally_supervised_profiles=[],
@@ -179,7 +179,7 @@ def test_scan_dashboard_processes_includes_ledger_only_serves(monkeypatch):
         profile="work",
     )
     fake_pi = SimpleNamespace(ledger_entries=lambda **k: [profiled])
-    monkeypatch.setitem(sys.modules, "hermes_cli.process_identity", fake_pi)
+    monkeypatch.setitem(sys.modules, "hermes_platform.process", fake_pi)
 
     # Force the ps/wmic scan itself to find nothing.
     fake_run = SimpleNamespace(returncode=0, stdout="")
@@ -194,7 +194,7 @@ def test_scan_dashboard_processes_ledger_respects_exclusions(monkeypatch):
 
     entry = _ledger_entry(pid=8124)
     fake_pi = SimpleNamespace(ledger_entries=lambda **k: [entry])
-    monkeypatch.setitem(sys.modules, "hermes_cli.process_identity", fake_pi)
+    monkeypatch.setitem(sys.modules, "hermes_platform.process", fake_pi)
     fake_run = SimpleNamespace(returncode=0, stdout="")
     monkeypatch.setattr(dp.subprocess, "run", lambda *a, **k: fake_run)
 
@@ -213,7 +213,7 @@ def test_inventory_records_the_serve_process_incarnation(monkeypatch):
         ledger_entries=lambda **k: [entry],
         spawner_is_dead=lambda e: None,
     )
-    monkeypatch.setitem(sys.modules, "hermes_cli.process_identity", fake_pi)
+    monkeypatch.setitem(sys.modules, "hermes_platform.process", fake_pi)
     plan = update_inventory.collect_runtime_inventory()
     serves = [r for r in plan.runtimes if r.kind == "serve"]
     assert serves and serves[0].detail["create_time"] == 1712345678.5
@@ -234,7 +234,7 @@ def test_inventory_classifies_launchd_job_owned_serve(monkeypatch):
     )
     jobs = [("gui/501", "ai.hermes.dashboard",
              ["hermes", "serve", "--host", "100.94.65.93", "--port", "9119"], None)]
-    monkeypatch.setitem(sys.modules, "hermes_cli.process_identity", fake_pi)
+    monkeypatch.setitem(sys.modules, "hermes_platform.process", fake_pi)
     with patch.object(main_dashboard, "_loaded_launchd_backend_jobs", return_value=jobs), \
          patch("hermes_cli.dashboard_procs._process_ancestors", return_value=[]):
         plan = update_inventory.collect_runtime_inventory()

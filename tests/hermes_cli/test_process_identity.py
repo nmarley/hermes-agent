@@ -1,4 +1,4 @@
-"""Tests for hermes_cli.process_identity — spawn tags, the machine spawn
+"""Tests for hermes_platform.process — spawn tags, the machine spawn
 ledger, and the updater's ledger-identified reap rung.
 
 Layer context (Aug 2026, after the 12-minute Windows update hang): reapers
@@ -26,6 +26,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from hermes_cli import dashboard_procs
 from hermes_cli import process_identity as pi
 
 
@@ -322,7 +323,7 @@ def _reap(entry_pid=555, create=55.0, procs=None, kill_fn=None, **entry_kw):
     fake = _fake_psutil({} if procs is None else procs)
     with patch.dict(sys.modules, {"psutil": fake}), \
          patch.object(pi, "ledger_entries", return_value=[entry]):
-        result = pi.reap_orphaned_backend_owner(
+        result = dashboard_procs.reap_orphaned_backend_owner(
             entry_pid, create, kill_fn=(kills.append if kill_fn is None else kill_fn))
     return result, kills
 
@@ -356,7 +357,7 @@ def test_reclaim_spares_unprovable_spawner():
     with patch.dict(sys.modules, {"psutil": fake}), \
          patch.object(pi, "ledger_entries",
                       return_value=[_entry(555, 55.0, spawner_pid=500, spawner_create=5.0)]):
-        assert pi.reap_orphaned_backend_owner(555, 55.0, kill_fn=lambda pid: None) is None
+        assert dashboard_procs.reap_orphaned_backend_owner(555, 55.0, kill_fn=lambda pid: None) is None
 
 
 def test_reclaim_reaps_null_spawner_orphan_to_init():
@@ -402,6 +403,6 @@ def test_reclaim_spares_interactive_purposes_and_self():
 def test_reclaim_ignores_unknown_pid_and_never_raises():
     with patch.dict(sys.modules, {"psutil": _fake_psutil({555: 55.0})}), \
          patch.object(pi, "ledger_entries", return_value=[_entry(555, 55.0)]):
-        assert pi.reap_orphaned_backend_owner(999, 9.0, kill_fn=lambda pid: None) is None
+        assert dashboard_procs.reap_orphaned_backend_owner(999, 9.0, kill_fn=lambda pid: None) is None
     with patch.object(pi, "ledger_entries", side_effect=RuntimeError("boom")):
-        assert pi.reap_orphaned_backend_owner(555, 55.0, kill_fn=lambda pid: None) is None
+        assert dashboard_procs.reap_orphaned_backend_owner(555, 55.0, kill_fn=lambda pid: None) is None

@@ -204,7 +204,7 @@ def _own_lineage() -> set[int]:
 
 def _registered_live_pids(home: Path) -> set[int]:
     """Live pids Hermes registered for *home*: the machine spawn ledger (every long-lived entry
-    point and MCP helper, ``hermes_cli.process_identity``) and the background-process checkpoint
+    point and MCP helper, ``hermes_platform.process``) and the background-process checkpoint
     (``tools.process_registry``, ``processes.json``). A recorded start time that no longer
     matches is a reused pid, not ownership."""
     import psutil

@@ -23,7 +23,7 @@ import time
 import urllib.parse
 
 from hermes_cli.install_identity import get_install_id as _shared_get_install_id
-from hermes_cli.process_identity import is_desktop_owned_backend
+from hermes_platform.process import is_desktop_owned_backend
 from hermes_cli.pty_session import run_reaper
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
@@ -1051,7 +1051,7 @@ def _reclaim_host_from_orphaned_owner(role: str) -> bool:
     False and the caller stays observe-only. Never raises.
     """
     from gateway import host_rendezvous as hr
-    from hermes_cli.process_identity import reap_orphaned_backend_owner
+    from hermes_cli.dashboard_procs import reap_orphaned_backend_owner
 
     try:
         owner = hr.read_record(role)
@@ -1158,7 +1158,7 @@ def _on_server_started(
         _reap_orphaned_desktop_local_serves()
 
     def _reap_mcp_helpers() -> None:
-        from hermes_cli.process_identity import reap_orphaned_mcp_helpers
+        from hermes_platform.process import reap_orphaned_mcp_helpers
 
         reap_orphaned_mcp_helpers()
 
@@ -1207,7 +1207,7 @@ def _on_server_started(
     # ACTUAL port — what lets `hermes update` relaunch a manually-started serve
     # on its real endpoint (#63206).
     def _register_identity() -> None:
-        from hermes_cli.process_identity import attach_self_to_kill_on_close_job, register_self
+        from hermes_platform.process import attach_self_to_kill_on_close_job, register_self
 
         register_self(
             "serve" if headless else "dashboard",

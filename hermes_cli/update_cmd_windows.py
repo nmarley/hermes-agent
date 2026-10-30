@@ -404,7 +404,7 @@ def _ledger_manual_serve_holders(matches: list[tuple[int, str, str]]) -> list[di
     NOT alive (a Desktop-owned backend keeps its live Electron spawner and must keep the refusal — the app would
     respawn what we kill). Full entries let the relauncher rebuild from host/port/profile, not argv."""
     try:
-        from hermes_cli.process_identity import ledger_entries, spawner_is_dead
+        from hermes_platform.process import ledger_entries, spawner_is_dead
     except Exception:
         return []
     holder_pids = {int(pid) for pid, _name, _cmd in matches}
@@ -561,7 +561,7 @@ def _ledger_reapable_backend_pids(matches: list[tuple[int, str, str]]) -> list[i
     (PID reuse can't forge it), purpose is a REAPABLE kind (never interactive), and the recorded SPAWNER is
     provably dead. Safe in ANY context. Unlisted holders fall to later rungs and never disqualify identified ones."""
     try:
-        from hermes_cli.process_identity import REAPABLE_PURPOSES, ledger_entries, spawner_is_dead
+        from hermes_platform.process import REAPABLE_PURPOSES, ledger_entries, spawner_is_dead
         entries = ledger_entries()
     except Exception:
         return []
@@ -649,7 +649,7 @@ def _desktop_owns_gateway_lifecycle() -> bool:
     """
     from hermes_cli.update_cmd import _m
     with _best_effort('Desktop-lifecycle ledger probe failed: %s'):
-        from hermes_cli.process_identity import ledger_entries, spawner_is_dead
+        from hermes_platform.process import ledger_entries, spawner_is_dead
         if any(e.get("purpose") in _BACKEND_PURPOSES and spawner_is_dead(e) is False for e in ledger_entries()):
             return True
     psutil = _psutil()

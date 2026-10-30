@@ -26,7 +26,7 @@ def defer_manual_serve(runtime: dict, *, require_alive: bool = False) -> bool:
 def _defer_identified(runtime: dict, *, extra: dict | None = None, require_alive: bool = False) -> bool:
     """Shared tail of the manual and unit deferrals: True when the incarnation is gone or its reminder
     (plus *extra* fields) was filed; False while it is still owed and nothing durable was written."""
-    from hermes_cli.process_identity import _pid_alive_matches
+    from hermes_platform.process import _pid_alive_matches
 
     pid, created = runtime.get("pid"), runtime["detail"].get("create_time")
     if type(pid) is not int or pid <= 0:
@@ -121,7 +121,7 @@ def retain_receipt_manual_serves(receipt: dict) -> list[dict]:
 def warn_pending_manual_serves(*, startup: bool = False, pending_manual: list[dict] | None = None) -> None:
     """Warn about manual debt independently of gateway evidence; optionally reuse a snapshot's failed transfers."""
     from hermes_cli.main_dashboard import _format_restart_commands, _systemd_restart_commands
-    from hermes_cli.process_identity import _pid_alive_matches
+    from hermes_platform.process import _pid_alive_matches
     from hermes_cli.update_receipt import read_latest_receipt
 
     stream = sys.stderr if startup else sys.stdout

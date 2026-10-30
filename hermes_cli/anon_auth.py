@@ -201,9 +201,9 @@ def has_guest() -> bool:
 
 def on_local_desktop_backend() -> bool:
     """This activity is work for the Desktop app on this machine: a request from, or a turn of a chat
-    created by, a connection ``process_identity.local_desktop_client`` accepted. Never an SSH, URL or
+    created by, a connection ``hermes_platform.process.local_desktop_client`` accepted. Never an SSH, URL or
     cloud backend, a shell the desktop launched, or the gateway's other clients."""
-    from hermes_cli.process_identity import serves_local_desktop_now
+    from hermes_platform.process import serves_local_desktop_now
     return serves_local_desktop_now()
 
 

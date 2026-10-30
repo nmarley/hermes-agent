@@ -5,12 +5,17 @@ call time so imports stay one-way (both of those modules import this one lazily)
 """
 
 import contextlib
+import logging
 import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Optional
 
 from hermes_cli._startup_fast import is_desktop_ssh_backend_argv
+from hermes_platform import process as _process
+
+logger = logging.getLogger(__name__)
 
 _PS_RUN_KWARGS = dict(capture_output=True, text=True, encoding="utf-8", errors="replace")
 
@@ -96,7 +101,7 @@ def _scan_dashboard_processes(*, exclude_pids: set[int] | None = None) -> list[t
         # (pid, create_time), so ledger rows are positive identity, not argv guessing. Add any live ledger
         # serve/dashboard the scan missed; prefer the ledger's recorded argv (full launch args) over the
         # scan's truncated view. See #81564.
-        from hermes_cli.process_identity import ledger_entries
+        from hermes_platform.process import ledger_entries
         seen = {pid for pid, _ in found} | skip
         for entry in ledger_entries():
             pid = entry.get("pid")
@@ -114,7 +119,7 @@ def _ledger_serve_binds() -> dict[int, tuple[str, int]]:
     """
     binds: dict[int, tuple[str, int]] = {}
     with contextlib.suppress(Exception):
-        from hermes_cli.process_identity import ledger_entries
+        from hermes_platform.process import ledger_entries
         for entry in ledger_entries():
             pid, port = entry.get("pid"), entry.get("port")
             if (entry.get("purpose") in ("serve", "dashboard") and isinstance(pid, int)
@@ -944,6 +949,79 @@ def read_valid_backend_lock(lock_path: Path) -> dict | None:
 
 # Covers the gap between process start and the Desktop client writing backend.lock.json.
 _REAP_MIN_AGE_SECONDS = 180.0
+
+# Host-role owners a fresh backend may reap on a HELD_BY_OTHER conflict (#121964): the
+# serve/dashboard/gateway subset. The mcp-helper rung stays owned by the platform reaper.
+_BACKEND_OWNER_PURPOSES = frozenset({"serve", "dashboard", "gateway"})
+
+
+def _reparented_orphan(pid: int) -> bool:
+    """Null-spawner owner with no live supervisor: reparented to init, old, lock-unclaimed.
+
+    Mirrors ``_reap_orphaned_desktop_local_serves``: operator-managed remote backends legitimately
+    sit at ppid 1 (systemd, an exited sshd), so ppid alone is never proof. The SSH-lock claim
+    and the 180 s lock-write grace exclude live-supervised backends. Windows: the ppid probe is
+    unavailable there, so this rung never fires (desktop tree-kill reaps instead).
+    """
+    try:
+        if _process_ppid(pid) not in (0, 1):
+            return False
+        if pid in (_lock_owned_serve_pids() or ()):
+            return False
+        import time as _time
+
+        import psutil
+        return max(0.0, _time.time() - psutil.Process(pid).create_time()) >= _REAP_MIN_AGE_SECONDS
+    except Exception:
+        return False  # unprovable → never touch
+
+
+def reap_orphaned_backend_owner(
+    pid: int, create_time: Optional[float], *, kill_fn=None) -> Optional[int]:
+    """Kill the conflicting host owner when the ledger PROVES it is a dead session's orphan.
+
+    HELD_BY_OTHER rung for #121964: the owner PID is alive (re-parented to init), so
+    ``record_is_stale()`` never fires and a fresh backend would loop observe-only against the
+    same orphan forever. Reaped only with a live ``serve``/``dashboard``/``gateway`` entry for
+    THIS install whose spawner is provably dead, or whose spawner was never recorded and which
+    is reparented to init, old, and claimed by no Desktop SSH lock. Live-spawned, lock-claimed,
+    young, interactive, self, or unprovable owners are never touched. Returns the reaped pid,
+    else ``None``; never raises.
+
+    # ponytail: a dead session's surviving backend.lock.json still shields its orphan (the lock
+    # has no session liveness); clearing stale locks is a Desktop-side lifecycle job, not this rung.
+    """
+    try:
+        pid = int(pid)
+    except (TypeError, ValueError):
+        return None
+    if pid <= 0 or pid == os.getpid():
+        return None
+    try:
+        entry = next(
+            (e for e in _process.ledger_entries()
+             if e.get("pid") == pid
+             and e.get("purpose") in _BACKEND_OWNER_PURPOSES
+             and (e.get("create_time") is None or create_time is None
+                  or abs(float(e["create_time"]) - float(create_time)) < 2.0)),
+            None)
+    except Exception:
+        return None
+    if entry is None:
+        return None
+    if _process.spawner_is_dead(entry) is not True and not (
+            entry.get("spawner_pid") is None and _reparented_orphan(pid)):
+        return None  # live or unprovable spawner → never touch
+    try:
+        if kill_fn is not None:
+            kill_fn(pid)
+        elif not _process._terminate_then_kill(pid, entry.get("create_time")):
+            return None
+    except Exception:
+        logger.debug("backend owner reap failed for %s", entry, exc_info=True)
+        return None
+    logger.info("reaped orphaned %s backend owner pid %s", entry.get("purpose"), pid)
+    return pid
 
 
 def _process_age_seconds(pid: int) -> float:

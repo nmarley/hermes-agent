@@ -1088,7 +1088,7 @@ def _write_start_attestation(pids: list[int], via: str, home: Path | None = None
     try:
         path = _start_attestation_path(home)
         path.parent.mkdir(parents=True, exist_ok=True)
-        from hermes_cli.process_identity import _process_create_time
+        from hermes_platform.process import _process_create_time
 
         payload = {
             "pids": [int(p) for p in pids], "via": via, "ts": datetime.now(UTC).isoformat(),
@@ -1116,7 +1116,7 @@ def _clear_start_attestation(home: Path | None = None) -> None:
 # meant to bridge the seconds between a ✓ and the next ``hermes gateway status``/``update``; a
 # historical marker must never later override Desktop ownership into a duplicate gateway (#76129).
 START_ATTESTATION_MAX_AGE_S = 24 * 3600
-# Same slack process_identity uses for psutil create_time comparisons (PID reuse disambiguation).
+# Same slack the process identity helper uses for psutil create_time comparisons (PID reuse disambiguation).
 _CREATE_TIME_TOLERANCE_S = 2.0
 # A backwards clock step (NTP) between write and read must not kill a fresh marker.
 _ATTESTATION_CLOCK_SLACK_S = 60.0

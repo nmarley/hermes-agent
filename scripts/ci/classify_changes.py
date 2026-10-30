@@ -262,7 +262,7 @@ _UPDATE_PIPELINE = (
     "hermes_cli/_launchers.py",
     "hermes_cli/release_channels.py",
     "hermes_cli/gitlock.py",  # git self-heal + partial-clone fetch
-    "hermes_cli/process_identity.py",  # marker owner liveness
+    "hermes_platform/process.py",  # marker owner liveness
     "hermes_cli/runtime_state.py",
     "hermes_cli/relaunch.py",
     "hermes_cli/managed_uv.py",
@@ -358,7 +358,7 @@ _UPDATE_DEPENDENCIES = (
     "hermes_cli/steward.py",
     "hermes_cli/observability/shared_metrics_update.py",
     "hermes_cli/main_install_repair.py",
-    "hermes_platform.logging.py",
+    "hermes_platform/logging.py",
     "hermes_platform/host/__init__.py",
     "hermes_platform/host/facts.py",
     "hermes_platform/resolver/__init__.py",  # update_cmd_commit's interpreter lookup
@@ -404,6 +404,7 @@ _E2E_LANES: dict[str, tuple[str, ...]] = {
         # The state.db torture chamber and the compaction/exactly-once
         # suites are the only tests that run real concurrent writers.
         "hermes_state",
+        "hermes_store",
         # Messaging-gated gateway cases: only the e2e job installs the real
         # Discord/Telegram SDKs (tests.yml "Run messaging-gated gateway cases").
         "tests/gateway/test_native_role_reauthorization.py",

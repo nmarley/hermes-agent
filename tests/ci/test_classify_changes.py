@@ -493,7 +493,7 @@ _UPDATE_PATH_FILES = (
     "hermes_cli/source_releases.py",
     "hermes_cli/_launchers.py",
     "hermes_cli/gitlock.py",
-    "hermes_cli/process_identity.py",
+    "hermes_platform/process.py",
     "hermes_cli/relaunch.py",
     "hermes_cli/gateway.py",
     "hermes_cli/gateway_windows.py",

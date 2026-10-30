@@ -27,7 +27,7 @@ FOLLOW_SECTIONS = ('model', 'providers', 'custom_providers', 'fallback_providers
 # A chat created on the welcome trial's model carries it too (``stage_local_session``), so a provider the user
 # connects later replaces that model.
 FOLLOW_ADOPTED = 'follow_adopted'
-# A Desktop chat its creator's connection declared local (``process_identity.local_desktop_client``): its
+# A Desktop chat its creator's connection declared local (``hermes_platform.process.local_desktop_client``): its
 # turns run as work for the local Desktop (``local_desktop_turn``). Owner-set in the policy's own config, so
 # an exact create retry from a socket whose declaration has not landed carries the same creation request,
 # and ``launch_request`` never echoes it.
@@ -1023,7 +1023,7 @@ def local_desktop_turn(runner, source, scope):
 
 @contextmanager
 def _serving_local_desktop_within(scope):
-    from hermes_cli.process_identity import serving_local_desktop
+    from hermes_platform.process import serving_local_desktop
     with scope, serving_local_desktop(True):
         yield
 

@@ -295,7 +295,7 @@ def _collect_ledger_runtimes(plan: UpdatePlan, seen: set[int]) -> None:
     detached argv respawn) — the spawner probe cannot see that (#116503); one that is a systemd
     unit's MainPID is ``systemd`` for the same reason (#141021)."""
     with _probe("Serve/dashboard ledger inventory"):
-        from hermes_cli.process_identity import ledger_entries, spawner_is_dead
+        from hermes_platform.process import ledger_entries, spawner_is_dead
 
         launchd_jobs = _loaded_backend_launchd_jobs()
         for entry in ledger_entries():

@@ -121,7 +121,7 @@ def client_surface() -> str:
     console) unless it is serving the local Desktop app, ``desktop`` for that and for the backend the
     desktop app spawned, else ``cli``. ``HERMES_DESKTOP``
     alone is inherited by every terminal-pane shell, so desktop ownership needs the spawn credential."""
-    from hermes_cli.process_identity import is_desktop_owned_backend, serves_local_desktop_now
+    from hermes_platform.process import is_desktop_owned_backend, serves_local_desktop_now
     if serves_local_desktop_now():
         return "desktop"
     status = sys.modules.get("gateway.status")

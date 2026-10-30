@@ -5118,7 +5118,7 @@ def main():
 
     def _register_identity() -> None:
         # Ledger registration + Windows job-object attach so update-time reapers can identify this gateway.
-        from hermes_cli.process_identity import attach_self_to_kill_on_close_job, register_self
+        from hermes_platform.process import attach_self_to_kill_on_close_job, register_self
         register_self("gateway")
         attach_self_to_kill_on_close_job()
 
