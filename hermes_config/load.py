@@ -48,6 +48,12 @@ class ConfigState:
     warn_parse_failure: Callable[..., None] = _warn_config_parse_failure
     open_fn: Callable[..., Any] = open
     fast_safe_load_fn: Callable[..., Any] = fast_safe_load
+    is_managed: Callable[[], bool] = lambda: False
+    managed_error: Callable[[str], None] = lambda action: None
+    strip_managed_keys: Callable[[dict], dict] = lambda config: config
+    rebase_for_save: Callable[[dict, dict, bool], dict] = lambda config, raw, merge: config
+    secure_file: Callable[[Path], None] = lambda path: None
+    record_saved: Callable[[dict, dict], None] = lambda raw, config: None
 
 
 def _raw_config_cache_hit(state: ConfigState, path_key: str, cache_key: tuple[Any, ...]) -> Optional[dict[str, Any]]:

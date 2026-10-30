@@ -38,6 +38,7 @@ from hermes_config.env_refs import (
     expand_env_vars, is_non_env_secret_ref as _is_non_env_secret_ref,
     preserve_env_ref_templates,
 )
+from hermes_config.write import save_config as _save_config_impl
 from hermes_config.load import ConfigState
 from hermes_config.load import (
     _load_config_cache_sig as _load_config_cache_sig_impl,
@@ -219,6 +220,18 @@ def _backup_good(config_path: Path) -> None:
     backup_config(config_path, "good")
 
 
+def _rebase_for_save(config: dict[str, Any], raw: dict[str, Any], merge_existing: bool) -> dict[str, Any]:
+    from hermes_cli.config_worker_save import rebase_for_save
+
+    return rebase_for_save(config, raw, merge_existing)
+
+
+def _record_saved(raw: dict[str, Any], config: dict[str, Any]) -> None:
+    from hermes_cli.observability.shared_metrics_disabled import record_config_saved
+
+    record_config_saved(raw, config)
+
+
 def _config_state() -> ConfigState:
     """Build the loader state from the current module globals.
 
@@ -249,6 +262,12 @@ def _config_state() -> ConfigState:
         warn_parse_failure=_warn_config_parse_failure,
         open_fn=open,
         fast_safe_load_fn=fast_safe_load,
+        is_managed=is_managed,
+        managed_error=managed_error,
+        strip_managed_keys=_strip_managed_keys_for_save,
+        rebase_for_save=_rebase_for_save,
+        secure_file=_secure_file,
+        record_saved=_record_saved,
     )
 
 # Env var names written to .env that aren't in OPTIONAL_ENV_VARS (managed by setup/provider
@@ -1769,42 +1788,6 @@ def _load_config_cache_sig(config_path: Path):
     return _load_config_cache_sig_impl(_config_state(), config_path)
 
 
-_SECURITY_COMMENT = """
-# ── Security ──────────────────────────────────────────────────────────
-# Secret redaction is ON by default — strings that look like API keys,
-# tokens, and passwords are masked in tool output, logs, and chat
-# responses before the model or user ever sees them. Set redact_secrets
-# to false to disable (e.g. when developing the redactor itself).
-#
-# security:
-#   redact_secrets: true
-"""
-
-_FALLBACK_COMMENT = """
-# ── Fallback Model ────────────────────────────────────────────────────
-# Automatic provider failover when primary is unavailable.
-# Uncomment and configure to enable. Triggers on rate limits (429),
-# overload (529), service errors (503), or connection failures.
-#
-# Supported providers:
-#   openrouter   (OPENROUTER_API_KEY)  — routes to any model
-#   openai-codex (OAuth — hermes auth) — OpenAI Codex
-#   nous         (OAuth — hermes auth) — Nous Portal
-#   zai          (ZAI_API_KEY)         — Z.AI / GLM
-#   kimi-coding  (KIMI_API_KEY)        — Kimi / Moonshot
-#   kimi-coding-cn (KIMI_CN_API_KEY)   — Kimi / Moonshot (China)
-#   minimax      (MINIMAX_API_KEY)     — MiniMax
-#   minimax-cn   (MINIMAX_CN_API_KEY)  — MiniMax (China)
-#   bedrock      (AWS IAM / boto3)     — AWS Bedrock (Converse API)
-#
-# For custom OpenAI-compatible endpoints, add base_url and key_env.
-#
-# fallback_model:
-#   provider: openrouter
-#   model: anthropic/claude-sonnet-4
-"""
-
-
 def _strip_managed_keys_for_save(config: dict[str, Any]) -> dict[str, Any]:
     """Drop every leaf the managed layer pins (bulk safety net; single-key ``config set``
     hard-rejects) and tell the user what was not saved."""
@@ -1819,63 +1802,18 @@ def _strip_managed_keys_for_save(config: dict[str, Any]) -> dict[str, Any]:
     return config
 
 
-def _commented_sections_for_save(normalized: dict[str, Any]) -> Optional[str]:
-    """Commented-out example blocks for features that are off/unconfigured."""
-    parts = []
-    if (normalized.get("security") or {}).get("redact_secrets") is None:
-        parts.append(_SECURITY_COMMENT)
-    fb = normalized.get("fallback_model", {})
-    fb_entries = fb if isinstance(fb, list) else [fb]
-    if not any(isinstance(e, dict) and e.get("provider") and e.get("model") for e in fb_entries):
-        parts.append(_FALLBACK_COMMENT)
-    return "".join(parts) or None
-
-
 def save_config(
     config: dict[str, Any], *, strip_defaults: bool = True,
-    preserve_keys: Optional[set[tuple[str, ...]]] = None, merge_existing: bool = False):
+    preserve_keys: Optional[set[tuple[str, ...]]] = None, merge_existing: bool = False,
+):
     """Save configuration to ~/.hermes/config.yaml.
     Schema defaults are not written unless the user explicitly set them (the path exists in the
     raw config before normalisation), so config.yaml is never contaminated with defaults that
     would hide future default changes. ``merge_existing`` deep-merges the on-disk raw config
     under *config* so partial callers cannot drop sections they omitted."""
-    with _CONFIG_LOCK:
-        if is_managed():
-            managed_error("save configuration")
-            return
-
-        config_path = get_config_path()
-        _refuse_failed_read(config_path, config)
-        config = _strip_managed_keys_for_save(config)
-
-        ensure_hermes_home()
-        # Explicit user paths come from the RAW dict BEFORE normalisation (which may inject
-        # agent.max_turns) so _strip_default_values keeps exactly what the user set. The
-        # fail-closed read is the single authority here: ``read_raw_config()`` is cached and
-        # swallows transient stat/open errors into ``{}``, and a ``{}`` at this point makes the
-        # strip pass drop every user section whose value matches a default (#113301).
-        _raw_for_paths = require_readable_config_before_write(config_path)
-        from hermes_cli.config_worker_save import rebase_for_save  # frozen-worker writes + merge_existing
-        config = rebase_for_save(config, _raw_for_paths, merge_existing)
-
-        current_normalized = _canonicalize_config(config)
-        normalized = current_normalized
-        if _raw_for_paths:
-            normalized = _preserve_env_ref_templates(
-                normalized, _canonicalize_config(_raw_for_paths),
-                _LAST_EXPANDED_CONFIG_BY_PATH.get(str(config_path)))
-
-        if strip_defaults:
-            # ``_strip_default_values`` always preserves ``_config_version`` itself.
-            effective_preserve_keys = _explicit_config_paths(_raw_for_paths) | set(preserve_keys or ())
-            normalized = _strip_default_values(normalized, DEFAULT_CONFIG, preserve_keys=effective_preserve_keys)
-
-        atomic_config_replace(config_path, normalized, extra_content_on_create=_commented_sections_for_save(normalized))
-        _secure_file(config_path)
-        _RAW_CONFIG_CACHE.pop(str(config_path), None)
-        _LAST_EXPANDED_CONFIG_BY_PATH[str(config_path)] = copy.deepcopy(current_normalized)
-    from hermes_cli.observability.shared_metrics_disabled import record_config_saved
-    record_config_saved(_raw_for_paths, current_normalized)
+    return _save_config_impl(
+        _config_state(), config, strip_defaults=strip_defaults,
+        preserve_keys=preserve_keys, merge_existing=merge_existing)
 
 
 def load_env() -> dict[str, str]:
